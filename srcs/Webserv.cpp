@@ -31,7 +31,7 @@ void Webserv::fileParser(char *av) {
 		std::cout << "File is opened now" << std::endl;
 
 		//get the first line of the file to check if it has the word "server" for scope check
-		getline(file, line);
+		std::getline(file, line);
 
 		// std::cout << "line >> " << line << std::endl;
 		if ((line.length() > 6 || line.length() < 0) || line != "server"){
