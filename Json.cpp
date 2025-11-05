@@ -25,6 +25,8 @@ std::string	Json::trim(std::string &str)
 	const char *space = " \t\r\n";
 	std::size_t	start = str.find_first_not_of(space);
 	std::size_t	end = str.find_last_not_of(space);
+	if (start == end)
+		return ("");
 	return (str = str.substr(start, end - start + 1));
 }
 
