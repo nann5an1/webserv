@@ -132,7 +132,10 @@ bool Json::parse_value(std::istream &is)
 
             } while (iss >> token);
         }
-		_obj_value[key] = value;
+		if (_obj_value.find(key) != _obj_value.end())
+			_obj_value[key]._array_value.push_back(value);
+		else
+			_obj_value[key] = value;
 	}
 	return true;
 }
