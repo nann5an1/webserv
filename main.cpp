@@ -2,11 +2,15 @@
 
 int main()
 {
-	Json	test("test_file");
+	Json	test("test.conf");
 	// test.print();
 
-	test["server"]["location"].print();
-	// std::string	str = test["server"]["server_name"][0];
-	// std::cout << "server_name : " << str << std::endl; 
-	// std::cout << "key : " << test["server"].obj_begin()->first << std::endl;
+	std::string	str = test["server"]["server_name"][0];
+	std::cout << "\nserver_name : " << str << std::endl; 
+	std::cout << "key : " << test["server"].obj_begin()->first << std::endl;
+	size_t n = test["server"]["error_page"].size();
+	std::cout << "error_page count: " << n << std::endl;
+
+	std::cout << typeid(test["server"].obj_begin()->second).name() << std::endl;
+
 }

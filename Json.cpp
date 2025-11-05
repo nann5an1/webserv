@@ -67,6 +67,37 @@ Json::object_iterator Json::obj_end()   { return _obj_value.end(); }
 Json::object_const_iterator Json::obj_begin() const { return _obj_value.begin(); }
 Json::object_const_iterator Json::obj_end()   const { return _obj_value.end(); }
 
+size_t	Json::size() const
+{
+	switch (_type)
+	{
+	case Array:
+		return (_array_value.size());
+	case Object:
+		return (_obj_value.size());
+	case String:
+		return (_str_value.size());
+	default :
+		return (0);
+	}
+}
+
+std::vector<Json>	Json::get_array()
+{
+	if (_type == Array)
+		return (_array_value);
+	else
+		return (std::vector<Json>());
+}
+
+std::map<std::string, Json>	Json::get_obj()
+{
+	if (_type == Object)
+		return (_obj_value);
+	else
+		return (std::map<std::string, Json>());
+}
+
 bool	Json::parse_file(std::ifstream &file)
 {
 	_type = Object;

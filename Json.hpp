@@ -61,6 +61,9 @@ class	Json
 		object_const_iterator obj_begin() const;
 		object_const_iterator obj_end() const;
 
+		size_t	size() const;
+		std::vector<Json>	get_array();
+		std::map<std::string, Json>	get_obj();
 		void	print();
 };
 
