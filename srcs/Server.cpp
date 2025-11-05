@@ -1,25 +1,24 @@
-#include "../include/Server.hpp"
+#include "Server.hpp"
 
-
-Server::Server(){
+Server::Server() {
 
 }
 
-Server::Server(const Server &other){
-    // *this = other;
+Server::Server(const Server &other) {
     (void)other;
 }
 
-Server::~Server(){}
+Server::~Server() {}
 
-Server& Server:: operator=(const Server &other){
+Server& Server:: operator=(const Server &other) {
     // if(this != &other)
     //     *this = other;
+	(void)other; 
     return *this;
-    (void)other; 
 }
 
-void Server:: initiate(){
+void Server:: initiate() {
+
         struct sockaddr_in serverAddress;
 
         //creates an endpoint for communication
@@ -49,11 +48,11 @@ void Server:: initiate(){
         }
 
         //create epoll_instance
-        int epoll_fd = epoll_create(5);
-        if(epoll_ctl(epoll_fd, EPOLL_CTL_ADD, serverSocket, NULL) < 0){
-            std::cout << "adding into epoll failed" << std::endl;
-        }
-        std::cout << "added into epoll" << std::endl;
+        // int epoll_fd = epoll_create(5);
+        // if(epoll_ctl(epoll_fd, EPOLL_CTL_ADD, serverSocket, NULL) < 0){
+        //     std::cout << "adding into epoll failed" << std::endl;
+        // }
+        // std::cout << "added into epoll" << std::endl;
 
         //listen to the assigned socket
         if(listen(serverSocket, 5) < 0){

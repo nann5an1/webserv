@@ -1,5 +1,5 @@
-#include "../include/webserv.hpp"
-#include "../include/Client.hpp"
+#include "Webserv.hpp"
+#include "Client.hpp"
 
 Client::Client(){}
 
