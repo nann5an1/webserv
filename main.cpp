@@ -3,8 +3,9 @@
 int main()
 {
 	Config	test("test.conf");
-	test["server"].print();
-
+	
+	std::cout << "\n\n\n ______________________" << std::endl;
+	test["server"]["a"].print();
 	// std::string	str = test["server"]["server_name"][0];
 	// std::cout << "\nserver_name : " << str << std::endl; 
 	// std::cout << "key : " << test["server"].obj_begin()->first << std::endl;

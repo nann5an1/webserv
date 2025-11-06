@@ -174,7 +174,7 @@ bool	Config::parse_file(std::ifstream &file)
 bool Config::parse_value(std::istream &is)
 {
     std::string line;
-    std::string pending_key;
+    std::string key;
     
     while (std::getline(is, line))
     {
@@ -183,59 +183,72 @@ bool Config::parse_value(std::istream &is)
 
         while (iss >> token)
         {
+			// std::cout << " token:" << token << "\t\t";
             if (token[0] == '#')
                 break;
             if (token == "}")
            		return true;
-            if (token == "{")
-            {
-                if (!pending_key.empty())
-                {
-                    Config obj;
-                    obj._type = Object;
-                    obj.parse_value(is);  // recursively parse nested object
-                    _obj_value[pending_key] = obj;
-                    pending_key.clear();
-                }
-                continue;
-            }
+			if (token != "{" && token.back() != '{' && key.empty())
+				key = token;
+			// std::cout << "key:" << key << std::endl;
+			if (token.back() == '{')
+			{
+				token.pop_back();
+				if (key.empty())
+					key = token;
+				// std::cout << "\tkey:" << key << std::endl;
+				Config	value;
+				value._type = Object;
+				value.parse_value(is);
+				_obj_value[key] = value;
+				key.clear();
+				continue;
+			}
+			if (_type == Object)
+			{
+				Config	value;
+				std::string	sub_token;
 
-            // Token ends with ';' => value assignment
-            if (token.back() == ';')
-            {
-                token.pop_back(); // remove ';'
+				value._type = Array;
+				while (iss >> sub_token)
+				{
+					Config	arr_val;
+					arr_val._type = Null;
+					arr_val.parse_value(is);
+					arr_val.print();
+					value._array_value.push_back(arr_val);
+				}
+				_obj_value[key] = value;
+				continue;
+				// std::cout << "shit : "; this->print();
+				
+			}
+			if (_type == Null)
+			{
+				std::cout << "never got in" << std::endl;
+				Config	value;
+				value._type = String;
+				value._str_value = token;
+				continue;
+			}
+			// if (_type == Object)
+			// {
+			// 	Config	value, arr_val;
+			// 	value._type = Array;
+			// 	arr_val.parse_value(is);
+			// 	std::cout << "help " ; arr_val.print();
+			// 	value._array_value.push_back(arr_val);
+			// }
+			// else if (_type == Null)
+			// {
+			// 	Config	value;
+			// 	value._type = String;
+			// 	value._str_value = token;
 
-                Config value;
-                value._type = Array;
-                value._array_value.push_back(Config(token)); // store as string Config
-                _obj_value[pending_key] = value;
-                pending_key.clear();
-                continue;
-            }
-
-            // If no pending_key, this token is key
-            if (pending_key.empty())
-            {
-                pending_key = token;
-            }
-            else
-            {
-                // Multiple values for the same key (like allow_methods GET POST)
-                if (_obj_value.find(pending_key) == _obj_value.end())
-                {
-                    Config arr;
-                    arr._type = Array;
-                    arr._array_value.push_back(Config(token));
-                    _obj_value[pending_key] = arr;
-                }
-                else
-                {
-                    _obj_value[pending_key]._array_value.push_back(Config(token));
-                }
-            }
-        }
-    }
-    return true;
+			// }
+		}
+	}
+	return (true);
 }
 
 void	Config::print()
