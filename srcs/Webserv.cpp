@@ -14,6 +14,11 @@ Webserv& Webserv:: operator=(const Webserv &other) {
 
 void Webserv::watchServer(){
 	// while(epoll())
+	int epoll_fd = epoll_create(10);
+	std::cout << epoll_fd << std::endl;
+
+	//if successful returns 0
+	// epoll_ctl(epoll_fd, EPOLL_CTL_ADD, )
 }
 
 void Webserv::fileParser(char *av) {

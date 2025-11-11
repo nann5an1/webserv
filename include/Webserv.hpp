@@ -6,7 +6,7 @@
 #include <iomanip>
 #include <sstream>
 #include <fstream>
-// #include <sys/epoll.h>
+#include <sys/epoll.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
@@ -41,7 +41,7 @@ class Webserv{
 		std::map<std::string, std::string> err_pages;
 	public:
 		Webserv();
-		Webserv(char *av);
+		Webserv(char *av); //take the av(filename) like this
 		~Webserv();
 		Webserv(const Webserv &other);
 		Webserv& operator=(const Webserv &other);
