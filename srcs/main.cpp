@@ -8,6 +8,6 @@ int main(int ac, char **av){
     webserv.fileParser(av[1]);
     webserv.watchServer();
 
-    Server server;
-    server.initiate();
+    // Server server;
+    // server.initiate();
 }
