@@ -20,6 +20,7 @@
 typedef struct	s_location
 {
 	// std::string	path;
+	// get 1, post 2, del 4;
 	bool	autoindex;
 	bool	get;
 	bool	post;

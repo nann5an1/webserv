@@ -6,7 +6,7 @@ int main(int ac, char **av){
     
     Webserv webserv;
     webserv.fileParser(av[1]);
-    webserv.watchServer();
+    // webserv.watchServer();
 
     // Server server;
     // server.initiate();

@@ -2,26 +2,37 @@
 #define SERVER_HPP
 
 #include <iostream>
+#include <map>
+#include <cstring>
+
+#include <sys/types.h>
 #include <sys/socket.h>
+// #include <sys/epoll.h>
 #include <netinet/in.h>
-// #include <sys/epoll.h>
+#include <arpa/inet.h>
 #include <fcntl.h>
-#include <errno.h>  // For errno
-#include <cstddef>
 #include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <errno.h>
 // #include <sys/epoll.h>
+
+#define	RED	"\033[31m"
+#define	RESET "\033[0m"
 
 class Server{
     private:
-        // int socket_fd; //endpoint for communication
+		std::string server_name;
+		std::string listen_port;
+		std::string	listen_ip;
+		long long max_body_size;
+		std::map<std::string, t_location> location_map;
+		std::map<int, std::string> err_pages;
+		int _sock_fd; //endpoint for communication
     public:
         Server();
         Server(const Server &other);
         ~Server();
         Server &operator=(const Server &other);
-        void initiate();
+        int	start();
 };
 
 #endif
