@@ -182,7 +182,7 @@ int Webserv::scopeValidation(std::ifstream &file){
 				location_scope = true;
 				start_location++;
 			}
-			location = t_loc();
+			location = t_location();
 			this->location_path = tok2;
 		}
 		if(location_scope && line.find("}") != std::string::npos){ //after reading the location scope

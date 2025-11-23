@@ -1,5 +1,11 @@
 #include "Server.hpp"
 
+fd::fd() : FD(-1) {}
+
+fd::fd(int fd_) : FD(fd_) {}
+
+fd::operator int() const {return (FD);}
+
 Server::Server() {
 
 }
@@ -19,43 +25,51 @@ Server& Server:: operator=(const Server &other) {
 
 int	Server::start()
 {
-	try
+	int	err = 0;
+	socklen_t	opt = 1;
+	struct sockaddr_in	sock_addr;
+
+	std::memset(&sock_addr, 0, sizeof(sock_addr));
+	sock_addr.sin_family = AF_INET;	
+	// TEMP: I set the port to 8080 for test.
+	listen_port = "8080";
+	listen_ip = "127.0.0.1";
+	server_name = "nsan.server";
+	sock_addr.sin_port = htons(std::atoi(listen_port.c_str()));
+	sock_addr.sin_addr.s_addr = inet_addr(listen_ip.c_str());
+	if ((_sock_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0 ||
+		setsockopt(_sock_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0 ||
+		bind(_sock_fd, (sockaddr *)&sock_addr, sizeof(sock_addr)) < 0 ||
+		fcntl(_sock_fd, F_SETFL, fcntl(_sock_fd, F_GETFL, 0) | O_NONBLOCK) < 0 ||
+		listen(_sock_fd, SOMAXCONN) < 0)
 	{
-		if ((_sock_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-			throw	std::runtime_error("creation failed!");
-		socklen_t	opt = 1;
-		if (setsockopt(_sock_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
-			throw	std::runtime_error("creation failed!");
-		
-		sockaddr_in	sock_addr;
-		std::memset(&sock_addr, 0, sizeof(sock_addr));
-		sock_addr.sin_family = AF_INET;	
-		// TEMP: I set the port to 8080 for test.
-		listen_port = 8080;
-		sock_addr.sin_port = htons(std::atoi(listen_port.c_str()));
-		sock_addr.sin_addr.s_addr = inet_addr(listen_ip.c_str());
-		if (bind(_sock_fd, (sockaddr *)&sock_addr, sizeof(sock_addr)) < 0)
-		{
+		err = errno;
+		if (_sock_fd > 0)
 			close(_sock_fd);
-			throw	std::runtime_error("bind error!");
-		}
-		if (fcntl(_sock_fd, F_SETFL, fcntl(_sock_fd, F_GETFL, 0) | O_NONBLOCK))
-		{
-			close(_sock_fd);
-			throw	std::runtime_error("non-blocking error!");
-		}
-		if (listen(_sock_fd, SOMAXCONN) < 0)
-		{
-			close(_sock_fd);
-			throw	std::runtime_error("listen failed!");
-		}
-	} catch(std::exception &e)
-	{
-		std::cerr << RED << "Error: Socket: " << e.what() << std::endl;
-		return (0);
+		std::cout << "Err: " << err << std::endl;
+		return (err);
 	}
-	return (1);
+	sleep(3);
+	std::cout << "Server.start(): " << _sock_fd << std::endl;
+	return (0);
 }
+
+Server::operator	fd() const
+{
+	return (_sock_fd);
+}
+
+Server::operator	int() const
+{
+	return (std::atoi(listen_port.c_str()));
+}
+
+Server::operator	std::string() const
+{
+	return (listen_ip + ":" + listen_port + ":" + server_name);
+}
+
+
 
 // void Server::initiate() {
 

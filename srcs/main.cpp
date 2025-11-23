@@ -8,6 +8,13 @@ int main(int ac, char **av){
     webserv.fileParser(av[1]);
     // webserv.watchServer();
 
-    // Server server;
-    // server.initiate();
+    Server	server;
+	int		status;
+	if ((status = server.start()) != 0)
+		std::cerr << RED << "Error: Socket: " << strerror(status) << RESET << std::endl;
+
+	fd	sock = server;
+	std::cout << "port: " << server << std::endl;
+	std::cout << "sock: " << sock << std::endl;
+	std::cout << "id: " << (std::string)server << std::endl;
 }
