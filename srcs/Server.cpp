@@ -46,6 +46,7 @@ int	Server::start()
 		err = errno;
 		if (_sock_fd > 0)
 			close(_sock_fd);
+		_sock_fd = -1;
 		std::cout << "Err: " << err << std::endl;
 		return (err);
 	}
