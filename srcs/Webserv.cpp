@@ -302,6 +302,7 @@ void Webserv::fileParser(char *av){
 int	Webserv::fail(std::string head, int err_no)
 {
 	std::cerr << RED << "Error: " << head << ": " << strerror(err_no) << std::endl;
+	return (err_no);
 }
 
 
@@ -372,6 +373,8 @@ int	Webserv::start()
 			}
 			else if (events[i].events & EPOLLIN)
 			{
+				//	HELP: No understanding at all
+				//	HELP: I dont understand a shit at all starting from here.
 				char	buffer[4096];
 				bool	keep = true;
 				while (true)
@@ -380,11 +383,79 @@ int	Webserv::start()
 					if (bytes > 0)
 					{
 						std::string	req(buffer, bytes);
-						std::cout << "Request\n" << std::string(42, '=') << "\n" ;
+						std::cout << "Request: " << event_fd << "\n" << std::string(42, '=') << "\n" << req << std::endl;
+						timestamps[event_fd] = time(NULL);
+					}
+					else if (bytes == 0)
+					{
+						keep = false;
+						break;
+					}
+					else
+					{
+						if (errno == EAGAIN)
+							break;
+						keep = false;
+						break;
 					}
 				}
+				if (!keep)
+				{
+					epoll_ctl(ep_fd, EPOLL_CTL_DEL, event_fd, NULL);
+					close(event_fd);
+					timestamps.erase(event_fd);
+				}
+				else
+				{
+					struct	epoll_event	mod_event;
+					mod_event.events = EPOLLOUT | EPOLLET;
+					mod_event.data.fd = event_fd;
+					epoll_ctl(ep_fd, EPOLL_CTL_MOD, event_fd, &mod_event);
+				}
+			}
+			else if (events[i].events & EPOLLOUT)
+			{
+				const char response[] = "HTTP/1.1 200 OK\r\n"
+										"Content-Length: 12\r\n"
+										"Content-Type: text/plain\r\n"
+										"\r\n"
+										"Hello World";
+				;
+				if (write(event_fd, response, sizeof(response) - 1) < 0 && errno != EAGAIN)
+					fail("Response", errno);
+				epoll_ctl(ep_fd, EPOLL_CTL_DEL, event_fd, NULL);
+				close(event_fd);
+				timestamps.erase(event_fd);
+			}
+			else if (events[i].events & (EPOLLHUP | EPOLLERR))
+			{
+				epoll_ctl(ep_fd, EPOLL_CTL_DEL, event_fd, NULL);
+				close(event_fd);
+				timestamps.erase(event_fd);
 			}
 		}
+
+		time_t	now = time(NULL);
+		for (std::map<fd, time_t>::iterator it = timestamps.begin(); it != timestamps.end();)
+		{
+			int	c_fd_ = it->first;
+			if (now - it->second > WAIT_TIME)
+			{
+				std::cout << "Client " << c_fd_ << "time out" << std::endl;
+				epoll_ctl(ep_fd, EPOLL_CTL_DEL, c_fd_, NULL);
+				close(c_fd_);
+				it = timestamps.erase(it);
+			}
+			else
+				++it;
+		}
 	}
-	
+	for (std::set<fd>::iterator it = server_fds.begin(); it != server_fds.end(); ++it)
+    	close(*it);
+	close(ep_fd);
+	return (0);
 }
+
+// DANGER: the most shittest function so far created "webserv.start()" better not touch it
+// only gpt & I know it, now only I know what i'm gonna do. I will clean out later.
+// I dont understand a shit at all. :) 25.Nov.2025/06:41
