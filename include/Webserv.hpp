@@ -47,10 +47,11 @@ class Webserv{
 		std::map<int, std::string> err_pages;
 	public:
 		Webserv();
-		Webserv(char *av); //take the av(filename) like this
 		~Webserv();
 		Webserv(const Webserv &other);
 		Webserv& operator=(const Webserv &other);
+
+		Webserv(char *av); //take the av(filename) like this
 		void watchServer();
 		void fileParser(char *av);
 		void print_map();
@@ -61,6 +62,8 @@ class Webserv{
 		int inputLocation(std::string line, t_location &location);
 		std::string trimSemiColon(std::string val);
 		int validateHTTPCode(std::string &val);
+
+		int	start();
 	
 };
 

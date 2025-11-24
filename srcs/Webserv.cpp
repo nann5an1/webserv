@@ -302,3 +302,12 @@ ConfigFileError::ConfigFileError()
 	
 // }
 
+
+int	Webserv::start()
+{
+	fd	ep_fd = epoll_create(1);
+	struct	epoll_event	ev;
+	ev.events = EPOLLIN;
+	ev.data.fd = 
+	
+}

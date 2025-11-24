@@ -8,7 +8,7 @@
 
 #include <sys/types.h>
 #include <sys/socket.h>
-// #include <sys/epoll.h>
+#include <sys/epoll.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
@@ -34,8 +34,6 @@ std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>&
 	os << fd_.FD;
 	return (os);
 }
-
-
 
 class Server{
     private:
