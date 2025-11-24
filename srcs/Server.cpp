@@ -168,7 +168,7 @@ int	Server::start()
 
 	std::memset(&sock_addr, 0, sizeof(sock_addr));
 	sock_addr.sin_family = AF_INET;	
-	// TEMP: I set the port to 8080 for test.
+	// TEMP~ I set the port to 8080 for test.
 	listen_port = "8080";
 	listen_ip = "127.0.0.1";
 	server_name = "nsan.server";

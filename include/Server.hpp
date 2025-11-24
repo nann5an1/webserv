@@ -21,7 +21,7 @@
 #define	RED	"\033[31m"
 #define	RESET "\033[0m"
 
-// TEMP: i want to overload the sock, but not as int, 
+// TEMP~ i want to overload the sock, but not as int, 
 // bcuz i rather overload int as port but not sure yet. Let me test this first. Thank you :)
 struct	fd 
 {

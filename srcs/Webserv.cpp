@@ -353,7 +353,7 @@ int	Webserv::start()
 						fail("Epoll", errno);
 						break;
 					}
-					// FAIL: need proper clean up
+					// FAIL~ need proper clean up
 					if (fcntl(c_fd, F_SETFL, fcntl(c_fd, F_GETFL, 0) | O_NONBLOCK) < 0)
 						return (errno);
 
@@ -361,7 +361,7 @@ int	Webserv::start()
 					c_event.events = EPOLLIN | EPOLLET;
 					c_event.data.fd = c_fd;
 
-					// FAIL:
+					// FAIL~
 					if (epoll_ctl(ep_fd, EPOLL_CTL_ADD, c_fd, &c_event) < 0)
 					{
 						int	status = errno; 
@@ -456,6 +456,6 @@ int	Webserv::start()
 	return (0);
 }
 
-// DANGER: the most shittest function so far created "webserv.start()" better not touch it
+// DANGER~ the most shittest function so far created "webserv.start()" better not touch it
 // only gpt & I know it, now only I know what i'm gonna do. I will clean out later.
 // I dont understand a shit at all. :) 25.Nov.2025/06:41
