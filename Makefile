@@ -3,7 +3,7 @@ CXX 		= c++
 INCLUDES	:= -Iinclude
 CXXFLAGS 	= $(INCLUDES) -g -std=c++98 #-Wall -Wextra -Werror 
 
-SRCS		= ./srcs/main.cpp ./srcs/Server.cpp ./srcs/Webserv.cpp
+SRCS		= ./main.cpp ./srcs/Server.cpp ./srcs/Webserv.cpp
 
 OBJS		= ${SRCS:.cpp=.o}
 

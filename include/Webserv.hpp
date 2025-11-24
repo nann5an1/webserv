@@ -15,7 +15,7 @@
 #include <stdlib.h>
 #include <map>
 #include <exception>
-
+#include "Server.hpp"
 
 typedef struct	s_location
 {
@@ -33,6 +33,7 @@ typedef struct	s_location
 	std::vector<std::string>	page_seq;
 	std::map<std::string, std::string>	cgi;
 	std::map<int, std::string> ret_pages;
+	std::vector<Server>servers;	//take the sever class as type and save a collection of servers
 }	t_location;
 
 class Webserv{

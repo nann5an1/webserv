@@ -4,6 +4,7 @@
 #include <iostream>
 #include <map>
 #include <cstring>
+#include <cstdlib>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -13,7 +14,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
-// #include <sys/epoll.h>
 
 #define	RED	"\033[31m"
 #define	RESET "\033[0m"

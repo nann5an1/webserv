@@ -1,6 +1,7 @@
 #include "Webserv.hpp"
 
-Webserv::Webserv(){}
+Webserv::Webserv(){
+}
 
 Webserv::~Webserv(){}
 
@@ -225,6 +226,7 @@ int Webserv::scopeValidation(std::ifstream &file){
 }
 
 void Webserv::fileParser(char *av){
+	// servers.pushback(Server(file)); //cannot be called inside the constructor
 	std::string	word;
 	std::string	config_file;
 	if(av) config_file = av;
@@ -235,6 +237,7 @@ void Webserv::fileParser(char *av){
 	std::string line;
 
 	if(scopeValidation(file)){
+
 		// server_scope = true;
 		std::cout << "valid config file" << std::endl;
 		std::cout << "/nserver_name: " << this->server_name << std::endl;

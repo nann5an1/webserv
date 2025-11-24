@@ -1,23 +1,21 @@
-#include "Config.hpp"
 #include "Webserv.hpp"
+#include "Server.hpp"
 
-int main()
+int main(int ac, char **av)
 {
-	// Config	test("test.conf");
-	
-	// std::cout << "\n\n\n ______________________" << std::endl;
-	// test["server"]["a"].print();
-	// std::string	str = test["server"]["server_name"][0];
-	// std::cout << "\nserver_name : " << str << std::endl; 
-	// std::cout << "key : " << test["server"].obj_begin()->first << std::endl;
-	// size_t n = test["server"]["error_page"].size();
-	// std::cout << "error_page count: " << n << std::endl;
+    if(ac > 2) return 1;
+    
+    Webserv webserv;
+    webserv.fileParser(av[1]);
+    // webserv.watchServer();
 
-	// std::cout << typeid(test["server"].obj_begin()->second).name() << std::endl;
+    Server	server;
+	int		status;
+	// if ((status = server.start()) != 0)
+	// 	std::cerr << RED << "Error: Socket: " << strerror(status) << RESET << std::endl;
 
-	Webserv webserv();
-	webserv.fileParser("def.conf");
-	// webserv.watchServer();
-	return 0;
-
+	fd	sock = server;
+	std::cout << "port: " << server << std::endl;
+	std::cout << "sock: " << sock << std::endl;
+	std::cout << "id: " << (std::string)server << std::endl;
 }
