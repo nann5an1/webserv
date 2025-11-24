@@ -5,6 +5,7 @@
 #include <map>
 #include <cstring>
 #include <cstdlib>
+#include <vector>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -14,6 +15,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
+#include <fstream>
+#include <sstream>
 
 #define	RED	"\033[31m"
 #define	RESET "\033[0m"
@@ -35,19 +38,38 @@ std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>&
 	return (os);
 }
 
+//location scope that is to be under Server
+typedef struct	s_location
+{
+	bool	autoindex;
+	bool	get;
+	bool	post;
+	bool	del;
+	int		return_code;
+	std::string return_url;
+	std::string	root;
+	std::string	upload_dir;
+	std::vector<std::string>	index_files;
+	std::vector<std::string>	page_seq;
+	std::map<std::string, std::string>	cgi;
+	std::map<int, std::string> ret_pages;
+}	t_location;
 
 
 class Server{
     private:
+		fd	_sock_fd;
+
 		std::string server_name;
 		std::string listen_port;
-		std::string	listen_ip;
+		std::string listen_ip;
 		long long max_body_size;
-		// std::map<std::string, t_location> location_map;
+		std::string location_path;
+		std::map<std::string, t_location> location_map;
 		std::map<int, std::string> err_pages;
-		fd	_sock_fd;
     public:
         Server();
+		Server(std::ifstream &file, int server_scope);
         Server(const Server &other);
         ~Server();
         Server &operator=(const Server &other);
@@ -56,6 +78,19 @@ class Server{
 		operator fd() const;
 		operator int() const;
 		operator std::string() const;
+
+		// int scopeValidation(std::ifstream &file);
+		int inputData(std::string line);
+		int inputLocation(std::string line, t_location &location);
+		std::string trimSemiColon(std::string val);
+		int validateHTTPCode(std::string &val);
+
+
+};
+
+class ConfigFileError : public std::runtime_error {
+public:
+	ConfigFileError(); // constructor declaration
 };
 
 #endif
