@@ -326,7 +326,7 @@ int	Webserv::start()
 	
 	std::map<fd, std::time_t>	timestamps;
 
-	while (true)
+ 	while (true)
 	{
 		int	hits = epoll_wait(ep_fd, events, MAX_EVENTS, WAIT_TIME);
 		if (hits < 0)

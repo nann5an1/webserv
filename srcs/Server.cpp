@@ -1,10 +1,10 @@
 #include "Server.hpp"
 
-fd::fd() : FD(-1) {}
+fd::fd() : fd_(-1) {}
 
-fd::fd(int fd_) : FD(fd_) {}
+fd::fd(int fd_) : fd_(fd_) {}
 
-fd::operator int() const {return (FD);}
+fd::operator int() const {return (fd_);}
 
 Server::Server() {
 }

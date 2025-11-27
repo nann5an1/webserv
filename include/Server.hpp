@@ -25,16 +25,16 @@
 // bcuz i rather overload int as port but not sure yet. Let me test this first. Thank you :)
 struct	fd 
 {
-    int FD;
+   	int fd_;
 	fd();
-    fd(int fd_);
+    fd(int FD);
     operator int() const;
 };
 
 template <class CharT, class Traits>
-std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>& os, const fd& fd_)
+std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>& os, const fd& other)
 {
-	os << fd_.FD;
+	os << other.fd_;
 	return (os);
 }
 
