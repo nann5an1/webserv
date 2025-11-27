@@ -10,7 +10,7 @@ Server::Server() {
 }
 
 Server::~Server(){
-	std::cout << "Server Destructor Called " << std::endl;
+	// std::cout << "Server Destructor Called " << std::endl;
 }
 
 std::string Server::trimSemiColon(std::string val){
@@ -72,6 +72,7 @@ int Server::inputData(std::string &line){
 			}
 		}
 		else if(token == "error_page"){
+			
 			ss >> value;
 			std::cout << "error page status code >> " << value << std::endl;
 			if(!validateHTTPCode(value)) return 0;
@@ -80,13 +81,13 @@ int Server::inputData(std::string &line){
 				if(!(ss >> path)) return 0;
 				else{
 					this->err_pages.insert(std::pair<int, std::string>(atoi(value.c_str()), trimSemiColon(path)));
-					break;
+					// break;
 				}
 			}
 		}
-		// else{
-		// 	break;
-		// }
+		else{
+			break;
+		}
 	}
 	
 	
@@ -95,61 +96,58 @@ int Server::inputData(std::string &line){
 
 int Server::inputLocation(std::string line, t_location &location){
 	std::string token;
-	
 	std::stringstream ss(line);
-	ss >> token;
 
-	if(token == "autoindex"){
+	while(ss >> token){
 		std::string val;
-		ss >> val;
-		val = trimSemiColon(val);
-		if(val == "on") location.autoindex = true;
-	}
-	else if(token == "allow_methods"){
-		std::string method1, method2, method3;
-		ss >> method1 >> method2 >> method3;
-		// std::cout << "methods >> " << method1 << " " << method2 << " " << method3 << std::endl;
+		if(token == "autoindex"){
+			ss >> val;
+			val = trimSemiColon(val);
+			if(val == "on") location.autoindex = true;
+			else location.autoindex = false;
+		}
+		else if(token == "methods"){
+			while(ss >> val){
+				if(val.find(";") != std::string::npos)	val = trimSemiColon(val);
+				if(val.find(";") != std::string::npos)	val = trimSemiColon(val);
+				if(val.find(";") != std::string::npos)	val = trimSemiColon(val);
 
-		if(method1.find(";") != std::string::npos)	method1 = trimSemiColon(method1);
-		if(method2.find(";") != std::string::npos)	method2 = trimSemiColon(method2);
-		if(method3.find(";") != std::string::npos)	method3 = trimSemiColon(method3);
-
-		if(method1 == "GET")	location.get = true;
-		if(method2 == "POST")	location.post = true;
-		if(method3 == "DELETE")	location.del = true;
+				if(val == "GET")	location.get = true;
+				if(val == "POST")	location.post = true;
+				if(val == "DELETE")	location.del = true;
+			}
+			// std::cout << "methods >> " << method1 << " " << method2 << " " << method3 << std::endl;	
+		}
+		else if(token == "root"){
+			ss >> val;
+			val = trimSemiColon(val);
+			location.root = val;
+		}
+		else if(token == "upload_dir"){
+			ss >> val;
+			val = trimSemiColon(val);
+			location.upload_dir = val;
+		}
+		else if(token == "index"){
+			while(ss >> val)
+				location.index_files.push_back(val);
+			// std::cout << location.index_files[0] << " " << location.index_files[1] << std::endl;
+		}
+		else if(token == "cgi"){
+			std::string key, val;
+			ss >> key >> val;
+			val = trimSemiColon(val);
+			location.cgi.insert(std::pair<std::string, std::string>(key, val));
+		}
+		else if(token == "return"){
+			std::string key, val;
+			ss >> key >> val;
+			val = trimSemiColon(val);
+			if(!validateHTTPCode(key)) return 0;
+			location.ret_pages.insert(std::pair<int, std::string>(atoi(key.c_str()), val));
+		}
 	}
-	else if(token == "root"){
-		std::string val;
-		ss >> val;
-		val = trimSemiColon(val);
-		location.root = val;
-	}
-	else if(token == "upload_dir"){
-		std::string val;
-		ss >> val;
-		val = trimSemiColon(val);
-		location.upload_dir = val;
-	}
-	else if(token == "index"){
-		std::string val1, val2;
-		ss >> val1 >> val2;
-		location.index_files.push_back(val1);
-		location.index_files.push_back(val2);
-		// std::cout << location.index_files[0] << " " << location.index_files[1] << std::endl;
-	}
-	else if(token == "cgi"){
-		std::string key, val;
-		ss >> key >> val;
-		val = trimSemiColon(val);
-		location.cgi.insert(std::pair<std::string, std::string>(key, val));
-	}
-	else if(token == "return"){
-		std::string key, val;
-		ss >> key >> val;
-		val = trimSemiColon(val);
-		if(!validateHTTPCode(key)) return 0;
-		location.ret_pages.insert(std::pair<int, std::string>(atoi(key.c_str()), val));
-	}
+	
 	return 1;
 }
 
@@ -167,8 +165,8 @@ Server::Server(std::ifstream &file, int serv_scope_start)
 	std::string line, tok;
 	
 	int location_scope = 1, location_key = 1;
-	t_location location;
 	int server_scope = serv_scope_start;
+	t_location location;
 
 	// std::cout << "servere scope count >> " << server_scope << std::endl;
 	//going line by line inside the server scope now
@@ -202,9 +200,9 @@ Server::Server(std::ifstream &file, int serv_scope_start)
 			
 			// std::cout << "line under server scope >> " << line << std::endl;
 			if(inputData(line) != 1) throw ConfigFileError();
-			// if(location_scope > 1){
-			// 	if(!inputLocation(line, location)) throw ConfigFileError();
-			// }
+			if(location_scope > 1){
+				if(!inputLocation(line, location)) throw ConfigFileError();
+			}
 		}
 		// else if(server_scope <= 1)	break;
 	}
@@ -214,7 +212,15 @@ Server::Server(std::ifstream &file, int serv_scope_start)
 			  << "max_body_size >> " << this->max_body_size << "\n" << std::endl;
 }
 
-Server::Server(const Server &other) {
+Server::Server(const Server &other):
+	server_name(other.server_name),
+	listen_port(other.listen_port),
+	listen_ip(other.listen_ip),
+	root(other.root),
+	max_body_size(other.max_body_size),
+	err_pages(other.err_pages)
+
+{
     (void)other;
 }
 
