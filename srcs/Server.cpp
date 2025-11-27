@@ -9,6 +9,10 @@ fd::operator int() const {return (FD);}
 Server::Server() {
 }
 
+Server::~Server(){
+	std::cout << "Server Destructor Called " << std::endl;
+}
+
 std::string Server::trimSemiColon(std::string val){
 	if(val.find(";") == std::string::npos)	throw ConfigFileError();
 	return (val.substr(0, val.length() - 1));
@@ -23,28 +27,69 @@ int Server::validateHTTPCode(std::string &val){
 }
 
 //get the data from the config file by line iteration
-int Server::inputData(std::string line){
-	std::string token, value;  
+int Server::inputData(std::string &line){
+	std::string token;  
 	std::stringstream ss(line);
-	ss >> token >> value;
-
-	//change the string into the int -- don't forget
-	if(token == "server_name")	this->server_name = value;
-	else if(token == "listen"){
-		int idx = value.find(":");
-		this->listen_ip  = value.substr(0, idx);
-		this->listen_port = value.substr(idx + 1, value.length() - idx - 1);
+	// bool server_name = false, listen = false, root= true, max_body = true, err_page = true;
+	// std::cout << "line in inputData >> " << line << std::endl;
+	
+	//line is the line by line
+	while(ss >> token){
+		std::string value;
+		// std::cout << "token >> " << token << std::endl;
+		if(token == "server_name")	{
+			// std::string value;
+			if(!(ss >> value)) return 0;
+			else {
+				this->server_name = trimSemiColon(value);
+				break;
+			}
+			
+		}
+		else if(token == "listen"){ 
+			// std::string value;
+			if(!(ss >> value)) return 0;
+			else{
+				int idx = value.find(":");
+				this->listen_ip  = value.substr(0, idx);
+				this->listen_port = value.substr(idx + 1, value.length() - idx - 1);
+				break;
+				// std::cout << "listen >> " << this->listen_ip << ":" << this->listen_port << std::endl;
+			}
+		}
+		else if(token == "root"){
+			if(!(ss >> value)) return 0;
+			else {
+				this->root = trimSemiColon(value);
+				break;
+			}
+		}
+		else if(token == "max_body_size"){
+			if(!(ss >> value)) return 0;
+			else{
+				this->max_body_size = atoi(value.c_str());
+				break;
+			}
+		}
+		else if(token == "error_page"){
+			ss >> value;
+			std::cout << "error page status code >> " << value << std::endl;
+			if(!validateHTTPCode(value)) return 0;
+			else{ //http code is validated
+				std::string path;
+				if(!(ss >> path)) return 0;
+				else{
+					this->err_pages.insert(std::pair<int, std::string>(atoi(value.c_str()), trimSemiColon(path)));
+					break;
+				}
+			}
+		}
+		// else{
+		// 	break;
+		// }
 	}
-	else if(token == "error_page"){
-		std::string path;
-		ss >> path;
-		// std::cout << "path >> " << path << std::endl;
-		path = trimSemiColon(path);
-		if(!validateHTTPCode(value)) return 0;
-		this->err_pages.insert(std::pair<int, std::string>(atoi(value.c_str()), path));
-	}
-	else if(token == "client_max_body_size")	this->max_body_size = atoi(value.c_str());
-
+	
+	
 	return 1;	
 }
 
@@ -110,48 +155,69 @@ int Server::inputLocation(std::string line, t_location &location){
 
 
 //will retrive the strating from the next line of the server scope
-Server::Server(std::ifstream &file, int server_scope){
+Server::Server(std::ifstream &file, int serv_scope_start)
+: server_name("default"), 
+  listen_port("default"),
+  listen_ip("default"),
+  root("default"),
+  max_body_size(0),
+  location_path("default")
+{
+	// std::cout << "Server parameterized constructor" << std::endl;
 	std::string line, tok;
-	std::stringstream ss(line);
+	
 	int location_scope = 1, location_key = 1;
 	t_location location;
+	int server_scope = serv_scope_start;
 
+	// std::cout << "servere scope count >> " << server_scope << std::endl;
 	//going line by line inside the server scope now
 	while(getline(file, line) && server_scope > 1){
+		std::stringstream ss(line);
+		// std::cout << "line now at >> " << line << std::endl;
 		while(ss >> tok){
-			if(tok == "{") {
-				server_scope++;
-				break;
-			}
-			else if(tok == "location"){
+			//so just skip the server scope's { ?
+			//key identifiers
+			if(tok == "location"){
 				location_key++;
+				// std::cout << "location key >> " << location_key << std::endl;
 			}
+			// else if(location_key > 1 && tok != "{"){ //just a simple path parsing for the location
+			// 	this->location_path = tok;
+			// 	std::cout << "location path >> " << this->location_path << std::endl;
+			// }
 			else if(location_key > 1 && tok == "{"){
 				location_scope++;
+				// std::cout << "location scope start" << location_scope << std::endl;
 			}
-			else if(location_key > 1){ //just a simple path parsing for the location
-				this->location_path = tok;
+			else if(location_scope > 1 && tok == "}"){
+				location_scope--;
 			}
-			else if(server_scope > 1 && tok == "}"){
+			else if(server_scope > 1 && location_scope <= 1 && tok == "}"){
 				server_scope--;
 			}
 		}
 		if(server_scope > 1){ //inside the scope 
 			//parsing will come in
-			if(!inputData(line)) throw ConfigFileError();
-			if(location_scope > 1){
-				if(!inputLocation(line, location)) throw ConfigFileError();
-			}
+			
+			// std::cout << "line under server scope >> " << line << std::endl;
+			if(inputData(line) != 1) throw ConfigFileError();
+			// if(location_scope > 1){
+			// 	if(!inputLocation(line, location)) throw ConfigFileError();
+			// }
 		}
-		else if(server_scope <= 1)	break;
+		// else if(server_scope <= 1)	break;
 	}
+	std::cout << "server name >> " << this->server_name << "\n"
+			  << "listen >> " << this->listen_ip << ":" << this->listen_port << "\n"
+			  << "root >> " << this->root << "\n"
+			  << "max_body_size >> " << this->max_body_size << "\n" << std::endl;
 }
 
 Server::Server(const Server &other) {
     (void)other;
 }
 
-Server::~Server() {}
 
 Server& Server:: operator=(const Server &other) {
     // if(this != &other)
@@ -209,6 +275,55 @@ Server::operator	std::string() const
 
 ConfigFileError::ConfigFileError()
 	: std::runtime_error("Error in config file") {}
+
+
+
+//print out the values inside the server
+void Server::print() const {
+    std::cout << "==================== SERVER ====================\n";
+    std::cout << "Server Name: " << server_name << "\n";
+	std::cout << "Root: " << root << "\n";
+    std::cout << "IP: " << listen_ip << "\n";
+    std::cout << "Port: " << listen_port << "\n";
+    std::cout << "Max Body Size: " << max_body_size << "\n";
+
+    std::cout << "\n-- Error Pages --\n";
+    for (std::map<int, std::string>::const_iterator it = err_pages.begin(); it != err_pages.end(); ++it) {
+        std::cout << it->first << " => " << it->second << "\n";
+    }
+
+    std::cout << "\n-- Locations --\n";
+    for (std::map<std::string, t_location>::const_iterator it = location_map.begin(); it != location_map.end(); ++it) {
+        const std::string &path = it->first;
+        const t_location &loc = it->second;
+
+        std::cout << "Location: " << path << "\n";
+        std::cout << "  autoindex: " << (loc.autoindex ? "on" : "off") << "\n";
+        std::cout << "  methods: "
+                  << (loc.get ? "GET " : "")
+                  << (loc.post ? "POST " : "")
+                  << (loc.del ? "DELETE " : "") << "\n";
+        std::cout << "  root: " << loc.root << "\n";
+        std::cout << "  upload_dir: " << loc.upload_dir << "\n";
+
+        std::cout << "  index files: ";
+        for (size_t i = 0; i < loc.index_files.size(); i++)
+            std::cout << loc.index_files[i] << " ";
+        std::cout << "\n";
+
+        std::cout << "  CGI: ";
+        for (std::map<std::string, std::string>::const_iterator ci = loc.cgi.begin(); ci != loc.cgi.end(); ++ci)
+            std::cout << ci->first << " => " << ci->second << " ";
+        std::cout << "\n";
+
+        std::cout << "  Return pages: ";
+        for (std::map<int, std::string>::const_iterator rp = loc.ret_pages.begin(); rp != loc.ret_pages.end(); ++rp)
+            std::cout << rp->first << " => " << rp->second << " ";
+        std::cout << "\n\n";
+    }
+    std::cout << "=================================================\n";
+}
+
 
 // void Server::initiate() {
 

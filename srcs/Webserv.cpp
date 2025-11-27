@@ -25,68 +25,6 @@ void Webserv::watchServer(){
 }
 
 
-
-// int Webserv::inputLocation(std::string line, t_location &location){
-// 	std::string token;
-	
-// 	std::stringstream ss(line);
-// 	ss >> token;
-
-// 	if(token == "autoindex"){
-// 		std::string val;
-// 		ss >> val;
-// 		val = trimSemiColon(val);
-// 		if(val == "on") location.autoindex = true;
-// 	}
-// 	else if(token == "allow_methods"){
-// 		std::string method1, method2, method3;
-// 		ss >> method1 >> method2 >> method3;
-// 		// std::cout << "methods >> " << method1 << " " << method2 << " " << method3 << std::endl;
-
-// 		if(method1.find(";") != std::string::npos)	method1 = trimSemiColon(method1);
-// 		if(method2.find(";") != std::string::npos)	method2 = trimSemiColon(method2);
-// 		if(method3.find(";") != std::string::npos)	method3 = trimSemiColon(method3);
-
-// 		if(method1 == "GET")	location.get = true;
-// 		if(method2 == "POST")	location.post = true;
-// 		if(method3 == "DELETE")	location.del = true;
-// 	}
-// 	else if(token == "root"){
-// 		std::string val;
-// 		ss >> val;
-// 		val = trimSemiColon(val);
-// 		location.root = val;
-// 	}
-// 	else if(token == "upload_dir"){
-// 		std::string val;
-// 		ss >> val;
-// 		val = trimSemiColon(val);
-// 		location.upload_dir = val;
-// 	}
-// 	else if(token == "index"){
-// 		std::string val1, val2;
-// 		ss >> val1 >> val2;
-// 		location.index_files.push_back(val1);
-// 		location.index_files.push_back(val2);
-// 		// std::cout << location.index_files[0] << " " << location.index_files[1] << std::endl;
-// 	}
-// 	else if(token == "cgi"){
-// 		std::string key, val;
-// 		ss >> key >> val;
-// 		val = trimSemiColon(val);
-// 		location.cgi.insert(std::pair<std::string, std::string>(key, val));
-// 	}
-// 	else if(token == "return"){
-// 		std::string key, val;
-// 		ss >> key >> val;
-// 		val = trimSemiColon(val);
-// 		if(!validateHTTPCode(key)) return 0;
-// 		location.ret_pages.insert(std::pair<int, std::string>(atoi(key.c_str()), val));
-// 	}
-// 	return 1;
-// }
-
-
 //check if the {} is even for the server and for the location scopes
 //only the validation of the scopes should happen here no value parsing
 int Webserv::scopeValidation(std::ifstream &file){
@@ -164,18 +102,6 @@ int Webserv::scopeValidation(std::ifstream &file){
 			// std::cout << "token of ending server scope >> " << tok1 << std::endl;
 			if(tok1 == "}") end_server++;
 		}
-		// if(server_scope && location_scope == false){	//inputting the data from the server scope
-		// 	if(!inputData(line)) return 0;
-			
-		// }
-		// else if(server_scope && location_scope){	//inputting the data from the location scope
-		// 	if(!inputLocation(line, location)) return 0;
-
-			// std::cout << "get: " << location.get << std::endl;
-			// std::cout << "post: " << location.post << std::endl;
-			// std::cout << "del: " << location.del << std::endl;
-
-		// }
 	}
 	// std::cout << "start server_count " << start_server << std::endl;
 	// std::cout << "end server_count " << end_server << std::endl;
@@ -217,45 +143,47 @@ void Webserv::fileParser(char *av){
 	if(av) config_file = av;
 	else config_file = "def.conf";
 
+	std::cout << "config file >> "<< config_file << std::endl;
 	std::ifstream file(config_file.c_str());
+	// std::ifstream file2 = file;
 	std::string line;
 
-	if(scopeValidation(file)){ //if scope validation works, move to the parsing for each of the server scope
-		// std::cout << "valid config file" << std::endl;
-		// std::cout << "/nserver_name: " << this->server_name << std::endl;
-		// std::cout << "listen_ip: " << this->listen_ip << std::endl;
-		// std::cout << "listen_port: " << this->listen_port << std::endl;
-		// std::cout << "max_body_size: " << this->max_body_size << std::endl;
+	if(scopeValidation(file) == 0) throw ConfigFileError();
+		file.clear();
+		file.seekg(0);
 		
-		// servers.pushback(Server(file)); //cannot be called inside the constructor
 		while(getline(file, line)){ //read the whole file line by line
+			std::cout << "line >> " << line << std::endl;
 			if(line.find("server") != std::string::npos){
-				std::string tok1, tok2;
+				std::string tok;
 				std::stringstream ss(line);
 				int server_scope = 1;
 				
-				while(ss >> tok1 >> tok2){
-					// if(tok2 == "{")	server_scope++;
-					if(tok1 == "server") {
+				while(ss >> tok){
+					if(tok == "server") {
 						server_scope++;
-						Server(file, server_scope);
-						
+						// std::cout << "server scope value >> " << server_scope << std::endl;
+						// Server serv_constructor(file, server_scope);
+						servers.push_back(Server(file, server_scope)); //ther first scope of the server will be done
 					}
-					
+					else break;
 				}
 			}
 		}
-		// Server(file);
-		// printMap(this->err_pages);
-		
-		// printMap(this->location_map);
-	}
-	else{
-		throw ConfigFileError();
-	}
-	// std::cout << "server_scope status -> " << server_scope << std::endl;
 }
 
+//print each of the servers frin the webserv
+void Webserv::printServers() const {
+    std::cout << "\n========== PRINTING ALL SERVERS ==========\n" << servers.size() << std::endl;
+    for (size_t i = 0; i < servers.size(); i++) {
+        std::cout << "\nSERVER #" << i + 1 << ":\n";
+        servers[i].print();
+    }
+}
+
+
+ConfigValidationError::ConfigValidationError()
+	: std::runtime_error("Error in config file") {}
 
 //print location map
 // void Webserv::print_location_map(){

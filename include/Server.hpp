@@ -63,6 +63,7 @@ class Server{
 		std::string server_name;
 		std::string listen_port;
 		std::string listen_ip;
+		std::string root;
 		long long max_body_size;
 		std::string location_path;
 		std::map<std::string, t_location> location_map;
@@ -80,10 +81,11 @@ class Server{
 		operator std::string() const;
 
 		// int scopeValidation(std::ifstream &file);
-		int inputData(std::string line);
+		int inputData(std::string &line);
 		int inputLocation(std::string line, t_location &location);
 		std::string trimSemiColon(std::string val);
 		int validateHTTPCode(std::string &val);
+		void print() const;
 
 
 };
