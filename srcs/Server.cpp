@@ -99,6 +99,7 @@ int Server::inputLocation(std::string line, t_location &location){
 	std::stringstream ss(line);
 
 	while(ss >> token){
+		// std::cout << "token  in inputLocation>> " << token << std::endl;
 		std::string val;
 		if(token == "autoindex"){
 			ss >> val;
@@ -108,8 +109,6 @@ int Server::inputLocation(std::string line, t_location &location){
 		}
 		else if(token == "methods"){
 			while(ss >> val){
-				if(val.find(";") != std::string::npos)	val = trimSemiColon(val);
-				if(val.find(";") != std::string::npos)	val = trimSemiColon(val);
 				if(val.find(";") != std::string::npos)	val = trimSemiColon(val);
 
 				if(val == "GET")	location.get = true;
@@ -122,6 +121,7 @@ int Server::inputLocation(std::string line, t_location &location){
 			ss >> val;
 			val = trimSemiColon(val);
 			location.root = val;
+			std::cout <<"location root >> " << location.root << std::endl;
 		}
 		else if(token == "upload_dir"){
 			ss >> val;
@@ -174,42 +174,52 @@ Server::Server(std::ifstream &file, int serv_scope_start)
 		std::stringstream ss(line);
 		// std::cout << "line now at >> " << line << std::endl;
 		while(ss >> tok){
-			//so just skip the server scope's { ?
-			//key identifiers
 			if(tok == "location"){
+				location = t_location();
+				std::string path, scope;
+				ss >> path >> scope;
+				
+				this->location_path = path;
 				location_key++;
-				// std::cout << "location key >> " << location_key << std::endl;
+				if(scope == " ") break;
+				else location_scope++;
 			}
-			// else if(location_key > 1 && tok != "{"){ //just a simple path parsing for the location
-			// 	this->location_path = tok;
-			// 	std::cout << "location path >> " << this->location_path << std::endl;
-			// }
-			else if(location_key > 1 && tok == "{"){
+			else if(tok == "{"){
 				location_scope++;
 				// std::cout << "location scope start" << location_scope << std::endl;
-			}
-			else if(location_scope > 1 && tok == "}"){
-				location_scope--;
 			}
 			else if(server_scope > 1 && location_scope <= 1 && tok == "}"){
 				server_scope--;
 			}
+			else if(tok == "}"){
+				location_scope--;
+				location_key--;
+				this->location_map.insert(std::pair<std::string, t_location>(this->location_path, location));
+				this->location_path = "default";
+			}
+			
 		}
 		if(server_scope > 1){ //inside the scope 
 			//parsing will come in
 			
 			// std::cout << "line under server scope >> " << line << std::endl;
 			if(inputData(line) != 1) throw ConfigFileError();
+			// std::cout << "location scope count" << location_scope << std::endl;
 			if(location_scope > 1){
+				if (line.find("{") != std::string::npos ||
+					line.find("}") != std::string::npos ||
+					line.find("location") != std::string::npos)
+					continue; // skip these
 				if(!inputLocation(line, location)) throw ConfigFileError();
 			}
 		}
-		// else if(server_scope <= 1)	break;
+		else if(server_scope <= 1)	break;
 	}
 	std::cout << "server name >> " << this->server_name << "\n"
-			  << "listen >> " << this->listen_ip << ":" << this->listen_port << "\n"
-			  << "root >> " << this->root << "\n"
-			  << "max_body_size >> " << this->max_body_size << "\n" << std::endl;
+				<< "listen >> " << this->listen_ip << ":" << this->listen_port << "\n"
+				<< "root >> " << this->root << "\n"
+				<< "max_body_size >> " << this->max_body_size << "\n" << std::endl;
+	
 }
 
 Server::Server(const Server &other):
@@ -218,7 +228,9 @@ Server::Server(const Server &other):
 	listen_ip(other.listen_ip),
 	root(other.root),
 	max_body_size(other.max_body_size),
-	err_pages(other.err_pages)
+	err_pages(other.err_pages),
+	location_path(other.location_path),
+	location_map(other.location_map)
 
 {
     (void)other;

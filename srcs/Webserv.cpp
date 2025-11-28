@@ -162,8 +162,6 @@ void Webserv::fileParser(char *av){
 				while(ss >> tok){
 					if(tok == "server") {
 						server_scope++;
-						// std::cout << "server scope value >> " << server_scope << std::endl;
-						// Server serv_constructor(file, server_scope);
 						servers.push_back(Server(file, server_scope)); //ther first scope of the server will be done
 					}
 					else break;
