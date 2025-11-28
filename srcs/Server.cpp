@@ -209,7 +209,7 @@ Server::Server(std::ifstream &file, int serv_scope_start)
 				if (line.find("{") != std::string::npos ||
 					line.find("}") != std::string::npos ||
 					line.find("location") != std::string::npos)
-					continue; // skip these
+					continue; 
 				if(!inputLocation(line, location)) throw ConfigFileError();
 			}
 		}
