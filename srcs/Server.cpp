@@ -41,7 +41,7 @@ int Server::inputData(std::string &line){
 			// std::string value;
 			if(!(ss >> value)) return 0;
 			else {
-				this->server_name = trimSemiColon(value);
+				this->_server_name = trimSemiColon(value);
 				break;
 			}
 			
@@ -154,7 +154,7 @@ int Server::inputLocation(std::string line, t_location &location){
 
 //will retrive the strating from the next line of the server scope
 Server::Server(std::ifstream &file, int serv_scope_start)
-: server_name("default"), 
+: _server_name("default"), 
   listen_port("default"),
   listen_ip("default"),
   root("default"),
@@ -215,7 +215,7 @@ Server::Server(std::ifstream &file, int serv_scope_start)
 		}
 		else if(server_scope <= 1)	break;
 	}
-	std::cout << "server name >> " << this->server_name << "\n"
+	std::cout << "server name >> " << this->_server_name << "\n"
 				<< "listen >> " << this->listen_ip << ":" << this->listen_port << "\n"
 				<< "root >> " << this->root << "\n"
 				<< "max_body_size >> " << this->max_body_size << "\n" << std::endl;
@@ -223,7 +223,7 @@ Server::Server(std::ifstream &file, int serv_scope_start)
 }
 
 Server::Server(const Server &other):
-	server_name(other.server_name),
+	_server_name(other._server_name),
 	listen_port(other.listen_port),
 	listen_ip(other.listen_ip),
 	root(other.root),
@@ -255,7 +255,7 @@ int	Server::start()
 	// TEMP~ I set the port to 8080 for test.
 	listen_port = "8080";
 	listen_ip = "127.0.0.1";
-	server_name = "nsan.server";
+	_server_name = "nsan.server";
 	sock_addr.sin_port = htons(std::atoi(listen_port.c_str()));
 	sock_addr.sin_addr.s_addr = inet_addr(listen_ip.c_str());
 	if ((_sock_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0 ||
@@ -288,7 +288,7 @@ Server::operator	int() const
 
 Server::operator	std::string() const
 {
-	return (listen_ip + ":" + listen_port + ":" + server_name);
+	return (listen_ip + ":" + listen_port + ":" + _server_name);
 }
 
 ConfigFileError::ConfigFileError()
@@ -299,7 +299,7 @@ ConfigFileError::ConfigFileError()
 //print out the values inside the server
 void Server::print() const {
     std::cout << "==================== SERVER ====================\n";
-    std::cout << "Server Name: " << server_name << "\n";
+    std::cout << "Server Name: " << _server_name << "\n";
 	std::cout << "Root: " << root << "\n";
     std::cout << "IP: " << listen_ip << "\n";
     std::cout << "Port: " << listen_port << "\n";

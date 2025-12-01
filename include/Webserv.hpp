@@ -26,29 +26,20 @@
 class	Webserv
 {
 	private:
-		std::vector<Server> servers;	//take the sever class as type and save a collection of servers
+		std::vector<Server> _servers;	//take the sever class as type and save a collection of servers
 	public:
 		Webserv();
 		~Webserv();
 		Webserv(const Webserv &other);
 		Webserv& operator=(const Webserv &other);
 
-		Webserv(char *av); //take the av(filename) like this
-		void	watchServer();
 		void	fileParser(char *av);
-		void	print_map();
-	
-		void	print_location_map();
 
 		int	scopeValidation(std::ifstream &file);
 
 		int	start();
 
 		int	fail(std::string head, int err_no);
-		// int inputData(std::string line);
-		// int inputLocation(std::string line, t_location &location);
-		// std::string trimSemiColon(std::string val);
-		// int validateHTTPCode(std::string &val);
 		void printServers() const;
 
 	
@@ -62,10 +53,6 @@ void printMap(const std::map<K, V> &m) {
     }
 }
 
-class	ConfigFileError : public std::runtime_error {
-public:
-	ConfigFileError(); // constructor declaration
-};
 class ConfigValidationError : public std::runtime_error {
 public:
 	ConfigValidationError(); // constructor declaration

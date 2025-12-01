@@ -20,15 +20,15 @@ int main(int ac, char **av)
         "\r\n";
 
 	Request req;
-    if (req.parseRequest(raw_request)) {
-        std::cout << "Method: " << req.getMethod() << "\n";
-        std::cout << "Path: " << req.getPath() << "\n";
-        std::cout << "Query: " << req.getQuery() << "\n";
-        std::cout << "HTTP Version: " << req.getHttpVersion() << "\n";
-        std::cout << "Host: " << req.getHostname() << "\n";
-        std::cout << "Port: " << req.getPort() << "\n";
-        std::cout << "Connection: " << req.getConnStatus() << "\n";
-    }
+    // if (req.parseRequest(raw_request)) {
+    //     std::cout << "Method: " << req.getMethod() << "\n";
+    //     std::cout << "Path: " << req.getPath() << "\n";
+    //     std::cout << "Query: " << req.getQuery() << "\n";
+    //     std::cout << "HTTP Version: " << req.getHttpVersion() << "\n";
+    //     std::cout << "Host: " << req.getHostname() << "\n";
+    //     std::cout << "Port: " << req.getPort() << "\n";
+    //     std::cout << "Connection: " << req.getConnStatus() << "\n";
+    // }
     return 0;
     // Server	server;
 	// int		status;

@@ -60,7 +60,7 @@ class Server{
     private:
 		fd	_sock_fd;
 
-		std::string server_name;
+		std::string _server_name;
 		std::string listen_port;
 		std::string listen_ip;
 		std::string root;
@@ -86,8 +86,6 @@ class Server{
 		std::string trimSemiColon(std::string val);
 		int validateHTTPCode(std::string &val);
 		void print() const;
-
-
 };
 
 class ConfigFileError : public std::runtime_error {
