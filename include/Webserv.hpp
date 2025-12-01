@@ -1,7 +1,7 @@
 #ifndef WEBSERV_HPP
 #define WEBSERV_HPP
 
-#include <vector>
+
 #include <iostream>
 #include <iomanip>
 #include <sstream>
@@ -13,27 +13,42 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <ctime>
+#include <vector>
 #include <map>
+#include <set>
 #include <exception>
 #include "Server.hpp"
 
-class Webserv{
+#define	MAX_EVENTS	1024
+#define WAIT_TIME	1000 // wait time: 1s
+
+class	Webserv
+{
 	private:
 		std::vector<Server> servers;	//take the sever class as type and save a collection of servers
 	public:
 		Webserv();
-		Webserv(char *av); //take the av(filename) like this
 		~Webserv();
 		Webserv(const Webserv &other);
 		Webserv& operator=(const Webserv &other);
-		void watchServer();
-		void fileParser(char *av);
-		void print_map();
+
+		Webserv(char *av); //take the av(filename) like this
+		void	watchServer();
+		void	fileParser(char *av);
+		void	print_map();
 	
-		void print_location_map();
+		void	print_location_map();
 
-		int scopeValidation(std::ifstream &file);
+		int	scopeValidation(std::ifstream &file);
 
+		int	start();
+
+		int	fail(std::string head, int err_no);
+		// int inputData(std::string line);
+		// int inputLocation(std::string line, t_location &location);
+		// std::string trimSemiColon(std::string val);
+		// int validateHTTPCode(std::string &val);
 		void printServers() const;
 
 	
@@ -46,9 +61,13 @@ void printMap(const std::map<K, V> &m) {
         std::cout << it->first << " -> " << it->second << std::endl;
     }
 }
+
+class	ConfigFileError : public std::runtime_error {
+public:
+	ConfigFileError(); // constructor declaration
+};
 class ConfigValidationError : public std::runtime_error {
 public:
 	ConfigValidationError(); // constructor declaration
 };
-
 #endif

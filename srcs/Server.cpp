@@ -1,10 +1,10 @@
 #include "Server.hpp"
 
-fd::fd() : FD(-1) {}
+fd::fd() : fd_(-1) {}
 
-fd::fd(int fd_) : FD(fd_) {}
+fd::fd(int fd_) : fd_(fd_) {}
 
-fd::operator int() const {return (FD);}
+fd::operator int() const {return (fd_);}
 
 Server::Server() {
 }
@@ -252,7 +252,7 @@ int	Server::start()
 
 	std::memset(&sock_addr, 0, sizeof(sock_addr));
 	sock_addr.sin_family = AF_INET;	
-	// TEMP: I set the port to 8080 for test.
+	// TEMP~ I set the port to 8080 for test.
 	listen_port = "8080";
 	listen_ip = "127.0.0.1";
 	server_name = "nsan.server";

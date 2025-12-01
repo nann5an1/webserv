@@ -9,7 +9,7 @@
 
 #include <sys/types.h>
 #include <sys/socket.h>
-// #include <sys/epoll.h>
+#include <sys/epoll.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
@@ -21,20 +21,20 @@
 #define	RED	"\033[31m"
 #define	RESET "\033[0m"
 
-// TEMP: i want to overload the sock, but not as int, 
+// TEMP~ i want to overload the sock, but not as int, 
 // bcuz i rather overload int as port but not sure yet. Let me test this first. Thank you :)
 struct	fd 
 {
-    int FD;
+   	int fd_;
 	fd();
-    fd(int fd_);
+    fd(int FD);
     operator int() const;
 };
 
 template <class CharT, class Traits>
-std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>& os, const fd& fd_)
+std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>& os, const fd& other)
 {
-	os << fd_.FD;
+	os << other.fd_;
 	return (os);
 }
 
