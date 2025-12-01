@@ -37,7 +37,7 @@ class	Webserv
 
 		int	scopeValidation(std::ifstream &file);
 
-		int	start();
+		// int	start();
 
 		int	fail(std::string head, int err_no);
 		void printServers() const;

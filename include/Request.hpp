@@ -2,6 +2,7 @@
 #define REQUEST_HPP
 
 #include "Webserv.hpp"
+#include "Server.hpp"
 #include <iostream>
 #include <map>
 #include <cstring>
@@ -19,13 +20,14 @@ class Request{
         std::string content_type;
         int content_len;
         std::string conn_status;
-        std::vector<std::map<std::string, std::string> > body;
+        std::map<std::string, Server> attachServer;
     public:
         Request();
         ~Request();
         Request(const Request &other);
         Request &operator=(const Request &other);
-        bool parseRequest(const char *raw_request);
+        void parseRequest(const char *raw_request);
+        void fetchServerScope();
 };
 
 #endif

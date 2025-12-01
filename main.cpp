@@ -12,14 +12,16 @@ int main(int ac, char **av)
 	webserv.printServers();
     // webserv.watchServer();
 
-	 std::string raw_request = 
-        "GET /images/logo.png?user=john HTTP/1.1\r\n"
-        "Host: localhost:8080\r\n"
-        "Connection: keep-alive\r\n"
-        "User-Agent: curl/7.68.0\r\n"
-        "\r\n";
+	const char* raw_request = 
+        "POST /upload HTTP/1.1\n"
+        "Host: localhost:8080\n"
+        "Content-Type: application/json\n" 
+        "Content-Length: 27\n"                     
+        "Connection: keep-alive\n";
 
 	Request req;
+    req.parseRequest(raw_request);
+
     // if (req.parseRequest(raw_request)) {
     //     std::cout << "Method: " << req.getMethod() << "\n";
     //     std::cout << "Path: " << req.getPath() << "\n";

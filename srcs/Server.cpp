@@ -228,9 +228,9 @@ Server::Server(const Server &other):
 	listen_ip(other.listen_ip),
 	root(other.root),
 	max_body_size(other.max_body_size),
-	err_pages(other.err_pages),
 	location_path(other.location_path),
-	location_map(other.location_map)
+	location_map(other.location_map),
+	err_pages(other.err_pages)
 
 {
     (void)other;
