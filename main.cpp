@@ -1,5 +1,6 @@
 #include "Webserv.hpp"
 #include "Server.hpp"
+#include "Request.hpp"
 
 int main(int ac, char **av)
 {
@@ -10,6 +11,24 @@ int main(int ac, char **av)
 	webserv.printServers();
     // webserv.watchServer();
 
+	 std::string raw_request = 
+        "GET /images/logo.png?user=john HTTP/1.1\r\n"
+        "Host: localhost:8080\r\n"
+        "Connection: keep-alive\r\n"
+        "User-Agent: curl/7.68.0\r\n"
+        "\r\n";
+
+	Request req;
+    if (req.parseRequest(raw_request)) {
+        std::cout << "Method: " << req.getMethod() << "\n";
+        std::cout << "Path: " << req.getPath() << "\n";
+        std::cout << "Query: " << req.getQuery() << "\n";
+        std::cout << "HTTP Version: " << req.getHttpVersion() << "\n";
+        std::cout << "Host: " << req.getHostname() << "\n";
+        std::cout << "Port: " << req.getPort() << "\n";
+        std::cout << "Connection: " << req.getConnStatus() << "\n";
+    }
+    return 0;
     // Server	server;
 	// int		status;
 	// if ((status = server.start()) != 0)
