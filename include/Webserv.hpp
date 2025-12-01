@@ -19,6 +19,7 @@
 #include <set>
 #include <exception>
 #include "Server.hpp"
+#include "Connection.hpp"
 
 #define	MAX_EVENTS	1024
 #define WAIT_TIME	1000 // wait time: 1s
@@ -27,6 +28,7 @@ class	Webserv
 {
 	private:
 		std::vector<Server> _servers;	//take the sever class as type and save a collection of servers
+		std::map <fd, Connection>	_cons;
 	public:
 		Webserv();
 		~Webserv();

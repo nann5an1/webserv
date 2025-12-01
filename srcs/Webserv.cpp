@@ -174,161 +174,135 @@ ConfigValidationError::ConfigValidationError()
 // 	return (serverHeadline);
 // }
 
-int	Webserv::fail(std::string head, int err_no)
+int	Webserv::start()
 {
-	std::cerr << RED << "Error: " << head << ": " << strerror(err_no) << std::endl;
-	return (err_no);
-}
+	fd	ep_fd = epoll_create(1);
+	std::set<fd>	server_fds;
+	if (ep_fd < 0)
+		return (errno);
+	for(std::size_t i = 0; i < _servers.size(); ++i)
+	{
+		fd	s_fd = _servers[i];
+		struct epoll_event	s_event;
+		s_event.events = EPOLLIN;
+		s_event.data.fd = s_fd;
+		epoll_ctl(ep_fd, EPOLL_CTL_ADD, s_fd, &s_event);
+		server_fds.insert(s_fd);
+	}
 
-// int	Webserv::start()
-// {
-// 	fd	ep_fd = epoll_create(1);
-// 	std::set<fd>	server_fds;
-// 	if (ep_fd < 0)
-// 		return (errno);
-// 	for(std::size_t i = 0; i < _servers.size(); ++i)
-// 	{
-// 		fd	s_fd = _servers[i];
-// 		struct epoll_event	s_event;
-// 		s_event.events = EPOLLIN;
-// 		s_event.data.fd = s_fd;
-// 		epoll_ctl(ep_fd, EPOLL_CTL_ADD, s_fd, &s_event);
-// 		server_fds.insert(s_fd);
-// 	}
-
-// 	epoll_event	events[MAX_EVENTS];
+	epoll_event	events[MAX_EVENTS];
 	
-// 	std::map<fd, std::time_t>	timestamps;
+	std::map<fd, std::time_t>	timestamps;
 
-//  	while (true)
-// 	{
-// 		int	hits = epoll_wait(ep_fd, events, MAX_EVENTS, WAIT_TIME);
-// 		if (hits < 0)
-// 		{
-// 			if (errno == EINTR)
-// 				continue ;
-// 			fail("Epoll", errno);
-// 			break;
-// 		}
-// 		for (int i = 0; i < hits; ++i)
-// 		{
-// 			fd	event_fd = events[i].data.fd;
-// 			if (server_fds.count(event_fd))
-// 			{
-// 				while (true)
-// 				{
-// 					sockaddr_in	client_addr;
-// 					socklen_t	client_len = sizeof(client_addr);
-// 					fd	c_fd = accept(event_fd, (sockaddr *)&client_addr, &client_len);
-// 					if (c_fd < 0)
-// 					{
-// 						if (errno == EAGAIN || errno == EWOULDBLOCK)
-// 							break;
-// 						fail("Epoll", errno);
-// 						break;
-// 					}
-// 					// FAIL~ need proper clean up
-// 					if (fcntl(c_fd, F_SETFL, fcntl(c_fd, F_GETFL, 0) | O_NONBLOCK) < 0)
-// 						return (errno);
+ 	while (true)
+	{
+		int	hits = epoll_wait(ep_fd, events, MAX_EVENTS, WAIT_TIME);
+		if (hits < 0)
+		{
+			if (errno == EINTR)
+				continue ;
+			fail("Epoll", errno);
+			break;
+		}
+		for (int i = 0; i < hits; ++i)
+		{
+			fd	event_fd = events[i].data.fd;
+			if (server_fds.count(event_fd))
+			{
+				while (true)
+				{
+					Connection	con(event_fd);
+					fd c_fd = con;
+					if (c_fd < 0)
+						break;
+					
+					// sockaddr_in	client_addr;
+					// socklen_t	client_len = sizeof(client_addr);
+					// fd	c_fd = accept(event_fd, (sockaddr *)&client_addr, &client_len);
+					// if (c_fd < 0)
+					// {
+					// 	if (errno == EAGAIN || errno == EWOULDBLOCK)
+					// 		break;
+					// 	fail("Epoll", errno);
+					// 	break;
+					// }
+					// // FAIL~ need proper clean up
+					// if (fcntl(c_fd, F_SETFL, fcntl(c_fd, F_GETFL, 0) | O_NONBLOCK) < 0)
+					// 	return (errno);
 
-// 					struct epoll_event	c_event;
-// 					c_event.events = EPOLLIN | EPOLLET;
-// 					c_event.data.fd = c_fd;
+					struct epoll_event	c_event;
+					c_event.events = EPOLLIN | EPOLLET;
+					c_event.data.fd = c_fd;
 
-// 					// FAIL~
-// 					if (epoll_ctl(ep_fd, EPOLL_CTL_ADD, c_fd, &c_event) < 0)
-// 					{
-// 						int	status = errno; 
-// 						close(c_fd);
-// 						return (status);
-// 					}
-// 					timestamps[c_fd] = time(NULL);
-// 				}
-// 			}
-// 			else if (events[i].events & EPOLLIN)
-// 			{
-// 				//	HELP: No understanding at all
-// 				//	HELP: I dont understand a shit at all starting from here.
-// 				char	buffer[4096];
-// 				bool	keep = true;
-// 				while (true)
-// 				{
-// 					ssize_t	bytes = read(event_fd, buffer, sizeof(buffer));
-// 					if (bytes > 0)
-// 					{
-// 						std::string	req(buffer, bytes);
-// 						std::cout << "Request: " << event_fd << "\n" << std::string(42, '=') << "\n" << req << std::endl;
-// 						timestamps[event_fd] = time(NULL);
-// 					}
-// 					else if (bytes == 0)
-// 					{
-// 						keep = false;
-// 						break;
-// 					}
-// 					else
-// 					{
-// 						if (errno == EAGAIN)
-// 							break;
-// 						keep = false;
-// 						break;
-// 					}
-// 				}
-// 				if (!keep)
-// 				{
-// 					epoll_ctl(ep_fd, EPOLL_CTL_DEL, event_fd, NULL);
-// 					close(event_fd);
-// 					timestamps.erase(event_fd);
-// 				}
-// 				else
-// 				{
-// 					struct	epoll_event	mod_event;
-// 					mod_event.events = EPOLLOUT | EPOLLET;
-// 					mod_event.data.fd = event_fd;
-// 					epoll_ctl(ep_fd, EPOLL_CTL_MOD, event_fd, &mod_event);
-// 				}
-// 			}
-// 			else if (events[i].events & EPOLLOUT)
-// 			{
-// 				const char response[] = "HTTP/1.1 200 OK\r\n"
-// 										"Content-Length: 12\r\n"
-// 										"Content-Type: text/plain\r\n"
-// 										"\r\n"
-// 										"Hello World";
-// 				;
-// 				if (write(event_fd, response, sizeof(response) - 1) < 0 && errno != EAGAIN)
-// 					fail("Response", errno);
-// 				epoll_ctl(ep_fd, EPOLL_CTL_DEL, event_fd, NULL);
-// 				close(event_fd);
-// 				timestamps.erase(event_fd);
-// 			}
-// 			else if (events[i].events & (EPOLLHUP | EPOLLERR))
-// 			{
-// 				epoll_ctl(ep_fd, EPOLL_CTL_DEL, event_fd, NULL);
-// 				close(event_fd);
-// 				timestamps.erase(event_fd);
-// 			}
-// 		}
+					// FAIL~
+					if (epoll_ctl(ep_fd, EPOLL_CTL_ADD, c_fd, &c_event) < 0)
+					{
+						int	status = errno; 
+						close(c_fd);
+						return (status);
+					}
+					_cons[con] = con;
+				}
+			}
+			else if (events[i].events & EPOLLIN)
+			{
+				//	HELP: No understanding at all
+				//	HELP: I dont understand a shit at all starting from here.
+				if (_cons[event_fd].getRequest())
+				{
+					struct	epoll_event	mod_event;
+					mod_event.events = EPOLLOUT | EPOLLET;
+					mod_event.data.fd = event_fd;
+					epoll_ctl(ep_fd, EPOLL_CTL_MOD, event_fd, &mod_event);
+				}
+				else
+				{
+					epoll_ctl(ep_fd, EPOLL_CTL_DEL, event_fd, NULL);
+					close(event_fd);
+					timestamps.erase(event_fd);
+				}
+			}
+			else if (events[i].events & EPOLLOUT)
+			{
+				const char response[] = "HTTP/1.1 200 OK\r\n"
+										"Content-Length: 12\r\n"
+										"Content-Type: text/plain\r\n"
+										"\r\n"
+										"Hello World";
+				if (write(event_fd, response, sizeof(response) - 1) < 0 && errno != EAGAIN)
+					fail("Response", errno);
+				epoll_ctl(ep_fd, EPOLL_CTL_DEL, event_fd, NULL);
+				close(event_fd);
+				timestamps.erase(event_fd);
+			}
+			else if (events[i].events & (EPOLLHUP | EPOLLERR))
+			{
+				epoll_ctl(ep_fd, EPOLL_CTL_DEL, event_fd, NULL);
+				close(event_fd);
+				timestamps.erase(event_fd);
+			}
+		}
 
-// 		time_t	now = time(NULL);
-// 		for (std::map<fd, time_t>::iterator it = timestamps.begin(); it != timestamps.end();)
-// 		{
-// 			int	c_fd_ = it->first;
-// 			if (now - it->second > WAIT_TIME)
-// 			{
-// 				std::cout << "Client " << c_fd_ << "time out" << std::endl;
-// 				epoll_ctl(ep_fd, EPOLL_CTL_DEL, c_fd_, NULL);
-// 				close(c_fd_);
-// 				it = timestamps.erase(it);
-// 			}
-// 			else
-// 				++it;
-// 		}
-// 	}
-// 	for (std::set<fd>::iterator it = server_fds.begin(); it != server_fds.end(); ++it)
-//     	close(*it);
-// 	close(ep_fd);
-// 	return (0);
-// }
+		time_t	now = time(NULL);
+		for (std::map<fd, time_t>::iterator it = timestamps.begin(); it != timestamps.end();)
+		{
+			int	c_fd_ = it->first;
+			if (now - it->second > WAIT_TIME)
+			{
+				std::cout << "Client " << c_fd_ << "time out" << std::endl;
+				epoll_ctl(ep_fd, EPOLL_CTL_DEL, c_fd_, NULL);
+				close(c_fd_);
+				it = timestamps.erase(it);
+			}
+			else
+				++it;
+		}
+	}
+	for (std::set<fd>::iterator it = server_fds.begin(); it != server_fds.end(); ++it)
+    	close(*it);
+	close(ep_fd);
+	return (0);
+}
 
 // DANGER~ the most shittest function so far created "webserv.start()" better not touch it
 // only gpt & I know it, now only I know what i'm gonna do. I will clean out later.

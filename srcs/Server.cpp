@@ -428,3 +428,10 @@ void Server::print() const {
 //         // recv(clientSocket, buffer, sizeof(buffer), 0);
 //         // close(listenfd);
 // }
+
+
+int	fail(std::string head, int err_no)
+{
+	std::cerr << RED << "Error: " << head << ": " << strerror(err_no) << std::endl;
+	return (err_no);
+}

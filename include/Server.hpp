@@ -93,4 +93,6 @@ public:
 	ConfigFileError(); // constructor declaration
 };
 
+int	fail(std::string head, int err_no);
+
 #endif
