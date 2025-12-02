@@ -2,12 +2,16 @@
 
 #include <ctime>
 #include "Server.hpp"
+#include "Request.hpp"
+#include "Response.hpp"
 
 class	Connection
 {
 	private:
 		fd	_fd;
 		std::time_t	_time;
+		Request	req;
+		Response rep;
 	public:
 		Connection();
 		Connection(const Connection &other);
@@ -17,6 +21,8 @@ class	Connection
 		Connection(fd server_fd);
 
 		bool	getRequest();
+		bool	response();
+
 		operator	fd() const;
 		operator	std::time_t() const;
 };

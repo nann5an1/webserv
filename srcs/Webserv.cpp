@@ -1,5 +1,6 @@
 #include "Webserv.hpp"
 #include "Server.hpp"
+#include "Response.hpp"
 
 Webserv::Webserv(){
 }
@@ -17,7 +18,8 @@ Webserv& Webserv:: operator=(const Webserv &other) {
 
 //check if the {} is even for the server and for the location scopes
 //only the validation of the scopes should happen here no value parsing
-int Webserv::scopeValidation(std::ifstream &file){
+int Webserv::scopeValidation(std::ifstream &file)
+{
 	std::string line, tok1, tok2;
 	bool location_scope = false;
 	bool server_scope = false;
@@ -186,13 +188,13 @@ int	Webserv::start()
 		struct epoll_event	s_event;
 		s_event.events = EPOLLIN;
 		s_event.data.fd = s_fd;
-		epoll_ctl(ep_fd, EPOLL_CTL_ADD, s_fd, &s_event);
+		// FAIL:
+		if (epoll_ctl(ep_fd, EPOLL_CTL_ADD, s_fd, &s_event) <  0)
+			return (fail("Epoll: Server", errno));
 		server_fds.insert(s_fd);
 	}
 
 	epoll_event	events[MAX_EVENTS];
-	
-	std::map<fd, std::time_t>	timestamps;
 
  	while (true)
 	{
@@ -237,69 +239,78 @@ int	Webserv::start()
 					// FAIL~
 					if (epoll_ctl(ep_fd, EPOLL_CTL_ADD, c_fd, &c_event) < 0)
 					{
-						int	status = errno; 
+						int	status = fail("Epoll: Client"); 
 						close(c_fd);
 						return (status);
 					}
-					_cons[con] = con;
+					_cons[c_fd] = con;
 				}
 			}
-			else if (events[i].events & EPOLLIN)
+			else
 			{
-				//	HELP: No understanding at all
-				//	HELP: I dont understand a shit at all starting from here.
-				if (_cons[event_fd].getRequest())
+				std::map<fd, Connection>::iterator it = _cons.find(event_fd);
+				if (it == _cons.end())
+					continue;
+				Connection	&cur_con = it->second;
+				if (events[i].events & EPOLLIN)
 				{
-					struct	epoll_event	mod_event;
-					mod_event.events = EPOLLOUT | EPOLLET;
-					mod_event.data.fd = event_fd;
-					epoll_ctl(ep_fd, EPOLL_CTL_MOD, event_fd, &mod_event);
+					//	HELP: No understanding at all
+					//	HELP: I dont understand a shit at all starting from here.
+					if (cur_con.getRequest())
+					{
+						struct	epoll_event	mod_event;
+						mod_event.events = EPOLLOUT | EPOLLET;
+						mod_event.data.fd = event_fd;
+						epoll_ctl(ep_fd, EPOLL_CTL_MOD, event_fd, &mod_event);
+					}
+					else
+					{
+						epoll_ctl(ep_fd, EPOLL_CTL_DEL, event_fd, NULL);
+						_cons.erase(event_fd);
+					}
 				}
-				else
+				else if (events[i].events & EPOLLOUT)
+				{
+					cur_con.response();
+					epoll_ctl(ep_fd, EPOLL_CTL_DEL, event_fd, NULL);
+					_cons.erase(event_fd);
+				}
+				else if (events[i].events & (EPOLLHUP | EPOLLERR))
 				{
 					epoll_ctl(ep_fd, EPOLL_CTL_DEL, event_fd, NULL);
-					close(event_fd);
-					timestamps.erase(event_fd);
+					_cons.erase(event_fd);
 				}
 			}
-			else if (events[i].events & EPOLLOUT)
-			{
-				const char response[] = "HTTP/1.1 200 OK\r\n"
-										"Content-Length: 12\r\n"
-										"Content-Type: text/plain\r\n"
-										"\r\n"
-										"Hello World";
-				if (write(event_fd, response, sizeof(response) - 1) < 0 && errno != EAGAIN)
-					fail("Response", errno);
-				epoll_ctl(ep_fd, EPOLL_CTL_DEL, event_fd, NULL);
-				close(event_fd);
-				timestamps.erase(event_fd);
-			}
-			else if (events[i].events & (EPOLLHUP | EPOLLERR))
-			{
-				epoll_ctl(ep_fd, EPOLL_CTL_DEL, event_fd, NULL);
-				close(event_fd);
-				timestamps.erase(event_fd);
-			}
 		}
-
 		time_t	now = time(NULL);
-		for (std::map<fd, time_t>::iterator it = timestamps.begin(); it != timestamps.end();)
+		for (std::map<fd, Connection>::iterator it = _cons.begin(); it != _cons.end();)
 		{
-			int	c_fd_ = it->first;
-			if (now - it->second > WAIT_TIME)
+			int	c_fd = it->first;
+			if (now - it->second > 30)
 			{
-				std::cout << "Client " << c_fd_ << "time out" << std::endl;
-				epoll_ctl(ep_fd, EPOLL_CTL_DEL, c_fd_, NULL);
-				close(c_fd_);
-				it = timestamps.erase(it);
+				std::cout << "Client " << c_fd << " time out" << std::endl;
+				epoll_ctl(ep_fd, EPOLL_CTL_DEL, c_fd, NULL);
+				it = _cons.erase(it);
 			}
 			else
 				++it;
 		}
+		// for (std::map<fd, time_t>::iterator it = timestamps.begin(); it != timestamps.end();)
+		// {
+		// 	int	c_fd_ = it->first;
+		// 	if (now - it->second > WAIT_TIME)
+		// 	{
+		// 		std::cout << "Client " << c_fd_ << "time out" << std::endl;
+		// 		epoll_ctl(ep_fd, EPOLL_CTL_DEL, c_fd_, NULL);
+		// 		close(c_fd_);
+		// 		it = timestamps.erase(it);
+		// 	}
+		// 	else
+		// 		++it;
+		// }
 	}
 	for (std::set<fd>::iterator it = server_fds.begin(); it != server_fds.end(); ++it)
-    	close(*it);
+		close(*it);
 	close(ep_fd);
 	return (0);
 }
