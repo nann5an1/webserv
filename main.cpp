@@ -12,15 +12,21 @@ int main(int ac, char **av)
 	webserv.printServers();
     // webserv.watchServer();
 
-	const char* raw_request = 
-        "POST /upload HTTP/1.1\n"
+	// const char* raw_request = 
+    //     "POST /upload HTTP/1.1\n"
+    //     "Host: localhost:8080\n"
+    //     "Content-Type: application/json\n" 
+    //     "Content-Length: 27\n"                     
+    //     "Connection: keep-alive\n";
+
+    const char* raw_request2 =
+        "GET /script.pl?name=john&age=30 HTTP/1.1\n"
         "Host: localhost:8080\n"
-        "Content-Type: application/json\n" 
-        "Content-Length: 27\n"                     
-        "Connection: keep-alive\n";
+        "Accept: text/html\n"
+        "Connection: close\n";
 
 	Request req;
-    req.parseRequest(raw_request);
+    req.parseRequest(raw_request2);
 
     // if (req.parseRequest(raw_request)) {
     //     std::cout << "Method: " << req.getMethod() << "\n";

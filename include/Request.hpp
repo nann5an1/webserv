@@ -20,12 +20,15 @@ class Request{
         std::string content_type;
         int content_len;
         std::string conn_status;
-        std::map<std::string, Server> attachServer;
+        std::string body;
+        bool bool_cgi;
+        std::string cgi_env;
+        // std::map<std::string, Server> attachServer;
     public:
         Request();
         ~Request();
         Request(const Request &other);
-        Request &operator=(const Request &other);
+        // Request &operator=(const Request &other);
         void parseRequest(const char *raw_request);
         void fetchServerScope();
 };

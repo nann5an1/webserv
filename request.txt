@@ -9,13 +9,20 @@ Connection: keep-alive
 
 =============== GET Request for CGI (dynamic content) ===========
 
+possible extensions -> .php, .py, .pl, .sh, .rb
+
+//don't need to parse the body attribute(stay empty cuz it's get)
 GET /script.php?name=john HTTP/1.1
 Host: localhost:8080
 Accept: text/html
 Connection: close
 
+POST /script.php HTTP/1.1
+Host: localhost:8080
+Content-Type: application/json
+Content-Length: 20
 
-
+//in this case only need to parse the the values into body attribute cux (POST) method
 POST /script.php HTTP/1.1
 Host: localhost:8080
 Content-Type: application/x-www-form-urlencoded
@@ -59,3 +66,22 @@ Connection: close
 | `application/json`                  | `{"a":1}`   | ❌ NO        | Server only stores it                    |
 | `application/x-www-form-urlencoded` | `a=1&b=2`   | ❌ NO        | Only store body                          |
 | `text/plain`                        | raw text    | ❌ NO        | Store only                               |
+
+
+
+for the cgi executables, the ENVs are required
+Common CGI environment variables
+| Variable          | Example                             | Description                             |
+| ----------------- | ----------------------------------- | --------------------------------------- |
+| `REQUEST_METHOD`  | `GET` or `POST`                     | HTTP method of the request              |
+| `QUERY_STRING`    | `name=john&age=20`                  | The part after `?` in the URL           |
+| `CONTENT_TYPE`    | `application/x-www-form-urlencoded` | Only for POST/PUT with a body           |
+| `CONTENT_LENGTH`  | `27`                                | Only for POST/PUT with a body           |
+| `SCRIPT_NAME`     | `/script.php`                       | Path to the script relative to web root |
+| `PATH_INFO`       | `/foo/bar`                          | Extra path info after the script        |
+| `PATH_TRANSLATED` | `/var/www/html/script.php`          | Full filesystem path to the script      |
+| `SERVER_PROTOCOL` | `HTTP/1.1`                          | HTTP version                            |
+| `SERVER_NAME`     | `localhost`                         | Hostname of the server                  |
+| `SERVER_PORT`     | `8080`                              | Port number of the server               |
+| `REMOTE_ADDR`     | `127.0.0.1`                         | Client IP address                       |
+| `HTTP_*`          | `HTTP_USER_AGENT=Mozilla/5.0`       | Any HTTP header prefixed with `HTTP_`   |
