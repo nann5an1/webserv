@@ -172,15 +172,14 @@ void	Webserv::print_server_head() const
 
 int	Webserv::server_add(std::set<fd> &server_fds)
 {
-	std::cout << "Server: size: " << _servers.size() << std::endl;
+	std::cerr << "[webserv] Registering " << _servers.size() << " server(s) with epoll" << std::endl;
 	for(std::size_t i = 0; i < _servers.size(); ++i)
 	{
 		fd	s_fd = _servers[i];
 		struct epoll_event	s_event;
 		s_event.events = EPOLLIN;
 		s_event.data.fd = s_fd;
-		// FAIL:
-		std::cout << "s_fd: " << s_fd << std::endl;
+		// register server socket with epoll
 		if (epoll_ctl(_ep_fd, EPOLL_CTL_ADD, s_fd, &s_event) <  0)
 			return (fail("Epoll: Server", errno));
 		server_fds.insert(s_fd);
@@ -219,8 +218,9 @@ int	Webserv::start()
 	std::set<fd>	server_fds;
 	if (_ep_fd < 0)
 		return (fail("Epoll", errno));
+	servers_start();
 	_status = server_add(server_fds);
-	std::cout << "Connection creation done with stauts: " << _status << std::endl;
+	std::cerr << "[webserv] server_add returned status: " << _status << std::endl;
 	if (_status)
 		return (_status);
 
@@ -305,6 +305,19 @@ void	Webserv::timeout()
 	}
 }
 
+int	Webserv::servers_start()
+{
+	int	size = _servers.size();
+	std::cerr << "[webserv] Starting " << size << " server(s)" << std::endl;
+	for (int i = 0; i < size; ++i)
+	{
+		_status = _servers[i].start();
+		if (_status)
+			return (_status);
+	}
+	return (0);
+}
+
 //trim spaces/tabs and validate
 // std::string Webserv::trimSpaces(std::string line){
 // 	std::string serverHeadline = "";
@@ -326,6 +339,4 @@ void	Webserv::timeout()
 // 	return (serverHeadline);
 // }
 
-// DANGER~ the most shittest function so far created "webserv.start()" better not touch it
-// only gpt & I know it, now only I know what i'm gonna do. I will clean out later.
-// I dont understand a shit at all. :) 25.Nov.2025/06:41
+// Note: `start()` is complex and uses edge-triggered epoll; review carefully before changing.

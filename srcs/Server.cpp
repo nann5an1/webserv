@@ -6,7 +6,9 @@ fd::fd(int fd_) : fd_(fd_) {}
 
 fd::operator int() const {return (fd_);}
 
-Server::Server() {
+Server::Server() :	_sock_fd(-1), _server_name(""), listen_port(""), listen_ip(""), 
+					root(""), max_body_size(0), location_path ("")
+{
 }
 
 Server::~Server(){
@@ -220,10 +222,7 @@ Server::Server(std::ifstream &file, int serv_scope_start)
 	// std::cout << "server name >> " << this->_server_name << "\n"
 	// 			<< "listen >> " << this->listen_ip << ":" << this->listen_port << "\n"
 	// 			<< "root >> " << this->root << "\n"
-	// 			<< "max_body_size >> " << this->max_body_size << "\n" << std::endl;
-
-	this->start();
-	
+	// 			<< "max_body_size >> " << this->max_body_size << "\n" << std::endl;	
 }
 
 Server::Server(const Server &other):
@@ -242,9 +241,17 @@ Server::Server(const Server &other):
 
 
 Server& Server:: operator=(const Server &other) {
-    // if(this != &other)
-    //     *this = other;
-	(void)other; 
+    if (this != &other)
+	{
+		_server_name = other._server_name;
+		listen_port = other.listen_port;
+		listen_ip = other.listen_ip;
+		root = other.root;
+		max_body_size = other.max_body_size;
+		location_path = other.location_path;
+		location_map = other.location_map;
+		err_pages = other.err_pages;
+	}
     return *this;
 }
 
@@ -270,7 +277,7 @@ int	Server::start()
 		_sock_fd = -1;
 		return (status);
 	}
-	std::cout << "Server: '" << std::string(*this) << "'\tstarted with socket: " << _sock_fd << std::endl;
+	std::cerr << "[server] Started " << std::string(*this) << " socket:" << _sock_fd << std::endl;
 	return (0);
 }
 

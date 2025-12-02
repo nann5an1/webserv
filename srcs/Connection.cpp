@@ -60,7 +60,6 @@ bool	Connection::getRequest()
 		if (bytes > 0)
 		{
 			std::string	req(buffer, bytes);
-			std::cout << "Request: " << _fd << "\n" << std::string(42, '=') << "\n" << req << std::endl;
 			_time = time(NULL);
 		}
 		else if (bytes == 0)
