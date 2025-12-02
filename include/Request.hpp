@@ -10,6 +10,14 @@
 #include <vector>
 #include <sstream>
 
+
+enum content_category{
+    ERROR,
+    JSON,
+    URLENCODED,
+    FORM
+};
+
 class Request{
     private:
         std::string method;
@@ -17,12 +25,13 @@ class Request{
         std::string version;
         std::string hostname;
         int port;
-        std::string content_type;
+        int content_type;
         int content_len;
         std::string conn_status;
         std::string body;
         bool bool_cgi;
         std::string cgi_env;
+        std::map<std::string, content_category> content_types;
         // std::map<std::string, Server> attachServer;
     public:
         Request();

@@ -10,14 +10,18 @@ Request::Request():
     version(""),
     hostname(""),
     port(0),
-    content_type(""),
+    content_type(-1),
     content_len(0),
     conn_status(""),
     body(""),
     bool_cgi(false),
-    cgi_env(""
-    )
-{}
+    cgi_env("")
+{
+    content_types["application/json"] = JSON;
+    content_types["application/x-www-form-urlencoded"] = URLENCODED;
+    content_types["multipart/form-data"] = FORM;
+}
+
 Request::~Request() {}
 Request::Request(const Request &other):
     method(other.method),
@@ -51,12 +55,19 @@ std::string toLower(std::string token){
     return result;
 }
 
+
 //----------------- request parsing --------------------
 void Request::parseRequest(const char *raw_request){
+    // std::map<std::string, content_category> content_types;
+    
+    
+
     bool_cgi = false;
     bool hostname = false;
     bool bool_content_len = false;
     bool bool_connection = false;
+    bool bool_cont_type = false;
+
     size_t idx2;
     int length;
     std::string header = raw_request;
@@ -72,7 +83,8 @@ void Request::parseRequest(const char *raw_request){
             // std::cout << token << std::endl;
             if(token == "POST" || token == "GET"  || token == "DELETE") this->method = token;
             else if(token[0] == '/'){
-                size_t idx = token.find("."); 
+                size_t idx = token.find(".");
+                size_t queryIdx = token.find("?");
                 // std::cout << "idx >> " << idx << std::endl;
                 if(idx != std::string::npos){ //if the extension for the cgi is true
                     idx2 = token.find("?");
@@ -87,6 +99,11 @@ void Request::parseRequest(const char *raw_request){
                     // std::cout << "extension >> " << ext << std::endl;
                     if(ext == "php" || ext == "py" || ext == "pl" || ext == "sh" || ext == "rb") this->bool_cgi = true;
                 }
+                if(this->method == "GET" && queryIdx != std::string::npos){ //query parsing
+                    std::string query = token.substr(queryIdx + 1, token.length() - queryIdx);
+                    // std::cout << "query >> " << query << std::endl;
+                    this->cgi_env += query + "\n";
+                }
                 this->path = token;
                 
             }
@@ -94,6 +111,7 @@ void Request::parseRequest(const char *raw_request){
             else if(toLower(token)  == "host:") hostname = true;
             else if(toLower(token)  == "content-length:") bool_content_len = true;
             else if(toLower(token)  == "connection:") bool_connection = true;
+            else if(toLower(token) == "content-type:") bool_cont_type = true;
             else if(bool_content_len){
                 if(validate_len(token)) this->content_len = atoi(token.c_str());
                 bool_content_len = false;
@@ -109,6 +127,16 @@ void Request::parseRequest(const char *raw_request){
                 this->conn_status = token;
                 bool_connection = false;
             }
+            else if(bool_cont_type){
+                if(!this->content_types[token])
+                    std::cout << "error content type" << std::endl;
+                this->content_type = this->content_types[token];
+                // std::cout << "content type >> " << content_type << std::endl;
+                bool_cont_type = false;
+            }
+            else if(token.find("=") != std::string::npos){
+                this->body = token;
+            }
         }
     }
 
@@ -118,7 +146,10 @@ void Request::parseRequest(const char *raw_request){
               << "Port >> " << this->port << "\n"
               << "Content-Length >> " << this->content_len << "\n"
               << "Connection >> " << this->conn_status << "\n"
+              << "Content-Type >> " << this->content_type << "\n"
               << "CGI boolean >> " << this->bool_cgi << "\n"
+              << "Body >> " << this->body << "\n"
+              << "CGI env >> " << this->cgi_env
               << std::endl;
 }
 

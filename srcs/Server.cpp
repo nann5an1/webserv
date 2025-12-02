@@ -432,6 +432,6 @@ void Server::print() const {
 
 int	fail(std::string head, int err_no)
 {
-	std::cerr << RED << "Error: " << head << ": " << strerror(err_no) << std::endl;
+	std::cerr << RED << "Error: " << head << ": " << strerror(err_no) << RESET << std::endl;
 	return (err_no);
 }

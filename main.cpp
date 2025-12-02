@@ -19,14 +19,22 @@ int main(int ac, char **av)
     //     "Content-Length: 27\n"                     
     //     "Connection: keep-alive\n";
 
-    const char* raw_request2 =
-        "GET /script.pl?name=john&age=30 HTTP/1.1\n"
-        "Host: localhost:8080\n"
-        "Accept: text/html\n"
-        "Connection: close\n";
+    // const char* raw_request2 =
+    //     "GET /script.pl?name=john&age=20 HTTP/1.1\n"
+    //     "Host: localhost:8080\n"
+    //     "Accept: text/html\n"
+    //     "Connection: close";
+
+    const char* raw_request3 = 
+    "POST /script.php HTTP/1.1\n"
+    "Host: localhost:8080\n"
+    "Content-Type: application/x-www-form-urlencoded\n"
+    "Content-Length: 19\n"
+
+    "name=john&age=20";
 
 	Request req;
-    req.parseRequest(raw_request2);
+    req.parseRequest(raw_request3);
 
     // if (req.parseRequest(raw_request)) {
     //     std::cout << "Method: " << req.getMethod() << "\n";
