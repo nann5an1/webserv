@@ -1,9 +1,9 @@
 PROG 		= webserv
 CXX 		= c++
 INCLUDES	:= -Iinclude
-CXXFLAGS 	= $(INCLUDES) -Wall -Wextra -Werror -g -std=c++98
+CXXFLAGS 	= $(INCLUDES) -g -std=c++98 #-Wall -Wextra -Werror 
 
-SRCS		= ./srcs/main.cpp ./srcs/Server.cpp ./srcs/Webserv.cpp
+SRCS		= ./main.cpp ./srcs/Server.cpp ./srcs/Webserv.cpp ./srcs/Connection.cpp ./srcs/Request.cpp ./srcs/Response.cpp
 
 OBJS		= ${SRCS:.cpp=.o}
 

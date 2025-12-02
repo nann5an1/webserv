@@ -1,8 +1,15 @@
 #include "Webserv.hpp"
+#include "Server.hpp"
+#include "Response.hpp"
 
-Webserv::Webserv(){}
+Webserv::Webserv() {}
 
-Webserv::~Webserv(){}
+Webserv::~Webserv()
+{
+	if (_ep_fd >= 0)
+		close(_ep_fd);
+}
+
 Webserv::Webserv(const Webserv &other) {
 	(void)other;
 }
@@ -12,107 +19,313 @@ Webserv& Webserv:: operator=(const Webserv &other) {
 	return *this;
 }
 
-void Webserv::watchServer(){
-	// while(epoll())
+//check if the {} is even for the server and for the location scopes
+//only the validation of the scopes should happen here no value parsing
+int Webserv::scopeValidation(std::ifstream &file)
+{
+	std::string line, tok1, tok2;
+	bool location_scope = false;
+	bool server_scope = false;
+	t_location location;
+
+	int start_location = 0, end_location = 0;
+	int start_server = 0, end_server = 0;
+
+	/*------------------------inside the server scope------------------*/
+
+	//if we are in the server scope now read the line until the ending of the server's }
+	while(getline(file, line)){
+		// std::cout << "line check >> " << line << std::endl;
+		std::string token;
+		std::stringstream ss(line);
+		ss >> token;
+		if(token == "server"){
+			std::stringstream ss(line);
+
+			ss >> tok1 >> tok2;
+			// std::cout << "line " << line << std::endl;
+			// std::cout << "token " << token << std::endl;
+			// std::cout << "tok2 " << tok2 << std::endl;
+
+			//handle the { variations
+			if(tok2 == " "){
+				std::string tok;
+				getline(file, line);
+				std::stringstream ss(line);
+				ss >> tok;
+				if(tok != "{")	return 0;
+			}
+			server_scope = true;
+			start_server++;
+		}
+		else if(line.find("location") != std::string::npos){
+			std::stringstream ss(line);
+			std::string tok1, tok2, tok3;
+			ss >> tok1 >> tok2 >> tok3;
+
+			// std::cout << "token1 location >> " << tok1 << std::endl;
+			// std::cout << "token2 location >> " << tok2 << std::endl;
+			// std::cout << "token3 location >> " << tok3 << std::endl;
+			
+			if(tok1 != "location") return 0;
+			if(tok3 != "{"){ //if the opening isn't on the same line	
+				getline(file, line); //read the next line if the opening isn't on the same line
+				// std::cout << "Moved to another line of location >> " << line << std::endl;
+				std::stringstream ss(line);
+				ss >> tok1;
+				if(tok1 != "{") return 0;
+				else{
+					location_scope = true;
+					start_location++;
+				}
+			}
+			else{
+				location_scope = true;
+				start_location++;
+			}
+		}
+		if(location_scope && line.find("}") != std::string::npos){ //after reading the location scope
+			location_scope = false;
+			//need to add the values of the whole location scope into the map
+			end_location++;
+		}
+		else if(location_scope == false && line.find("}") != std::string::npos){ //look for the end of the server scope
+			std::stringstream ss(line);
+			std::string tok1;
+			ss >> tok1;
+
+			// std::cout << "token of ending server scope >> " << tok1 << std::endl;
+			if(tok1 == "}") end_server++;
+		}
+	}
+	// std::cout << "start server_count " << start_server << std::endl;
+	// std::cout << "end server_count " << end_server << std::endl;
+
+	// std::cout << "start location_count " << start_location << std::endl;
+	// std::cout << "end location_count " << end_location << std::endl;
+
+	
+	//return 0 if the number of server and location scopes are not even
+	if(start_server != end_server || start_location != end_location) return 0;
+	return 1;
 }
 
-void Webserv::fileParser(char *av) {
+void Webserv::fileParser(char *av)
+{
+	std::ifstream inputFile;
+	inputFile.open(av);
 	std::string	word;
 	std::string	config_file;
+
 	if(av) config_file = av;
 	else config_file = "def.conf";
 
-	std::ifstream	file(config_file.c_str());
-	std::string	line;
-	t_location	location = {};					// this will automatically assign all the struct value to 0, 
-												// and u can also use memset if u want
-	if (file.is_open())
-	{
-		std::cout << "File is opened now" << std::endl;
+	// std::cout << "config file >> "<< config_file << std::endl;
+	std::ifstream file(config_file.c_str());
+	std::string line;
 
-		//get the first line of the file to check if it has the word "server" for scope check
-		std::getline(file, line);
-
-		// std::cout << "line >> " << line << std::endl;
-		if ((line.length() > 6 || line.length() < 0) || line != "server"){
-			perror("the config file is not in server scope");
-			return ;
-		}
-		while(getline(file, line))
-		{ //read line by line
-				std::string token1, token2, token3;
+	if(scopeValidation(file) == 0) throw ConfigFileError();
+		file.clear();
+		file.seekg(0);
+		
+		while(getline(file, line)){ //read the whole file line by line
+			// std::cout << "line >> " << line << std::endl;
+			if(line.find("server") != std::string::npos){
+				std::string tok;
 				std::stringstream ss(line);
-				if(line.find("error_page") != std::string::npos){
-						while (ss >> token1 >> token2 >> token3){
-						this->err_pages.insert(std::pair<std::string, std::string>(token2, token3));
+				int server_scope = 1;
+				
+				while(ss >> tok){
+					if(tok == "server") {
+						server_scope++;
+						_servers.push_back(Server(file, server_scope)); //ther first scope of the server will be done
 					}
+					else break;
 				}
-				else if(line.find("location") != std::string::npos){
-					while(ss >> token1 >> token2 >> token3){
-						location.path = token2;
-						break;
-					}
-				}
-				else if(line.find("autoindex") != std::string::npos){
-					while(ss >> token1 >> token2){
-						if(token2 == "on") location.autoindex = true;
-					}
-				}
-				else if(line.find("allow_methods") != std::string::npos){
-					while(ss >> token1 >> token2 >> token3){
-						if(token1 == "GET" ) location.get = true;
-						else if(token2 == "POST") location.post = true;
-						else if(token3 == "DELETE") location.del = true;
-					}
-				}
-				else if(line.find("root") != std::string::npos){
-					while(ss >> token1 >> token2){
-						location.root = token2;
-						break;
-					}
-				}
-				// else if(line.find("cgi") != std::string::npos){
-				//     while(ss >> token1 >> token2)
-				// }
-				while(ss >> token1 >> token2){
-					if(token1 == "server_name") this->server_name = token2;
-					else if(token1 == "listen") this->listen_port = token2;
-					else if(token1 == "client_max_body_size")   this->max_body_size = atol(token2.c_str());
-				}
+			}
 		}
+}
+
+//print each of the servers frin the webserv
+void Webserv::printServers() const {
+    std::cout << "\n========== PRINTING ALL SERVERS ==========\n" << _servers.size() << std::endl;
+    for (size_t i = 0; i < _servers.size(); i++) {
+        std::cout << "\nSERVER #" << i + 1 << ":\n";
+        _servers[i].print();
+    }
+}
+
+ConfigValidationError::ConfigValidationError()
+	: std::runtime_error("Error in config file") {}
+
+void	Webserv::print_server_head() const
+{
+	std::cout << "server count : " << _servers.size() << std::endl;
+	for (int i = 0; i < _servers.size(); ++i)
+	{
+		Server	server = _servers[i];
+		fd	s_fd = server;
+		std::cout << std::string(server) << "\t: " << s_fd << std::endl;
 	}
-	std::cout << "\n<< Values check >> \nserver name >> " <<  this->server_name << "\n"
-	<< "listen >> " << this->listen_port
-	<< "\nclient max body size >> " << this->max_body_size << std::endl;
-	print_map();
-	std::cout << "location's path << " << location.path;
 }
 
 
-void Webserv::print_map(){
-	//cloned copy for iteration
-	std::map<std::string, std::string>err_pages_copied;
+int	Webserv::server_add(std::set<fd> &server_fds)
+{
+	std::cout << "Server: size: " << _servers.size() << std::endl;
+	for(std::size_t i = 0; i < _servers.size(); ++i)
+	{
+		fd	s_fd = _servers[i];
+		struct epoll_event	s_event;
+		s_event.events = EPOLLIN;
+		s_event.data.fd = s_fd;
+		// FAIL:
+		std::cout << "s_fd: " << s_fd << std::endl;
+		if (epoll_ctl(_ep_fd, EPOLL_CTL_ADD, s_fd, &s_event) <  0)
+			return (fail("Epoll: Server", errno));
+		server_fds.insert(s_fd);
+	}
+	return (0);
+}
 
-	// this->err_pages.insert(std::pair<std::string, std::string>(line.substr(firstdeli + 1, 3), line.substr(lastdeli + 1, line.length() - lastdeli)));
+int	Webserv::create_con(fd event_fd)
+{
+	while (true)
+	{
+		Connection	con(event_fd);
+		fd c_fd = con;
+		if (c_fd < 0)
+			break;
 
-	//iterate the error_pages in the map
-	err_pages_copied = this->err_pages;
+		struct epoll_event	c_event;
+		c_event.events = EPOLLIN | EPOLLET;
+		c_event.data.fd = c_fd;
 
-	for(std::map<std::string, std::string>::iterator it = err_pages_copied.begin(); it != err_pages_copied.end(); ++it){
-		std::cout << it->first << " " << it->second << std::endl;
+		// FAIL~
+		if (epoll_ctl(_ep_fd, EPOLL_CTL_ADD, c_fd, &c_event) < 0)
+		{
+			int	status = fail("Epoll: Client", errno); 
+			close(c_fd);
+			return (status);
+		}
+		_cons[c_fd] = con;
+	}
+	return (0);
+}
+
+int	Webserv::start()
+{
+	_ep_fd = epoll_create(1);
+	std::set<fd>	server_fds;
+	if (_ep_fd < 0)
+		return (fail("Epoll", errno));
+	_status = server_add(server_fds);
+	std::cout << "Connection creation done with stauts: " << _status << std::endl;
+	if (_status)
+		return (_status);
+
+	epoll_event	events[MAX_EVENTS];
+
+ 	while (true)
+	{
+		int	hits = epoll_wait(_ep_fd, events, MAX_EVENTS, 1000);
+		if (hits < 0)
+		{
+			if (errno == EINTR)
+				continue ;
+			fail("Epoll", errno);
+			break;
+		}
+		for (int i = 0; i < hits; ++i)
+		{
+			fd	event_fd = events[i].data.fd;
+			if (server_fds.count(event_fd))
+			{
+				_status = create_con(event_fd);
+				if (_status)
+					return (_status);
+			}
+			else
+			{
+				std::map<fd, Connection>::iterator it = _cons.find(event_fd);
+				if (it == _cons.end())
+					continue;
+				Connection	&cur_con = it->second;
+				if (events[i].events & EPOLLIN)
+				{
+					if (cur_con.getRequest())
+					{
+						struct	epoll_event	mod_event;
+						mod_event.events = EPOLLOUT | EPOLLET;
+						mod_event.data.fd = event_fd;
+						epoll_ctl(_ep_fd, EPOLL_CTL_MOD, event_fd, &mod_event);
+					}
+					else
+					{
+						epoll_ctl(_ep_fd, EPOLL_CTL_DEL, event_fd, NULL);
+						_cons.erase(event_fd);
+					}
+				}
+				else if (events[i].events & EPOLLOUT)
+				{
+					cur_con.response();
+					epoll_ctl(_ep_fd, EPOLL_CTL_DEL, event_fd, NULL);
+					_cons.erase(event_fd);
+				}
+				else if (events[i].events & (EPOLLHUP | EPOLLERR))
+				{
+					epoll_ctl(_ep_fd, EPOLL_CTL_DEL, event_fd, NULL);
+					_cons.erase(event_fd);
+				}
+			}
+		}
+		timeout();
+	}
+	for (std::set<fd>::iterator it = server_fds.begin(); it != server_fds.end(); ++it)
+		close(*it);
+	close(_ep_fd);
+	return (0);
+}
+
+void	Webserv::timeout()
+{
+	time_t	now = time(NULL);
+	for (std::map<fd, Connection>::iterator it = _cons.begin(); it != _cons.end();)
+	{
+		int	c_fd = it->first;
+		if (now - it->second > WAIT_TIME)
+		{
+			std::cout << "Client " << c_fd << " time out" << std::endl;
+			epoll_ctl(_ep_fd, EPOLL_CTL_DEL, c_fd, NULL);
+			std::map<fd, Connection>::iterator	tmp = it++;
+			_cons.erase(tmp);
+		}
+		else
+			++it;
 	}
 }
 
-// if(line.find("server_name") != std::string::npos){
-				//     int space = line.find(" ");
-				//     this->server_name = line.substr(space + 1, line.length() - space);
-				//     std::cout << this->server_name << std::endl;
-				// }
-				// else if(line.find("listen") != std::string::npos){
-				//     int space = line.find(" ");
-				//     this->listen_port = line.substr(space + 1, line.length() - space);
-				// }
-				// else if(line.find("error_page") != std::string::npos){
-				//     int firstdeli = line.find(" ");
-				//     int lastdeli = line.rfind(" ");
+//trim spaces/tabs and validate
+// std::string Webserv::trimSpaces(std::string line){
+// 	std::string serverHeadline = "";
+	
+// 	// std::cout << line.length() << std::endl;
 
+// 	for(size_t i = 0; i < line.length(); i++){
+// 		if(serverHeadline != "server" && line[i] == ' ' && serverHeadline.length() != 0) break;
+// 		if(serverHeadline.length() == 0 && (line[i] == ' ' || line[i] == '\t')) continue;
+// 		if(line[i] != ' ')
+// 			serverHeadline += line[i];
+// 	}
+// 	// std::cout << "after spaces trimmed >> " << serverHeadline << std::endl;
+// 	if(serverHeadline.length() == 7 && serverHeadline == "server{") return serverHeadline;
+// 	else if(serverHeadline.length() == 6 && serverHeadline == "server") return serverHeadline;
+// 	else if(serverHeadline.length() == 1 && serverHeadline == "{") return serverHeadline;
+// 	else return "";
+		
+// 	return (serverHeadline);
+// }
+
+// DANGER~ the most shittest function so far created "webserv.start()" better not touch it
+// only gpt & I know it, now only I know what i'm gonna do. I will clean out later.
+// I dont understand a shit at all. :) 25.Nov.2025/06:41
