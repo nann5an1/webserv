@@ -1,4 +1,5 @@
-#pragma once
+#ifndef CONNECTION_HPP
+#define CONNECTION_HPP
 
 #include <ctime>
 #include "Server.hpp"
@@ -10,8 +11,8 @@ class	Connection
 	private:
 		fd	_fd;
 		std::time_t	_time;
-		Request	req;
-		Response rep;
+		Request	_req;
+		Response _rep;
 	public:
 		Connection();
 		Connection(const Connection &other);
@@ -26,3 +27,5 @@ class	Connection
 		operator	fd() const;
 		operator	std::time_t() const;
 };
+
+#endif

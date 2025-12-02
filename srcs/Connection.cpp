@@ -16,8 +16,6 @@ Connection	&Connection::operator=(const Connection &other)
 
 Connection::~Connection()
 {
-	if (_fd >= 0)
-		close(_fd);
 }
 
 Connection::Connection(fd server_fd)
@@ -56,7 +54,6 @@ Connection::operator std::time_t() const
 bool	Connection::getRequest()
 {
 	char	buffer[4096];
-	bool	keep = true;
 	while (true)
 	{
 		ssize_t bytes = read(_fd, buffer, sizeof(buffer));
@@ -80,7 +77,8 @@ bool	Connection::getRequest()
 
 bool	Connection::response()
 {
-	const char	*str = rep;
-	if (write(_fd, str, sizeof(str) - 1) < 0 && errno != EAGAIN)
+	const char	*str = _rep;
+	if (write(_fd, str, std::strlen(str)) < 0 && errno != EAGAIN)
 		return (fail("Response", errno), 1);
+	return (0);
 }

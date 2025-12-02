@@ -6,11 +6,11 @@
 int main(int ac, char **av)
 {
     if(ac > 2) return 1;
-    
+
     Webserv webserv;
     webserv.fileParser(av[1]);
-	webserv.printServers();
-    // webserv.watchServer();
+    webserv.print_server_head();
+    // webserv.start();
 
 	const char* raw_request = 
         "POST /upload HTTP/1.1\n"
@@ -19,8 +19,8 @@ int main(int ac, char **av)
         "Content-Length: 27\n"                     
         "Connection: keep-alive\n";
 
-	Request req;
-    req.parseRequest(raw_request);
+	// Request req;
+    // req.parseRequest(raw_request);
 
     // if (req.parseRequest(raw_request)) {
     //     std::cout << "Method: " << req.getMethod() << "\n";

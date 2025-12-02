@@ -12,5 +12,5 @@ class	Response
 		Response	&operator=(const Response &other);
 		~Response();
 
-		operator const char() const;
+		operator const char*() const;
 };

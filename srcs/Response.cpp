@@ -13,7 +13,7 @@ Response	&Response::operator=(const Response &other)
 
 Response::~Response() {}
 
-Response::operator const char() const
+Response::operator const char*() const
 {
-	return (_reply.c_str());
+	return _reply.c_str();
 }

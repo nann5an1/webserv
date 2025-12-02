@@ -29,6 +29,13 @@ class	Webserv
 	private:
 		std::vector<Server> _servers;	//take the sever class as type and save a collection of servers
 		std::map <fd, Connection>	_cons;
+		fd	_ep_fd;
+		int	_status;
+	
+		int		server_add(std::set<fd> &sever_fds);
+		int		create_con(fd event_fd);
+		void	timeout();
+
 	public:
 		Webserv();
 		~Webserv();
@@ -39,9 +46,8 @@ class	Webserv
 
 		int	scopeValidation(std::ifstream &file);
 
-		// int	start();
-
-		int	fail(std::string head, int err_no);
+		int	start();
+		void	print_server_head() const;
 		void printServers() const;
 
 	

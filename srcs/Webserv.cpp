@@ -2,10 +2,13 @@
 #include "Server.hpp"
 #include "Response.hpp"
 
-Webserv::Webserv(){
-}
+Webserv::Webserv() {}
 
-Webserv::~Webserv(){}
+Webserv::~Webserv()
+{
+	if (_ep_fd >= 0)
+		close(_ep_fd);
+}
 
 Webserv::Webserv(const Webserv &other) {
 	(void)other;
@@ -117,7 +120,7 @@ void Webserv::fileParser(char *av)
 	if(av) config_file = av;
 	else config_file = "def.conf";
 
-	std::cout << "config file >> "<< config_file << std::endl;
+	// std::cout << "config file >> "<< config_file << std::endl;
 	std::ifstream file(config_file.c_str());
 	std::string line;
 
@@ -126,7 +129,7 @@ void Webserv::fileParser(char *av)
 		file.seekg(0);
 		
 		while(getline(file, line)){ //read the whole file line by line
-			std::cout << "line >> " << line << std::endl;
+			// std::cout << "line >> " << line << std::endl;
 			if(line.find("server") != std::string::npos){
 				std::string tok;
 				std::stringstream ss(line);
@@ -155,6 +158,153 @@ void Webserv::printServers() const {
 ConfigValidationError::ConfigValidationError()
 	: std::runtime_error("Error in config file") {}
 
+void	Webserv::print_server_head() const
+{
+	std::cout << "server count : " << _servers.size() << std::endl;
+	for (int i = 0; i < _servers.size(); ++i)
+	{
+		Server	server = _servers[i];
+		fd	s_fd = server;
+		std::cout << std::string(server) << "\t: " << s_fd << std::endl;
+	}
+}
+
+
+int	Webserv::server_add(std::set<fd> &server_fds)
+{
+	std::cout << "Server: size: " << _servers.size() << std::endl;
+	for(std::size_t i = 0; i < _servers.size(); ++i)
+	{
+		fd	s_fd = _servers[i];
+		struct epoll_event	s_event;
+		s_event.events = EPOLLIN;
+		s_event.data.fd = s_fd;
+		// FAIL:
+		std::cout << "s_fd: " << s_fd << std::endl;
+		if (epoll_ctl(_ep_fd, EPOLL_CTL_ADD, s_fd, &s_event) <  0)
+			return (fail("Epoll: Server", errno));
+		server_fds.insert(s_fd);
+	}
+	return (0);
+}
+
+int	Webserv::create_con(fd event_fd)
+{
+	while (true)
+	{
+		Connection	con(event_fd);
+		fd c_fd = con;
+		if (c_fd < 0)
+			break;
+
+		struct epoll_event	c_event;
+		c_event.events = EPOLLIN | EPOLLET;
+		c_event.data.fd = c_fd;
+
+		// FAIL~
+		if (epoll_ctl(_ep_fd, EPOLL_CTL_ADD, c_fd, &c_event) < 0)
+		{
+			int	status = fail("Epoll: Client", errno); 
+			close(c_fd);
+			return (status);
+		}
+		_cons[c_fd] = con;
+	}
+	return (0);
+}
+
+int	Webserv::start()
+{
+	_ep_fd = epoll_create(1);
+	std::set<fd>	server_fds;
+	if (_ep_fd < 0)
+		return (fail("Epoll", errno));
+	_status = server_add(server_fds);
+	std::cout << "Connection creation done with stauts: " << _status << std::endl;
+	if (_status)
+		return (_status);
+
+	epoll_event	events[MAX_EVENTS];
+
+ 	while (true)
+	{
+		int	hits = epoll_wait(_ep_fd, events, MAX_EVENTS, 1000);
+		if (hits < 0)
+		{
+			if (errno == EINTR)
+				continue ;
+			fail("Epoll", errno);
+			break;
+		}
+		for (int i = 0; i < hits; ++i)
+		{
+			fd	event_fd = events[i].data.fd;
+			if (server_fds.count(event_fd))
+			{
+				_status = create_con(event_fd);
+				if (_status)
+					return (_status);
+			}
+			else
+			{
+				std::map<fd, Connection>::iterator it = _cons.find(event_fd);
+				if (it == _cons.end())
+					continue;
+				Connection	&cur_con = it->second;
+				if (events[i].events & EPOLLIN)
+				{
+					if (cur_con.getRequest())
+					{
+						struct	epoll_event	mod_event;
+						mod_event.events = EPOLLOUT | EPOLLET;
+						mod_event.data.fd = event_fd;
+						epoll_ctl(_ep_fd, EPOLL_CTL_MOD, event_fd, &mod_event);
+					}
+					else
+					{
+						epoll_ctl(_ep_fd, EPOLL_CTL_DEL, event_fd, NULL);
+						_cons.erase(event_fd);
+					}
+				}
+				else if (events[i].events & EPOLLOUT)
+				{
+					cur_con.response();
+					epoll_ctl(_ep_fd, EPOLL_CTL_DEL, event_fd, NULL);
+					_cons.erase(event_fd);
+				}
+				else if (events[i].events & (EPOLLHUP | EPOLLERR))
+				{
+					epoll_ctl(_ep_fd, EPOLL_CTL_DEL, event_fd, NULL);
+					_cons.erase(event_fd);
+				}
+			}
+		}
+		timeout();
+	}
+	for (std::set<fd>::iterator it = server_fds.begin(); it != server_fds.end(); ++it)
+		close(*it);
+	close(_ep_fd);
+	return (0);
+}
+
+void	Webserv::timeout()
+{
+	time_t	now = time(NULL);
+	for (std::map<fd, Connection>::iterator it = _cons.begin(); it != _cons.end();)
+	{
+		int	c_fd = it->first;
+		if (now - it->second > WAIT_TIME)
+		{
+			std::cout << "Client " << c_fd << " time out" << std::endl;
+			epoll_ctl(_ep_fd, EPOLL_CTL_DEL, c_fd, NULL);
+			std::map<fd, Connection>::iterator	tmp = it++;
+			_cons.erase(tmp);
+		}
+		else
+			++it;
+	}
+}
+
 //trim spaces/tabs and validate
 // std::string Webserv::trimSpaces(std::string line){
 // 	std::string serverHeadline = "";
@@ -175,145 +325,6 @@ ConfigValidationError::ConfigValidationError()
 		
 // 	return (serverHeadline);
 // }
-
-int	Webserv::start()
-{
-	fd	ep_fd = epoll_create(1);
-	std::set<fd>	server_fds;
-	if (ep_fd < 0)
-		return (errno);
-	for(std::size_t i = 0; i < _servers.size(); ++i)
-	{
-		fd	s_fd = _servers[i];
-		struct epoll_event	s_event;
-		s_event.events = EPOLLIN;
-		s_event.data.fd = s_fd;
-		// FAIL:
-		if (epoll_ctl(ep_fd, EPOLL_CTL_ADD, s_fd, &s_event) <  0)
-			return (fail("Epoll: Server", errno));
-		server_fds.insert(s_fd);
-	}
-
-	epoll_event	events[MAX_EVENTS];
-
- 	while (true)
-	{
-		int	hits = epoll_wait(ep_fd, events, MAX_EVENTS, WAIT_TIME);
-		if (hits < 0)
-		{
-			if (errno == EINTR)
-				continue ;
-			fail("Epoll", errno);
-			break;
-		}
-		for (int i = 0; i < hits; ++i)
-		{
-			fd	event_fd = events[i].data.fd;
-			if (server_fds.count(event_fd))
-			{
-				while (true)
-				{
-					Connection	con(event_fd);
-					fd c_fd = con;
-					if (c_fd < 0)
-						break;
-					
-					// sockaddr_in	client_addr;
-					// socklen_t	client_len = sizeof(client_addr);
-					// fd	c_fd = accept(event_fd, (sockaddr *)&client_addr, &client_len);
-					// if (c_fd < 0)
-					// {
-					// 	if (errno == EAGAIN || errno == EWOULDBLOCK)
-					// 		break;
-					// 	fail("Epoll", errno);
-					// 	break;
-					// }
-					// // FAIL~ need proper clean up
-					// if (fcntl(c_fd, F_SETFL, fcntl(c_fd, F_GETFL, 0) | O_NONBLOCK) < 0)
-					// 	return (errno);
-
-					struct epoll_event	c_event;
-					c_event.events = EPOLLIN | EPOLLET;
-					c_event.data.fd = c_fd;
-
-					// FAIL~
-					if (epoll_ctl(ep_fd, EPOLL_CTL_ADD, c_fd, &c_event) < 0)
-					{
-						int	status = fail("Epoll: Client"); 
-						close(c_fd);
-						return (status);
-					}
-					_cons[c_fd] = con;
-				}
-			}
-			else
-			{
-				std::map<fd, Connection>::iterator it = _cons.find(event_fd);
-				if (it == _cons.end())
-					continue;
-				Connection	&cur_con = it->second;
-				if (events[i].events & EPOLLIN)
-				{
-					//	HELP: No understanding at all
-					//	HELP: I dont understand a shit at all starting from here.
-					if (cur_con.getRequest())
-					{
-						struct	epoll_event	mod_event;
-						mod_event.events = EPOLLOUT | EPOLLET;
-						mod_event.data.fd = event_fd;
-						epoll_ctl(ep_fd, EPOLL_CTL_MOD, event_fd, &mod_event);
-					}
-					else
-					{
-						epoll_ctl(ep_fd, EPOLL_CTL_DEL, event_fd, NULL);
-						_cons.erase(event_fd);
-					}
-				}
-				else if (events[i].events & EPOLLOUT)
-				{
-					cur_con.response();
-					epoll_ctl(ep_fd, EPOLL_CTL_DEL, event_fd, NULL);
-					_cons.erase(event_fd);
-				}
-				else if (events[i].events & (EPOLLHUP | EPOLLERR))
-				{
-					epoll_ctl(ep_fd, EPOLL_CTL_DEL, event_fd, NULL);
-					_cons.erase(event_fd);
-				}
-			}
-		}
-		time_t	now = time(NULL);
-		for (std::map<fd, Connection>::iterator it = _cons.begin(); it != _cons.end();)
-		{
-			int	c_fd = it->first;
-			if (now - it->second > 30)
-			{
-				std::cout << "Client " << c_fd << " time out" << std::endl;
-				epoll_ctl(ep_fd, EPOLL_CTL_DEL, c_fd, NULL);
-				it = _cons.erase(it);
-			}
-			else
-				++it;
-		}
-		// for (std::map<fd, time_t>::iterator it = timestamps.begin(); it != timestamps.end();)
-		// {
-		// 	int	c_fd_ = it->first;
-		// 	if (now - it->second > WAIT_TIME)
-		// 	{
-		// 		std::cout << "Client " << c_fd_ << "time out" << std::endl;
-		// 		epoll_ctl(ep_fd, EPOLL_CTL_DEL, c_fd_, NULL);
-		// 		close(c_fd_);
-		// 		it = timestamps.erase(it);
-		// 	}
-		// 	else
-		// 		++it;
-		// }
-	}
-	for (std::set<fd>::iterator it = server_fds.begin(); it != server_fds.end(); ++it)
-		close(*it);
-	close(ep_fd);
-	return (0);
-}
 
 // DANGER~ the most shittest function so far created "webserv.start()" better not touch it
 // only gpt & I know it, now only I know what i'm gonna do. I will clean out later.

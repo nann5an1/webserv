@@ -41,7 +41,9 @@ int Server::inputData(std::string &line){
 			// std::string value;
 			if(!(ss >> value)) return 0;
 			else {
+				
 				this->_server_name = trimSemiColon(value);
+				// std::cout << "server name debug >> " << this->_server_name << std::endl;
 				break;
 			}
 			
@@ -52,7 +54,7 @@ int Server::inputData(std::string &line){
 			else{
 				int idx = value.find(":");
 				this->listen_ip  = value.substr(0, idx);
-				this->listen_port = value.substr(idx + 1, value.length() - idx - 1);
+				this->listen_port = trimSemiColon(value.substr(idx + 1, value.length() - idx - 1));
 				break;
 				// std::cout << "listen >> " << this->listen_ip << ":" << this->listen_port << std::endl;
 			}
@@ -74,7 +76,7 @@ int Server::inputData(std::string &line){
 		else if(token == "error_page"){
 			
 			ss >> value;
-			std::cout << "error page status code >> " << value << std::endl;
+			// std::cout << "error page status code >> " << value << std::endl;
 			if(!validateHTTPCode(value)) return 0;
 			else{ //http code is validated
 				std::string path;
@@ -121,7 +123,7 @@ int Server::inputLocation(std::string line, t_location &location){
 			ss >> val;
 			val = trimSemiColon(val);
 			location.root = val;
-			std::cout <<"location root >> " << location.root << std::endl;
+			// std::cout <<"location root >> " << location.root << std::endl;
 		}
 		else if(token == "upload_dir"){
 			ss >> val;
@@ -215,10 +217,12 @@ Server::Server(std::ifstream &file, int serv_scope_start)
 		}
 		else if(server_scope <= 1)	break;
 	}
-	std::cout << "server name >> " << this->_server_name << "\n"
-				<< "listen >> " << this->listen_ip << ":" << this->listen_port << "\n"
-				<< "root >> " << this->root << "\n"
-				<< "max_body_size >> " << this->max_body_size << "\n" << std::endl;
+	// std::cout << "server name >> " << this->_server_name << "\n"
+	// 			<< "listen >> " << this->listen_ip << ":" << this->listen_port << "\n"
+	// 			<< "root >> " << this->root << "\n"
+	// 			<< "max_body_size >> " << this->max_body_size << "\n" << std::endl;
+
+	this->start();
 	
 }
 
@@ -246,16 +250,12 @@ Server& Server:: operator=(const Server &other) {
 
 int	Server::start()
 {
-	int	err = 0;
 	socklen_t	opt = 1;
 	struct sockaddr_in	sock_addr;
 
 	std::memset(&sock_addr, 0, sizeof(sock_addr));
 	sock_addr.sin_family = AF_INET;	
 	// TEMP~ I set the port to 8080 for test.
-	listen_port = "8080";
-	listen_ip = "127.0.0.1";
-	_server_name = "nsan.server";
 	sock_addr.sin_port = htons(std::atoi(listen_port.c_str()));
 	sock_addr.sin_addr.s_addr = inet_addr(listen_ip.c_str());
 	if ((_sock_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0 ||
@@ -264,15 +264,13 @@ int	Server::start()
 		fcntl(_sock_fd, F_SETFL, fcntl(_sock_fd, F_GETFL, 0) | O_NONBLOCK) < 0 ||
 		listen(_sock_fd, SOMAXCONN) < 0)
 	{
-		err = errno;
+		int status = fail("Server", errno);
 		if (_sock_fd > 0)
 			close(_sock_fd);
 		_sock_fd = -1;
-		std::cout << "Err: " << err << std::endl;
-		return (err);
+		return (status);
 	}
-	sleep(3);
-	std::cout << "Server.start(): " << _sock_fd << std::endl;
+	std::cout << "Server: '" << std::string(*this) << "'\tstarted with socket: " << _sock_fd << std::endl;
 	return (0);
 }
 
@@ -342,96 +340,8 @@ void Server::print() const {
     std::cout << "=================================================\n";
 }
 
-
-// void Server::initiate() {
-
-//         // struct sockaddr_in serverAddress;
-
-//         // //creates an endpoint for communication
-//         // //returns the file descriptor to that endpoint
-//         // int listenfd = socket(AF_INET, SOCK_STREAM, 0);
-
-//         // serverAddress.sin_family = AF_INET;
-//         // serverAddress.sin_addr.s_addr = INADDR_ANY;
-//         // serverAddress.sin_port = htons(8080);
-
-//         // //bind socket(assign the address to the socket)
-//         // if(bind(listenfd, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) < 0) //on success return the 0
-//         // {
-//         //     perror("something went wrong in binding");
-//         // }
-//         // std::cout << "socket is binded" << std::endl;
-
-
-//         //  //making of the non-blocking socket
-//         // int flags = fcntl(listenfd, F_GETFL, 0);
-//         // if(flags < 0){
-//         //     perror("fcntl getting flag failed");
-//         // }
-
-//         // if(fcntl(listenfd, F_SETFL, flags | O_NONBLOCK) < 0){
-//         //     perror("fcntl non blocking failed");
-//         // }
-
-//         // //create epoll_instance
-//         // // int epoll_fd = epoll_create(5);
-//         // // if(epoll_ctl(epoll_fd, EPOLL_CTL_ADD, serverSocket, NULL) < 0){
-//         // //     std::cout << "adding into epoll failed" << std::endl;
-//         // // }
-//         // // std::cout << "added into epoll" << std::endl;
-
-//         // int epfd = epoll_create1(0);
-
-//         // struct epoll_event ev;
-//         // ev.events = EPOLLIN;
-//         // ev.data.fd = listenfd;
-//         // // epoll_ctl(epfd, EPOLL_CTL_ADD, serverSocket, &ev);
-
-//         // epoll_event events[1024];
-//         // while(true){
-//         //     int n = epoll_wait(epfd, events, 1024, -1);
-//         //     if(n == -1){
-//         //         perror("epoll wait");
-//         //         break;
-//         //     }
-//         //     for(int i = 0; i < n; i++){
-//         //         int fd = events[i].data.fd;
-//         //         if(fd == listenfd){
-//         //             epoll_ctl(epfd, EPOLL_CTL_ADD, listenfd, &ev);
-//         //         } //not an initial connection(handle request)
-//         //         else if(EPOLLIN)
-//         //         {
-                        
-//         //         }
-//         //         else //handle response back to the client
-//         //         {
-
-//         //         }
-//         //     }
-//         // }
-
-//         // //listen to the assigned socket
-//         // if(listen(listenfd, 5) < 0){
-//         //     std::cout << "server is not listening" << std::endl;
-//         // }
-//         //  std::cout << "server is listening" << std::endl;
-        
-        
-        
-
-//         // //accept connection request
-//         // //returns the file descriptor for the accepted socket
-//         // int clientSocket = accept(listenfd, NULL, NULL);
-//         // std::cout << "accepting connection from client" << std::endl;
-//         // char buffer[1024] = {0};
-//         // //receiving data
-//         // recv(clientSocket, buffer, sizeof(buffer), 0);
-//         // close(listenfd);
-// }
-
-
 int	fail(std::string head, int err_no)
 {
-	std::cerr << RED << "Error: " << head << ": " << strerror(err_no) << std::endl;
+	std::cerr << RED << "Error: " << head << ": " << strerror(err_no) << RESET << std::endl;
 	return (err_no);
 }
