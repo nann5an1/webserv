@@ -22,12 +22,12 @@ Request::Request(const Request &other):
 //     return *this;
 // }
 
-// bool validate_len(std::string token){
-//     for(size_t i = 0; i < token.length(); i++){
-//         if(!isdigit(token[i]))  return false;
-//     }
-//     return true;
-// }
+bool validate_len(std::string token){
+    for(size_t i = 0; i < token.length(); i++){
+        if(!isdigit(token[i]))  return false;
+    }
+    return true;
+}
 
 std::string toLower(std::string token){
     std::string result = "";
