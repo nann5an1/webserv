@@ -6,11 +6,11 @@
 int main(int ac, char **av)
 {
     if(ac > 2) return 1;
-    
+
     Webserv webserv;
     webserv.fileParser(av[1]);
-	webserv.printServers();
-    // webserv.watchServer();
+    webserv.print_server_head();
+    // webserv.start();
 
 	// const char* raw_request = 
     //     "POST /upload HTTP/1.1\n"

@@ -7,11 +7,16 @@ Connection::Connection(const Connection &other) : _fd(other._fd) {}
 Connection	&Connection::operator=(const Connection &other)
 {
 	if (this != &other)
+	{
 		_fd = other._fd;
+		_time = other._time;
+	}
 	return (*this);
 }
 
-Connection::~Connection() {}
+Connection::~Connection()
+{
+}
 
 Connection::Connection(fd server_fd)
 {
@@ -27,9 +32,11 @@ Connection::Connection(fd server_fd)
 	// FAIL:
 	if (fcntl(_fd, F_SETFL, fcntl(_fd, F_GETFL, 0) | O_NONBLOCK) < 0)
 	{
+		fail("Connection", errno);
 		if (_fd > 0)
 			close(_fd);
-		fail("Connection", errno);
+		_fd = -1;
+		return;
 	}
 	_time = time(NULL);
 }
@@ -47,7 +54,6 @@ Connection::operator std::time_t() const
 bool	Connection::getRequest()
 {
 	char	buffer[4096];
-	bool	keep = true;
 	while (true)
 	{
 		ssize_t bytes = read(_fd, buffer, sizeof(buffer));
@@ -61,9 +67,18 @@ bool	Connection::getRequest()
 			return (false);
 		else
 		{
-			if (errno != EAGAIN)
-				return (false);
+			if (errno == EAGAIN || errno == EWOULDBLOCK)
+				break;
+			return (false);
 		}
 	}
 	return (true);
+}
+
+bool	Connection::response()
+{
+	const char	*str = _rep;
+	if (write(_fd, str, std::strlen(str)) < 0 && errno != EAGAIN)
+		return (fail("Response", errno), 1);
+	return (0);
 }

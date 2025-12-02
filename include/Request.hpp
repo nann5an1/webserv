@@ -1,8 +1,8 @@
 #ifndef REQUEST_HPP
 #define REQUEST_HPP
 
-#include "Webserv.hpp"
-#include "Server.hpp"
+// #include "Webserv.hpp"
+// #include "Server.hpp"
 #include <iostream>
 #include <map>
 #include <cstring>
