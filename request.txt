@@ -43,7 +43,8 @@ Content-Length: 514
 Content-Disposition: form-data; name="file"; filename="test.jpg"
 Content-Type: image/jpeg
 
-(binary data)
+\xFF\xD8\xFF\xE0\x00\x10\x4A\x46\x49\x46\x00\x01 
+\xFF\xD9
 ------ABC123--
 
 

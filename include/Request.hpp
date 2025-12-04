@@ -33,6 +33,7 @@ class Request{
         bool bool_cgi;
         bool bool_boundary;
         bool bool_referer;
+        bool bool_binary;
         std::string cgi_env;
         std::string boundary;
         std::string referer;
@@ -47,6 +48,7 @@ class Request{
         // Request &operator=(const Request &other);
         void parseRequest(const char *raw_request);
         void fetchServerScope();
+        void read_binary(std::string &line);
 };
 
 #endif

@@ -18,6 +18,7 @@ Request::Request():
     bool_cgi(false),
     bool_boundary(false),
     bool_referer(false),
+    bool_binary(false),
     cgi_env("")
 {
     content_types["application/json"] = JSON;
@@ -58,6 +59,16 @@ std::string toLower(std::string token){
     return result;
 }
 
+void Request::read_binary(std::string &line){
+    std::stringstream stream(line);
+    std::string sentence;
+
+    while(std::getline(stream, sentence) &&
+    sentence.find(this->boundary) != std::string::npos){
+        this->body += sentence;
+    }
+}
+
 
 //----------------- request parsing --------------------
 void Request::parseRequest(const char *raw_request){
@@ -79,7 +90,8 @@ void Request::parseRequest(const char *raw_request){
     while(std::getline(iss, line)){
         std::stringstream stream(line);
         std::string token;
-
+        
+        if(bool_boundary && line.empty()) bool_binary = true;
         while(stream >> token){ //toLower is applied because headers are case-insensitive
             // std::cout << token << std::endl;
             if(token == "POST" || token == "GET"  || token == "DELETE") this->method = token;
@@ -163,6 +175,9 @@ void Request::parseRequest(const char *raw_request){
                 this->body = token;
             }
         }
+        if(bool_binary){
+            read_binary(line);
+        }
     }
 
     if(bool_cgi){
@@ -182,8 +197,11 @@ void Request::parseRequest(const char *raw_request){
               << "CGI boolean >> " << this->bool_cgi << "\n"
               << "Body >> " << this->body << "\n"
               << "CGI env >> \n" << this->cgi_env << "\n"
-              << "File upload filename >> " << this->filename
+              << "File upload filename >> " << this->filename << "\n"
+              << "Boolean binary >> " << this->bool_binary << "\n"
+              << "Binary content >> " << this->binary_data
               << std::endl;
+    // bool_binary = false;
 }
 
 //-------------------- fetch the correct server scope from webserv ----------------
