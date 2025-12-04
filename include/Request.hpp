@@ -28,9 +28,16 @@ class Request{
         int content_type;
         int content_len;
         std::string conn_status;
+        std::string query;
         std::string body;
         bool bool_cgi;
+        bool bool_boundary;
+        bool bool_referer;
         std::string cgi_env;
+        std::string boundary;
+        std::string referer;
+        std::string filename;
+        std::string binary_data;
         std::map<std::string, content_category> content_types;
         // std::map<std::string, Server> attachServer;
     public:

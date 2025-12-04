@@ -14,7 +14,10 @@ Request::Request():
     content_len(0),
     conn_status(""),
     body(""),
+    filename(""),
     bool_cgi(false),
+    bool_boundary(false),
+    bool_referer(false),
     cgi_env("")
 {
     content_types["application/json"] = JSON;
@@ -60,8 +63,6 @@ std::string toLower(std::string token){
 void Request::parseRequest(const char *raw_request){
     // std::map<std::string, content_category> content_types;
     
-    
-
     bool_cgi = false;
     bool hostname = false;
     bool bool_content_len = false;
@@ -78,7 +79,7 @@ void Request::parseRequest(const char *raw_request){
     while(std::getline(iss, line)){
         std::stringstream stream(line);
         std::string token;
-        // std::cout << "Tokens" << std::endl;
+
         while(stream >> token){ //toLower is applied because headers are case-insensitive
             // std::cout << token << std::endl;
             if(token == "POST" || token == "GET"  || token == "DELETE") this->method = token;
@@ -100,7 +101,7 @@ void Request::parseRequest(const char *raw_request){
                     if(ext == "php" || ext == "py" || ext == "pl" || ext == "sh" || ext == "rb") this->bool_cgi = true;
                 }
                 if(this->method == "GET" && queryIdx != std::string::npos){ //query parsing
-                    std::string query = token.substr(queryIdx + 1, token.length() - queryIdx);
+                    this->query = token.substr(queryIdx + 1, token.length() - queryIdx);
                     // std::cout << "query >> " << query << std::endl;
                     this->cgi_env += query + "\n";
                 }
@@ -112,15 +113,19 @@ void Request::parseRequest(const char *raw_request){
             else if(toLower(token)  == "content-length:") bool_content_len = true;
             else if(toLower(token)  == "connection:") bool_connection = true;
             else if(toLower(token) == "content-type:") bool_cont_type = true;
+            else if(toLower(token) == "referer:") bool_referer = true;
             else if(bool_content_len){
                 if(validate_len(token)) this->content_len = atoi(token.c_str());
+                this->cgi_env += "CONTENT_LENGTH=" + token + "\n";
                 bool_content_len = false;
             }
             else if(hostname){
                 //will be the value after the host
                 int idx = token.find(":"); //index of the ':'
                 this->hostname = token.substr(0, idx);
-                this->port = atoi(token.substr(idx + 1, (token.length()) - idx - 1).c_str());
+                token = token.substr(idx + 1, (token.length()) - idx - 1).c_str();
+                this->port = atoi(token.c_str());
+                this->cgi_env += "SERVER_PORT=" + token + "\n";
                 hostname = false;
             }
             else if(bool_connection){
@@ -131,15 +136,42 @@ void Request::parseRequest(const char *raw_request){
                 if(!this->content_types[token])
                     std::cout << "error content type" << std::endl;
                 this->content_type = this->content_types[token];
+                
                 // std::cout << "content type >> " << content_type << std::endl;
+                this->cgi_env += "CONTENT_TYPE=" + token + "\n";
                 bool_cont_type = false;
             }
-            else if(token.find("=") != std::string::npos){
+            else if(token.find("boundary=") != std::string::npos){
+                int idx = token.find("=");
+                this->boundary = token.substr(idx + 1, token.length() - idx - 1);
+                std::cout << "boundary >> " << this->boundary << std::endl;
+            }
+            else if(token == this->boundary){
+                bool_boundary = true;
+            }
+            else if(token.find("filename") != std::string::npos){
+                int firstIdx = token.find("\"");
+                int lastIdx = token.length() - 1;
+                this->filename = token.substr(firstIdx + 1, lastIdx - firstIdx - 1);
+
+            }
+            else if(bool_referer){
+                this->referer = token;
+                bool_referer = false;
+            }
+            else if(!bool_boundary && token.find("=") != std::string::npos){ //body parsing
                 this->body = token;
             }
         }
     }
 
+    if(bool_cgi){
+        this->cgi_env += "REQUEST_METHOD=" + this->method + "\n" +
+                         "QUERY_STRING=" + this->query + "\n" +
+                         "SERVER_NAME=" + this->hostname + "\n" +
+                         "SERVER_PROTOCOL=" + this->version + "\n" +
+                         "SCRIPT_NAME=" + this->path + "\n";
+    }
     std::cout << "-------- Request parsing -------" << "\n"
               << "Method >> " << this->method << "\n"
               << "Hostname >> " << this->hostname << "\n"
@@ -149,7 +181,8 @@ void Request::parseRequest(const char *raw_request){
               << "Content-Type >> " << this->content_type << "\n"
               << "CGI boolean >> " << this->bool_cgi << "\n"
               << "Body >> " << this->body << "\n"
-              << "CGI env >> " << this->cgi_env
+              << "CGI env >> \n" << this->cgi_env << "\n"
+              << "File upload filename >> " << this->filename
               << std::endl;
 }
 

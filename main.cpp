@@ -9,8 +9,8 @@ int main(int ac, char **av)
 
     Webserv webserv;
     webserv.fileParser(av[1]);
-    webserv.print_server_head();
-    webserv.start();
+    // webserv.print_server_head();
+    // webserv.start();
 
 	// const char* raw_request = 
     //     "POST /upload HTTP/1.1\n"
@@ -25,16 +25,29 @@ int main(int ac, char **av)
     //     "Accept: text/html\n"
     //     "Connection: close";
 
-    const char* raw_request3 = 
-    "POST /script.php HTTP/1.1\n"
-    "Host: localhost:8080\n"
-    "Content-Type: application/x-www-form-urlencoded\n"
-    "Content-Length: 19\n"
+    // const char* raw_request3 = 
+    // "POST /script.php HTTP/1.1\n"
+    // "Host: localhost:8080\n"
+    // "Content-Type: application/x-www-form-urlencoded\n"
+    // "Content-Length: 19\n"
 
-    "name=john&age=20";
+    // "name=john&age=20";
+
+   const char* raw_request4 =
+    "POST /upload HTTP/1.1\r\n"
+    "Host: localhost:8080\r\n"
+    "Content-Type: multipart/form-data; boundary=----ABC123\r\n"
+    "Content-Length: 514\r\n"
+    "\r\n"
+    "------ABC123\r\n"
+    "Content-Disposition: form-data; name=\"file\"; filename=\"test.jpg\"\r\n"
+    "Content-Type: image/jpeg\r\n"
+    "\r\n"
+    /* JPEG bytes would go here */
+    "------ABC123--\r\n";
 
 	Request req;
-    req.parseRequest(raw_request3);
+    req.parseRequest(raw_request4);
 
     // if (req.parseRequest(raw_request)) {
     //     std::cout << "Method: " << req.getMethod() << "\n";
