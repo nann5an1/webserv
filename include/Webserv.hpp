@@ -35,6 +35,7 @@ class	Webserv
 		int		server_add(std::set<fd> &sever_fds);
 		int		create_con(fd event_fd);
 		void	timeout();
+		int		servers_start();
 
 	public:
 		Webserv();

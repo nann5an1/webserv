@@ -10,7 +10,7 @@ int main(int ac, char **av)
     Webserv webserv;
     webserv.fileParser(av[1]);
     webserv.print_server_head();
-    // webserv.start();
+    webserv.start();
 
 	// const char* raw_request = 
     //     "POST /upload HTTP/1.1\n"
