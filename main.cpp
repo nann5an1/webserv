@@ -4,8 +4,6 @@
 
 extern std::map<int, const char*>	gphrase;
 
-extern const std::string	CRLF = "\r\n";
-
 void	init_gphrase()
 {
 	// 0xx Not found

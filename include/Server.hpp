@@ -23,6 +23,11 @@
 
 // TEMP~ i want to overload the sock, but not as int, 
 // bcuz i rather overload int as port but not sure yet. Let me test this first. Thank you :)
+
+extern std::map<int, const char*>	gphrase;
+
+extern const std::string	CRLF = "\r\n";
+
 struct	fd 
 {
    	int fd_;
