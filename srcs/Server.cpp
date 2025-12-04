@@ -6,7 +6,7 @@ fd::fd(int fd_) : fd_(fd_) {}
 
 fd::operator int() const {return (fd_);}
 
-Server::Server() {
+Server::Server() : _server_name(0), _fd() {
 }
 
 Server::~Server(){
