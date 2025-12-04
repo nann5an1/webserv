@@ -219,6 +219,8 @@ int	Webserv::start()
 	if (_ep_fd < 0)
 		return (fail("Epoll", errno));
 	servers_start();
+	fd	test = _servers[0];
+	// print_server_head();
 	_status = server_add(server_fds);
 	std::cerr << "[webserv] server_add returned status: " << _status << std::endl;
 	if (_status)
