@@ -11,7 +11,7 @@ class	Connection
 	private:
 		fd	_fd;
 		std::time_t	_time;
-		Request	_req;
+		// Request	_req;
 		Response _rep;
 	public:
 		Connection();
@@ -21,7 +21,7 @@ class	Connection
 
 		Connection(fd server_fd);
 
-		bool	getRequest();
+		bool	request();
 		bool	response();
 
 		operator	fd() const;

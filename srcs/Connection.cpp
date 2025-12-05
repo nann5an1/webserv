@@ -1,8 +1,8 @@
 #include "Connection.hpp"
 
-Connection::Connection() : _fd(-1) {}
+Connection::Connection() : _fd(-1), _time(0), _rep() {}
 
-Connection::Connection(const Connection &other) : _fd(other._fd) {}
+Connection::Connection(const Connection &other) : _fd(other._fd), _time(other._time), _rep(other._rep) {}
 
 Connection	&Connection::operator=(const Connection &other)
 {
@@ -10,6 +10,7 @@ Connection	&Connection::operator=(const Connection &other)
 	{
 		_fd = other._fd;
 		_time = other._time;
+		_rep = other._rep;
 	}
 	return (*this);
 }
@@ -39,6 +40,8 @@ Connection::Connection(fd server_fd)
 		return;
 	}
 	_time = time(NULL);
+	std::cout << "[connection]\tclient connected\t\t| socket:" << _fd << std::endl;
+
 }
 
 Connection::operator	fd() const
@@ -51,15 +54,17 @@ Connection::operator std::time_t() const
 	return (_time);
 }
 
-bool	Connection::getRequest()
+bool	Connection::request()
 {
 	char	buffer[4096];
+	std::string	req;
+
 	while (true)
 	{
 		ssize_t bytes = read(_fd, buffer, sizeof(buffer));
 		if (bytes > 0)
 		{
-			std::string	req(buffer, bytes);
+			req += std::string(buffer, bytes);
 			_time = time(NULL);
 		}
 		else if (bytes == 0)
@@ -71,13 +76,25 @@ bool	Connection::getRequest()
 			return (false);
 		}
 	}
+	std::cout << "[connection]\tclient request\t\t\t| socket:" << _fd << "\n\n"
+			  << req << std::endl;
 	return (true);
 }
 
 bool	Connection::response()
 {
-	const char	*str = _rep;
-	if (write(_fd, str, std::strlen(str)) < 0 && errno != EAGAIN)
-		return (fail("Response", errno), 1);
-	return (0);
+	const char* str = _rep.build();
+    size_t size = std::strlen(str);
+    ssize_t n = write(_fd, str, size);
+
+    if (n < 0)
+    {
+        if (errno == EAGAIN || errno == EWOULDBLOCK)
+            return false;   // wait for next epoll notification
+        return fail("Response", errno), true;
+    }
+
+    // all bytes sent (or small responses handled in one write)
+    std::cout << "[connection]\tclient received response | socket:" << _fd << "\n\n" << str << std::endl;
+    return true;
 }

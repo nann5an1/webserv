@@ -18,15 +18,10 @@
 #include <fstream>
 #include <sstream>
 
-#define	RED	"\033[31m"
-#define	RESET "\033[0m"
+#include "Utils.hpp"
 
 // TEMP~ i want to overload the sock, but not as int, 
 // bcuz i rather overload int as port but not sure yet. Let me test this first. Thank you :)
-
-extern std::map<int, const char*>	gphrase;
-
-extern const std::string	CRLF = "\r\n";
 
 struct	fd 
 {
@@ -85,6 +80,10 @@ class Server{
 		operator int() const;
 		operator std::string() const;
 
+		std::string	port() const;
+		std::string	ip() const;
+		std::string	name() const;
+
 		// int scopeValidation(std::ifstream &file);
 		int inputData(std::string &line);
 		int inputLocation(std::string line, t_location &location);
@@ -97,7 +96,5 @@ class ConfigFileError : public std::runtime_error {
 public:
 	ConfigFileError(); // constructor declaration
 };
-
-int	fail(std::string head, int err_no);
 
 #endif

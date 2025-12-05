@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Server.hpp"
+#include "Utils.hpp"
 
 class	Response
 {
@@ -14,6 +15,6 @@ class	Response
 		Response	&operator=(const Response &other);
 		~Response();
 
-		void	build();
+		const char*	build();
 		operator const char*() const;
 };

@@ -20,20 +20,17 @@ Response	&Response::operator=(const Response &other)
 
 Response::~Response() {}
 
-void	Response::build()
+const char*	Response::build()
 {
-	std::stringstream ss;
-    ss << _status;
-	_reply = "HTTP/1.1 " + ss.str() + " " + gphrase[_status] + CRLF +
+	_status = 200;
+	_type = "text/plain";
+	_body = "welcome from webserv!";
+	_size = std::strlen(_body.c_str());
+	_reply = "HTTP/1.1 " + to_string(_status) + " " + gphrase[_status] + CRLF +
 			 "Content-Type: " + _type + CRLF +
-			 "Content-Length: " + _size + CRLF +
+			 "Content-Length: " + to_string(_size) + CRLF +
 			 CRLF + _body + CRLF;
-
-	_reply = "HTTP/1.1 200 OK\r\n \
-			  Content-Type: text/html\r\n \
-			  Content-Length: 57\r\n \
-			  \r\n \
-			  <html><body><h1>Hello from my Webserv!</h1></body></html>";
+	return (*this);
 }
 
 Response::operator const char*() const

@@ -277,7 +277,7 @@ int	Server::start()
 		_sock_fd = -1;
 		return (status);
 	}
-	std::cerr << "[server] Started " << std::string(*this) << " socket:" << _sock_fd << std::endl;
+	std::cerr << "[server]\t" << std::string(*this) << "\t| socket:" << _sock_fd << " started - http://" << listen_ip << ":" << listen_port << std::endl;
 	return (0);
 }
 
@@ -347,8 +347,18 @@ void Server::print() const {
     std::cout << "=================================================\n";
 }
 
-int	fail(std::string head, int err_no)
+std::string	Server::port() const
 {
-	std::cerr << RED << "Error: " << head << ": " << strerror(err_no) << RESET << std::endl;
-	return (err_no);
+	return (listen_port);
 }
+
+std::string	Server::ip() const
+{
+	return (listen_ip);
+}
+
+std::string	Server::name() const
+{
+	return (_server_name);
+}
+
