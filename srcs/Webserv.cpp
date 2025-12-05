@@ -261,24 +261,19 @@ int	Webserv::start()
 						epoll_ctl(_ep_fd, EPOLL_CTL_MOD, event_fd, &mod_event);
 					}
 					else
-						goto cleanup_con;
+						con_close(event_fd);
 				}
 				else if (events[i].events & EPOLLOUT)
 				{
 					if (cur_con.response())
-						goto	cleanup_con;
+						con_close(event_fd);
 				}
 				else if (events[i].events & (EPOLLHUP | EPOLLERR))
 				{
 					std::cout << "epollhup epollerr" << std::endl;
-					goto	cleanup_con;
+					con_close(event_fd);
 				}
 			}
-			continue ;
-			cleanup_con:
-				epoll_ctl(_ep_fd, EPOLL_CTL_DEL, event_fd, NULL);
-				_cons.erase(event_fd);
-				close(event_fd);
 		}
 		timeout();
 	}
@@ -296,10 +291,9 @@ void	Webserv::timeout()
 		int	c_fd = it->first;
 		if (now - it->second > WAIT_TIME)
 		{
-			std::cout << "Client " << c_fd << " time out" << std::endl;
-			epoll_ctl(_ep_fd, EPOLL_CTL_DEL, c_fd, NULL);
+			std::cout << "[webserv]\tclient timeout\t\t\t| socket:" << c_fd << std::endl;
 			std::map<fd, Connection>::iterator	tmp = it++;
-			_cons.erase(tmp);
+			con_close(c_fd);
 		}
 		else
 			++it;
@@ -317,6 +311,14 @@ int	Webserv::servers_start()
 			return (_status);
 	}
 	return (0);
+}
+
+void	Webserv::con_close(fd fd_)
+{
+	epoll_ctl(_ep_fd, EPOLL_CTL_DEL, fd_, NULL);
+	std::cout << "[webserv]\tclient disconnected\t\t| socket:" << fd_ << std::endl;
+	_cons.erase(fd_);
+	close(fd_);
 }
 
 //trim spaces/tabs and validate

@@ -95,6 +95,12 @@ bool	Connection::response()
     }
 
     // all bytes sent (or small responses handled in one write)
-    std::cout << "[connection]\tclient received response | socket:" << _fd << "\n\n" << str << std::endl;
+    std::cout << "[connection]\tclient received response \t| socket:" << _fd << "\n\n" << str << std::endl;
     return true;
+}
+
+std::time_t	Connection::contime() const
+{
+	std::time_t	now = time(0);
+	return (now - _time);
 }

@@ -26,6 +26,8 @@ class	Connection
 
 		operator	fd() const;
 		operator	std::time_t() const;
+
+		std::time_t	contime() const;
 };
 
 #endif
