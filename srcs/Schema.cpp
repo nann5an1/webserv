@@ -1,9 +1,20 @@
-#ifndef SCHEMA_HPP
-#define SCHEMA_HPP
+#include "Schema.cpp"
+#include "Request.hpp"
+
+Schema::Schema(){}
 
 
-class Schema{
+Schema::~Schema(){}
 
+Schema::Schema(int request_cat){
+    switch (request_cat)
+    {
+    case 0:
+        CGI cgi();
+        cgi.execute("path from the server's config file");
+        break;
+    default:
+        break;
+    }
+    std::cout << request_category << std::endl;
 }
-
-#endif

@@ -145,6 +145,7 @@ std::string toLower(std::string token){
 //----------------- request parsing --------------------
 void Request::parseRequest(const char *raw_request){
     // std::map<std::string, content_category> content_types;
+    request_cat request_category;
     
     bool_cgi = false;
     bool hostname = false;
@@ -192,7 +193,10 @@ void Request::parseRequest(const char *raw_request){
                     // std::cout << "ext length >> " << length << std::endl;
                     std::string ext = token.substr(idx + 1, length);
                     // std::cout << "extension >> " << ext << std::endl;
-                    if(ext == "php" || ext == "py" || ext == "pl" || ext == "sh" || ext == "rb") this->bool_cgi = true;
+                    if(ext == "php" || ext == "py" || ext == "pl" || ext == "sh" || ext == "rb") {
+                        this->bool_cgi = true;
+                        request_category = CGI;
+                    }
                 }
                 if(this->method == "GET" && queryIdx != std::string::npos){ //query parsing
                     this->query = token.substr(queryIdx + 1, token.length() - queryIdx);
@@ -207,7 +211,10 @@ void Request::parseRequest(const char *raw_request){
             else if(toLower(token)  == "content-length:") bool_content_len = true;
             else if(toLower(token)  == "connection:") bool_connection = true;
             else if(!bool_boundary && toLower(token) == "content-type:") bool_cont_type = true;
-            else if(toLower(token) == "referer:") bool_referer = true;
+            else if(toLower(token) == "referer:"){ 
+                bool_referer = true;
+                request_category = REDIRECTION;
+            }
             else if(bool_content_len){
                 if(validate_len(token)) this->content_len = atoi(token.c_str());
                 this->cgi_env += "CONTENT_LENGTH=" + token + "\n";
@@ -239,6 +246,7 @@ void Request::parseRequest(const char *raw_request){
                 int idx = token.find("=");
                 this->boundary = token.substr(idx + 1, token.length() - idx - 1);
                 bool_boundary = true;
+                request_category = UPLOAD;
                 std::cout << "boundary >> " << this->boundary << std::endl;
             }
             else if(token.find("filename") != std::string::npos){

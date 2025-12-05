@@ -11,12 +11,21 @@
 #include <sstream>
 #include <bits/stdc++.h>
 
+extern request_cat request_category;
+
 
 enum content_category{
     ERROR,
     JSON,
     URLENCODED,
     FORM
+};
+
+enum request_cat{
+    CGI,
+    REDIRECTION,
+    UPLOAD,
+    AUTOINDEX
 };
 
 struct binary_file{
@@ -49,7 +58,6 @@ class Request{
         std::string binary_data;
         std::map<std::string, content_category> content_types;
         std::vector<binary_file> upload_files;
-        // std::map<std::string, Server> attachServer;
     public:
         Request();
         ~Request();
