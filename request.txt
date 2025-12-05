@@ -48,6 +48,26 @@ Content-Type: image/jpeg
 ------ABC123--
 
 
+
+=============== File Upload Request (multiple-part)==================
+POST /upload HTTP/1.1
+Host: localhost:8080
+Content-Type: multipart/form-data; boundary=----XYZ789
+Content-Length: 200
+
+------XYZ789
+Content-Disposition: form-data; name="file1"; filename="test.jpg"
+Content-Type: image/jpeg
+
+<binary data here>
+------XYZ789
+Content-Disposition: form-data; name="file2"; filename="example.bin"
+Content-Type: application/octet-stream
+
+<binary data here>
+------XYZ789--
+
+
 =========== Redirect Request with Referer Header ===========
 GET /old-page HTTP/1.1
 Host: example.com

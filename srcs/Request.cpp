@@ -59,15 +59,87 @@ std::string toLower(std::string token){
     return result;
 }
 
-void Request::read_binary(std::string &line){
-    std::stringstream stream(line);
-    std::string sentence;
+// void Request::parseSinglePart(const std::string &headers,
+//                               const std::string &binary)
+// {
+//     binary_file filePart;
 
-    while(std::getline(stream, sentence) &&
-    sentence.find(this->boundary) != std::string::npos){
-        this->body += sentence;
-    }
-}
+//     // --- Extract filename="..." ---
+//     std::string filename_key = "filename=\"";
+//     size_t filename_pos = headers.find(filename_key);
+//     if (filename_pos != std::string::npos) {
+//         filename_pos += filename_key.size();
+//         size_t end = headers.find("\"", filename_pos);
+//         if (end != std::string::npos)
+//             filePart.filename = headers.substr(filename_pos, end - filename_pos);
+//     }
+
+//     // --- Extract Content-Type: ---
+//     std::string ct_key = "Content-Type:";
+//     size_t ct_pos = headers.find(ct_key);
+//     if (ct_pos != std::string::npos) {
+//         ct_pos += ct_key.size();
+
+//         // Skip spaces after Content-Type:
+//         while (ct_pos < headers.size() && (headers[ct_pos] == ' ' || headers[ct_pos] == '\t'))
+//             ct_pos++;
+
+//         // End at newline
+//         size_t end = headers.find("\r\n", ct_pos);
+//         if (end == std::string::npos)
+//             end = headers.size();
+
+//         filePart.content_type = headers.substr(ct_pos, end - ct_pos);
+//     }
+
+//     // --- Store binary data ---
+//     filePart.data = binary;
+
+//     // Save to request
+//     this->upload_files.push_back(filePart);
+// }
+
+
+// void Request::extractMultipartFile(const std::string &body) {
+//     std::string boundary = "--" + this->boundary;
+//     size_t pos = 0;
+
+//     while (true) {
+//         // 1. Find boundary
+//         size_t boundary_pos = body.find(boundary, pos);
+//         if (boundary_pos == std::string::npos)
+//             break;
+
+//         // Move to after boundary line
+//         size_t headers_start = body.find("\r\n", boundary_pos);
+//         if (headers_start == std::string::npos)
+//             break;
+//         headers_start += 2;
+
+//         // 2. Find header/body separator
+//         size_t data_start = body.find("\r\n\r\n", headers_start);
+//         if (data_start == std::string::npos)
+//             break;
+//         data_start += 4; // skip the empty line
+
+//         // 3. Find next boundary FROM data_start
+//         size_t next_boundary = body.find(boundary, data_start);
+//         if (next_boundary == std::string::npos)
+//             break; // last part
+
+//         // 4. Extract headers and binary safely
+//         std::string headers = body.substr(headers_start,
+//                                           (data_start - 4) - headers_start);
+
+//         std::string binary = body.substr(data_start,
+//                                          next_boundary - data_start);
+
+//         parseSinglePart(headers, binary);
+
+//         pos = next_boundary;
+//     }
+// }
+
 
 
 //----------------- request parsing --------------------
@@ -79,19 +151,29 @@ void Request::parseRequest(const char *raw_request){
     bool bool_content_len = false;
     bool bool_connection = false;
     bool bool_cont_type = false;
+    bool bool_main_headers = false;
 
     size_t idx2;
     int length;
-    std::string header = raw_request;
     std::string line;
-    std::istringstream iss(header);
+    
+    const char* body_start = strstr(raw_request, "\r\n\r\n"); //returns the pointer to the first \r\n\r\n
+    size_t header_len = body_start - raw_request;
+    size_t body_len = strlen(raw_request) - header_len;
+
+    std::string header(raw_request, header_len);
+    std::string body(body_start + 4, body_len); //binary safe since the remaining data is dumped into body
+
+
+    /*-------------------------header handler  ----------------------*/
+    //will only process the header's 
+    std::istringstream iss(header); //take hte request as a string stream
 
     //process each header line
     while(std::getline(iss, line)){
         std::stringstream stream(line);
         std::string token;
         
-        if(bool_boundary && line.empty()) bool_binary = true;
         while(stream >> token){ //toLower is applied because headers are case-insensitive
             // std::cout << token << std::endl;
             if(token == "POST" || token == "GET"  || token == "DELETE") this->method = token;
@@ -124,7 +206,7 @@ void Request::parseRequest(const char *raw_request){
             else if(toLower(token)  == "host:") hostname = true;
             else if(toLower(token)  == "content-length:") bool_content_len = true;
             else if(toLower(token)  == "connection:") bool_connection = true;
-            else if(toLower(token) == "content-type:") bool_cont_type = true;
+            else if(!bool_boundary && toLower(token) == "content-type:") bool_cont_type = true;
             else if(toLower(token) == "referer:") bool_referer = true;
             else if(bool_content_len){
                 if(validate_len(token)) this->content_len = atoi(token.c_str());
@@ -156,10 +238,8 @@ void Request::parseRequest(const char *raw_request){
             else if(token.find("boundary=") != std::string::npos){
                 int idx = token.find("=");
                 this->boundary = token.substr(idx + 1, token.length() - idx - 1);
-                std::cout << "boundary >> " << this->boundary << std::endl;
-            }
-            else if(token == this->boundary){
                 bool_boundary = true;
+                std::cout << "boundary >> " << this->boundary << std::endl;
             }
             else if(token.find("filename") != std::string::npos){
                 int firstIdx = token.find("\"");
@@ -171,13 +251,14 @@ void Request::parseRequest(const char *raw_request){
                 this->referer = token;
                 bool_referer = false;
             }
-            else if(!bool_boundary && token.find("=") != std::string::npos){ //body parsing
-                this->body = token;
-            }
         }
-        if(bool_binary){
-            read_binary(line);
-        }
+    }
+    /*-------------------------body handler  ----------------------*/
+    if(this->bool_boundary){
+        // extractMultipartFile(body);
+        // printUploadedFiles();
+        std::cout << "multipart size" << "\n"
+                    << body.size() << std::endl;
     }
 
     if(bool_cgi){
@@ -196,16 +277,42 @@ void Request::parseRequest(const char *raw_request){
               << "Content-Type >> " << this->content_type << "\n"
               << "CGI boolean >> " << this->bool_cgi << "\n"
               << "Body >> " << this->body << "\n"
-              << "CGI env >> \n" << this->cgi_env << "\n"
+              << "\n << CGI env >> \n" << this->cgi_env << "\n"
               << "File upload filename >> " << this->filename << "\n"
-              << "Boolean binary >> " << this->bool_binary << "\n"
-              << "Binary content >> " << this->binary_data
+              << "Boolean boundary >> " << this->bool_boundary << "\n"
+            //   << "Binary content >> " << this->binary_data
               << std::endl;
-    // bool_binary = false;
 }
 
-//-------------------- fetch the correct server scope from webserv ----------------
+//-------------------- fetch the correct server scope from webserv 
 void Request::fetchServerScope(){
 
 }
 
+void Request::printUploadedFiles() const
+{
+    std::cout << "=== Uploaded Files (" 
+              << this->upload_files.size() 
+              << ") ===\n";
+
+    for (size_t i = 0; i < this->upload_files.size(); ++i)
+    {
+        const binary_file &f = this->upload_files[i];
+
+        std::cout << "\n[File #" << i+1 << "]\n";
+        std::cout << "Filename    : " << f.filename << "\n";
+        std::cout << "Content-Type: " << f.content_type << "\n";
+        std::cout << "Binary Size : " << f.data.size() << " bytes\n";
+
+        // Optional: show first 16 bytes of binary content
+        std::cout << "Binary Preview (hex): ";
+        for (size_t j = 0; j < f.data.size() && j < 16; ++j) {
+            unsigned char byte = (unsigned char)f.data[j];
+            std::cout << std::hex;
+            if (byte < 16) std::cout << '0';
+            std::cout << (int)byte << " ";
+            std::cout << std::dec;
+        }
+        std::cout << "\n";
+    }
+}

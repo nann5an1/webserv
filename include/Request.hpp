@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <vector>
 #include <sstream>
+#include <bits/stdc++.h>
 
 
 enum content_category{
@@ -16,6 +17,13 @@ enum content_category{
     JSON,
     URLENCODED,
     FORM
+};
+
+struct binary_file{
+    std::string filename;
+    std::string binary_data;
+    std::string content_type;
+    std::string data; 
 };
 
 class Request{
@@ -40,6 +48,7 @@ class Request{
         std::string filename;
         std::string binary_data;
         std::map<std::string, content_category> content_types;
+        std::vector<binary_file> upload_files;
         // std::map<std::string, Server> attachServer;
     public:
         Request();
@@ -48,7 +57,11 @@ class Request{
         // Request &operator=(const Request &other);
         void parseRequest(const char *raw_request);
         void fetchServerScope();
-        void read_binary(std::string &line);
+        // void extractMultipartFile(std::istream &iss);
+        void extractMultipartFile(const std::string &body);
+        void parseSinglePart(const std::string &headers,
+                              const std::string &binary);
+        void printUploadedFiles() const;              
 };
 
 #endif
