@@ -22,13 +22,14 @@
 #include "Connection.hpp"
 
 #define	MAX_EVENTS	1024
-#define WAIT_TIME	1000 // wait time: 1s
+#define WAIT_TIME	5 // wait time: 1s
 
 class	Webserv
 {
 	private:
-		std::vector<Server> _servers;	//take the sever class as type and save a collection of servers
+		std::vector<Server> 		_servers;	//take the sever class as type and save a collection of servers
 		std::map <fd, Connection>	_cons;
+
 		fd	_ep_fd;
 		int	_status;
 	
@@ -36,6 +37,7 @@ class	Webserv
 		int		create_con(fd event_fd);
 		void	timeout();
 		int		servers_start();
+		void	con_close(fd _fd);
 
 	public:
 		Webserv();
@@ -45,22 +47,15 @@ class	Webserv
 
 		void	fileParser(char *av);
 
-		int	scopeValidation(std::ifstream &file);
+		int		scopeValidation(std::ifstream &file);
 
-		int	start();
+		int		start();
 		void	print_server_head() const;
-		void printServers() const;
+		void	printServers() const;
 
 	
 };
 
-// Template function to print any map
-template <typename K, typename V>
-void printMap(const std::map<K, V> &m) {
-    for (typename std::map<K, V>::const_iterator it = m.begin(); it != m.end(); ++it) {
-        std::cout << it->first << " -> " << it->second << std::endl;
-    }
-}
 
 class ConfigValidationError : public std::runtime_error {
 public:

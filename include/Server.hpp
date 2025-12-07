@@ -1,10 +1,8 @@
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
-#include <iostream>
-#include <map>
-#include <cstring>
 #include <cstdlib>
+
 #include <vector>
 
 #include <sys/types.h>
@@ -13,16 +11,14 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
-#include <unistd.h>
-#include <errno.h>
-#include <fstream>
-#include <sstream>
 
-#define	RED	"\033[31m"
-#define	RESET "\033[0m"
+#include <fstream>
+
+#include "Utils.hpp"
 
 // TEMP~ i want to overload the sock, but not as int, 
 // bcuz i rather overload int as port but not sure yet. Let me test this first. Thank you :)
+
 struct	fd 
 {
    	int fd_;
@@ -31,21 +27,14 @@ struct	fd
     operator int() const;
 };
 
-template <class CharT, class Traits>
-std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>& os, const fd& other)
-{
-	os << other.fd_;
-	return (os);
-}
-
 //location scope that is to be under Server
 typedef struct	s_location
 {
-	bool	autoindex;
-	bool	get;
-	bool	post;
-	bool	del;
-	int		return_code;
+	bool		autoindex;
+	bool		get;
+	bool		post;
+	bool		del;
+	int			return_code;
 	std::string return_url;
 	std::string	root;
 	std::string	upload_dir;
@@ -58,16 +47,15 @@ typedef struct	s_location
 
 class Server{
     private:
-		fd	_sock_fd;
-
-		std::string _server_name;
-		std::string listen_port;
-		std::string listen_ip;
-		std::string root;
-		long long max_body_size;
+		fd			_sock_fd;
+		std::string _name;
+		std::string _port;
+		std::string _ip;
+		std::string _root;
+		long long	_max_size;
 		std::string location_path;
-		std::map<std::string, t_location> location_map;
-		std::map<int, std::string> err_pages;
+		std::map<std::string, t_location>	_locations;
+		std::map<int, std::string>			_err_pages;
     public:
         Server();
 		Server(std::ifstream &file, int server_scope);
@@ -79,6 +67,10 @@ class Server{
 		operator fd() const;
 		operator int() const;
 		operator std::string() const;
+
+		std::string	port() const;
+		std::string	ip() const;
+		std::string	name() const;
 
 		// int scopeValidation(std::ifstream &file);
 		int inputData(std::string &line);
@@ -92,7 +84,5 @@ class ConfigFileError : public std::runtime_error {
 public:
 	ConfigFileError(); // constructor declaration
 };
-
-int	fail(std::string head, int err_no);
 
 #endif

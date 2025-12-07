@@ -6,14 +6,12 @@ fd::fd(int fd_) : fd_(fd_) {}
 
 fd::operator int() const {return (fd_);}
 
-Server::Server() :	_sock_fd(-1), _server_name(""), listen_port(""), listen_ip(""), 
-					root(""), max_body_size(0), location_path ("")
+Server::Server() :	_sock_fd(-1), _name(""), _port(""), _ip(""), 
+					_root(""), _max_size(0), location_path ("")
 {
 }
 
-Server::~Server(){
-	// std::cout << "Server Destructor Called " << std::endl;
-}
+Server::~Server() {}
 
 std::string Server::trimSemiColon(std::string val){
 	if(val.find(";") == std::string::npos)	throw ConfigFileError();
@@ -32,7 +30,7 @@ int Server::validateHTTPCode(std::string &val){
 int Server::inputData(std::string &line){
 	std::string token;  
 	std::stringstream ss(line);
-	// bool server_name = false, listen = false, root= true, max_body = true, err_page = true;
+	// bool server_name = false, listen = false, _root= true, max_body = true, err_page = true;
 	// std::cout << "line in inputData >> " << line << std::endl;
 	
 	//line is the line by line
@@ -44,8 +42,8 @@ int Server::inputData(std::string &line){
 			if(!(ss >> value)) return 0;
 			else {
 				
-				this->_server_name = trimSemiColon(value);
-				// std::cout << "server name debug >> " << this->_server_name << std::endl;
+				this->_name = trimSemiColon(value);
+				// std::cout << "server name debug >> " << this->_name << std::endl;
 				break;
 			}
 			
@@ -55,23 +53,23 @@ int Server::inputData(std::string &line){
 			if(!(ss >> value)) return 0;
 			else{
 				int idx = value.find(":");
-				this->listen_ip  = value.substr(0, idx);
-				this->listen_port = trimSemiColon(value.substr(idx + 1, value.length() - idx - 1));
+				this->_ip  = value.substr(0, idx);
+				this->_port = trimSemiColon(value.substr(idx + 1, value.length() - idx - 1));
 				break;
-				// std::cout << "listen >> " << this->listen_ip << ":" << this->listen_port << std::endl;
+				// std::cout << "listen >> " << this->_ip << ":" << this->_port << std::endl;
 			}
 		}
 		else if(token == "root"){
 			if(!(ss >> value)) return 0;
 			else {
-				this->root = trimSemiColon(value);
+				this->_root = trimSemiColon(value);
 				break;
 			}
 		}
 		else if(token == "max_body_size"){
 			if(!(ss >> value)) return 0;
 			else{
-				this->max_body_size = atoi(value.c_str());
+				this->_max_size = atoi(value.c_str());
 				break;
 			}
 		}
@@ -84,7 +82,7 @@ int Server::inputData(std::string &line){
 				std::string path;
 				if(!(ss >> path)) return 0;
 				else{
-					this->err_pages.insert(std::pair<int, std::string>(atoi(value.c_str()), trimSemiColon(path)));
+					this->_err_pages.insert(std::pair<int, std::string>(atoi(value.c_str()), trimSemiColon(path)));
 					// break;
 				}
 			}
@@ -125,7 +123,7 @@ int Server::inputLocation(std::string line, t_location &location){
 			ss >> val;
 			val = trimSemiColon(val);
 			location.root = val;
-			// std::cout <<"location root >> " << location.root << std::endl;
+			// std::cout <<"location _root >> " << location._root << std::endl;
 		}
 		else if(token == "upload_dir"){
 			ss >> val;
@@ -158,11 +156,11 @@ int Server::inputLocation(std::string line, t_location &location){
 
 //will retrive the strating from the next line of the server scope
 Server::Server(std::ifstream &file, int serv_scope_start)
-: _server_name("default"), 
-  listen_port("default"),
-  listen_ip("default"),
-  root("default"),
-  max_body_size(0),
+: _name("default"), 
+  _port("default"),
+  _ip("default"),
+  _root("default"),
+  _max_size(0),
   location_path("default")
 {
 	// std::cout << "Server parameterized constructor" << std::endl;
@@ -198,7 +196,7 @@ Server::Server(std::ifstream &file, int serv_scope_start)
 			else if(tok == "}"){
 				location_scope--;
 				location_key--;
-				this->location_map.insert(std::pair<std::string, t_location>(this->location_path, location));
+				this->_locations.insert(std::pair<std::string, t_location>(this->location_path, location));
 				this->location_path = "default";
 			}
 			
@@ -219,21 +217,21 @@ Server::Server(std::ifstream &file, int serv_scope_start)
 		}
 		else if(server_scope <= 1)	break;
 	}
-	// std::cout << "server name >> " << this->_server_name << "\n"
-	// 			<< "listen >> " << this->listen_ip << ":" << this->listen_port << "\n"
-	// 			<< "root >> " << this->root << "\n"
-	// 			<< "max_body_size >> " << this->max_body_size << "\n" << std::endl;	
+	// std::cout << "server name >> " << this->_name << "\n"
+	// 			<< "listen >> " << this->_ip << ":" << this->_port << "\n"
+	// 			<< "_root >> " << this->_root << "\n"
+	// 			<< "_max_size >> " << this->_max_size << "\n" << std::endl;	
 }
 
 Server::Server(const Server &other):
-	_server_name(other._server_name),
-	listen_port(other.listen_port),
-	listen_ip(other.listen_ip),
-	root(other.root),
-	max_body_size(other.max_body_size),
+	_name(other._name),
+	_port(other._port),
+	_ip(other._ip),
+	_root(other._root),
+	_max_size(other._max_size),
 	location_path(other.location_path),
-	location_map(other.location_map),
-	err_pages(other.err_pages)
+	_locations(other._locations),
+	_err_pages(other._err_pages)
 
 {
     (void)other;
@@ -243,14 +241,14 @@ Server::Server(const Server &other):
 Server& Server:: operator=(const Server &other) {
     if (this != &other)
 	{
-		_server_name = other._server_name;
-		listen_port = other.listen_port;
-		listen_ip = other.listen_ip;
-		root = other.root;
-		max_body_size = other.max_body_size;
+		_name = other._name;
+		_port = other._port;
+		_ip = other._ip;
+		_root = other._root;
+		_max_size = other._max_size;
 		location_path = other.location_path;
-		location_map = other.location_map;
-		err_pages = other.err_pages;
+		_locations = other._locations;
+		_err_pages = other._err_pages;
 	}
     return *this;
 }
@@ -263,8 +261,8 @@ int	Server::start()
 	std::memset(&sock_addr, 0, sizeof(sock_addr));
 	sock_addr.sin_family = AF_INET;	
 	// TEMP~ I set the port to 8080 for test.
-	sock_addr.sin_port = htons(std::atoi(listen_port.c_str()));
-	sock_addr.sin_addr.s_addr = inet_addr(listen_ip.c_str());
+	sock_addr.sin_port = htons(std::atoi(_port.c_str()));
+	sock_addr.sin_addr.s_addr = inet_addr(_ip.c_str());
 	if ((_sock_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0 ||
 		setsockopt(_sock_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0 ||
 		bind(_sock_fd, (sockaddr *)&sock_addr, sizeof(sock_addr)) < 0 ||
@@ -277,7 +275,7 @@ int	Server::start()
 		_sock_fd = -1;
 		return (status);
 	}
-	std::cerr << "[server] Started " << std::string(*this) << " socket:" << _sock_fd << std::endl;
+	std::cerr << "[server]\t" << std::string(*this) << "\t| socket:" << _sock_fd << " started - http://" << _ip << ":" << _port << std::endl;
 	return (0);
 }
 
@@ -288,12 +286,12 @@ Server::operator	fd() const
 
 Server::operator	int() const
 {
-	return (std::atoi(listen_port.c_str()));
+	return (std::atoi(_port.c_str()));
 }
 
 Server::operator	std::string() const
 {
-	return (listen_ip + ":" + listen_port + ":" + _server_name);
+	return (_ip + ":" + _port + ":" + _name);
 }
 
 ConfigFileError::ConfigFileError()
@@ -304,19 +302,19 @@ ConfigFileError::ConfigFileError()
 //print out the values inside the server
 void Server::print() const {
     std::cout << "==================== SERVER ====================\n";
-    std::cout << "Server Name: " << _server_name << "\n";
-	std::cout << "Root: " << root << "\n";
-    std::cout << "IP: " << listen_ip << "\n";
-    std::cout << "Port: " << listen_port << "\n";
-    std::cout << "Max Body Size: " << max_body_size << "\n";
+    std::cout << "Server Name: " << _name << "\n";
+	std::cout << "Root: " << _root << "\n";
+    std::cout << "IP: " << _ip << "\n";
+    std::cout << "Port: " << _port << "\n";
+    std::cout << "Max Body Size: " << _max_size << "\n";
 
     std::cout << "\n-- Error Pages --\n";
-    for (std::map<int, std::string>::const_iterator it = err_pages.begin(); it != err_pages.end(); ++it) {
+    for (std::map<int, std::string>::const_iterator it = _err_pages.begin(); it != _err_pages.end(); ++it) {
         std::cout << it->first << " => " << it->second << "\n";
     }
 
     std::cout << "\n-- Locations --\n";
-    for (std::map<std::string, t_location>::const_iterator it = location_map.begin(); it != location_map.end(); ++it) {
+    for (std::map<std::string, t_location>::const_iterator it = _locations.begin(); it != _locations.end(); ++it) {
         const std::string &path = it->first;
         const t_location &loc = it->second;
 
@@ -347,8 +345,18 @@ void Server::print() const {
     std::cout << "=================================================\n";
 }
 
-int	fail(std::string head, int err_no)
+std::string	Server::port() const
 {
-	std::cerr << RED << "Error: " << head << ": " << strerror(err_no) << RESET << std::endl;
-	return (err_no);
+	return (_port);
 }
+
+std::string	Server::ip() const
+{
+	return (_ip);
+}
+
+std::string	Server::name() const
+{
+	return (_name);
+}
+

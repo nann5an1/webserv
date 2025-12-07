@@ -1,16 +1,19 @@
 #include "Webserv.hpp"
 #include "Server.hpp"
 #include "Request.hpp"
+#include "Utils.hpp"
 #include "CGI.hpp"
 
 
 int main(int ac, char **av)
 {
-    if(ac > 2) return 1;
+	if(ac > 2) 
+		return (1);
 
+	init_gphrase();
     Webserv webserv;
-    webserv.fileParser(av[1]);
-    // webserv.print_server_head();
+
+    webserv.fileParser("test.conf");
     // webserv.start();
 
 	// const char* raw_request = 
@@ -32,7 +35,9 @@ int main(int ac, char **av)
     // "Content-Type: application/x-www-form-urlencoded\n"
     // "Content-Length: 19\n"
 
+
     // "name=john&age=20";
+
 
 //    const char* raw_request4 =
 //     "POST /upload HTTP/1.1\r\n"
