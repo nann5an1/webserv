@@ -26,4 +26,12 @@ std::string	to_string(T value)
 	return (ss.str());
 }
 
+// Template function to print any map
+template <typename K, typename V>
+void	printMap(const std::map<K, V> &m) {
+    for (typename std::map<K, V>::const_iterator it = m.begin(); it != m.end(); ++it) {
+        std::cout << it->first << " -> " << it->second << std::endl;
+    }
+}
+
 #endif

@@ -11,8 +11,8 @@ int main(int ac, char **av)
 
 	init_gphrase();
     Webserv webserv;
-    webserv.fileParser(av[1]);
-    webserv.start();
+    webserv.fileParser("test.conf");
+    // webserv.start();
 
 	// const char* raw_request = 
     //     "POST /upload HTTP/1.1\n"

@@ -56,13 +56,6 @@ class	Webserv
 	
 };
 
-// Template function to print any map
-template <typename K, typename V>
-void printMap(const std::map<K, V> &m) {
-    for (typename std::map<K, V>::const_iterator it = m.begin(); it != m.end(); ++it) {
-        std::cout << it->first << " -> " << it->second << std::endl;
-    }
-}
 
 class ConfigValidationError : public std::runtime_error {
 public:
