@@ -272,7 +272,8 @@ void Request::parseRequest(const char *raw_request){
                     "SERVER_NAME=" + this->hostname + "\n" +
                     "SERVER_PROTOCOL=" + this->version + "\n" +
                     "SCRIPT_NAME=" + this->path + "\n";
-}
+}   
+    std::cout << "body part header >> " << this->body << "\n";
     std::cout << "-------- Request parsing -------" << "\n"
               << "Method >> " << this->method << "\n"
               << "Hostname >> " << this->hostname << "\n"

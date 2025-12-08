@@ -13,7 +13,7 @@ int main(int ac, char **av)
 	init_gphrase();
     Webserv webserv;
 
-    webserv.fileParser("test.conf");
+    // webserv.fileParser("test.conf");
     // webserv.start();
 
 	// const char* raw_request = 
@@ -29,11 +29,11 @@ int main(int ac, char **av)
     //     "Accept: text/html\n"
     //     "Connection: close";
 
-    // const char* raw_request3 = 
-    // "POST /script.php HTTP/1.1\n"
-    // "Host: localhost:8080\n"
-    // "Content-Type: application/x-www-form-urlencoded\n"
-    // "Content-Length: 19\n";
+    const char* raw_request3 = 
+    "POST /script.php HTTP/1.1\n"
+    "Host: localhost:8080\n"
+    "Content-Type: application/x-www-form-urlencoded\n"
+    "Content-Length: 19\n";
 
     // "name=john&age=20";
 
@@ -54,29 +54,29 @@ int main(int ac, char **av)
 //     "\r\n"
 //     "------ABC123--\r\n";
 
-     const char raw_request[] =
-        "POST /upload HTTP/1.1\r\n"
-        "Host: localhost:8080\r\n"
-        "Content-Type: multipart/form-data; boundary=----XYZ789\r\n"
-        "Content-Length: 500\r\n"
-        "\r\n"
-        "------XYZ789\r\n"
-        "Content-Disposition: form-data; name=\"file1\"; filename=\"test.jpg\"\r\n"
-        "Content-Type: image/jpeg\r\n"
-        "\r\n"
-        "\xFF\xD8\xFF\xE0\x00\x10\x4A\x46\x49\x46\x00\x01"   // fake JPEG header
-        "HelloWorld1"
-        "\xFF\xD9"
-        "\r\n"
-        "------XYZ789\r\n"
-        "Content-Disposition: form-data; name=\"file2\"; filename=\"example.bin\"\r\n"
-        "Content-Type: application/octet-stream\r\n"
-        "\r\n"
-        "\xDE\xAD\xBE\xEF\x00\x01\x02\x03"   // fake binary
-        "HelloWorld2"
-        "\xAA\xBB\xCC\xDD"
-        "\r\n"
-        "------XYZ789--\r\n";
+    //  const char raw_request[] =
+    //     "POST /upload HTTP/1.1\r\n"
+    //     "Host: localhost:8080\r\n"
+    //     "Content-Type: multipart/form-data; boundary=----XYZ789\r\n"
+    //     "Content-Length: 500\r\n"
+    //     "\r\n"
+    //     "------XYZ789\r\n"
+    //     "Content-Disposition: form-data; name=\"file1\"; filename=\"test.jpg\"\r\n"
+    //     "Content-Type: image/jpeg\r\n"
+    //     "\r\n"
+    //     "\xFF\xD8\xFF\xE0\x00\x10\x4A\x46\x49\x46\x00\x01"   // fake JPEG header
+    //     "HelloWorld1"
+    //     "\xFF\xD9"
+    //     "\r\n"
+    //     "------XYZ789\r\n"
+    //     "Content-Disposition: form-data; name=\"file2\"; filename=\"example.bin\"\r\n"
+    //     "Content-Type: application/octet-stream\r\n"
+    //     "\r\n"
+    //     "\xDE\xAD\xBE\xEF\x00\x01\x02\x03"   // fake binary
+    //     "HelloWorld2"
+    //     "\xAA\xBB\xCC\xDD"
+    //     "\r\n"
+    //     "------XYZ789--\r\n";
 
     Request req;
     req.parseRequest(raw_request3);
