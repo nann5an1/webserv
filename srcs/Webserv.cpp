@@ -2,7 +2,9 @@
 #include "Server.hpp"
 #include "Response.hpp"
 
-Webserv::Webserv() {}
+Webserv::Webserv() {
+	
+}
 
 Webserv::~Webserv()
 {

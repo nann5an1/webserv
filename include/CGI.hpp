@@ -7,11 +7,20 @@
 #include <sys/types.h>
 #include <ostream>
 #include <iostream>
-class CGI{
+#include <vector>
+#include "Request.hpp"
+#include <sys/wait.h>
+
+class Cgi{
+    private:
+        std::string _env;
+        char *env[50];
     public:
-        CGI();
-        ~CGI();
+        Cgi();
+        ~Cgi();
+        // Cgi(std::string &exec_path);
         void execute();
+        void addToEnv();
 };
 
 

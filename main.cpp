@@ -1,7 +1,7 @@
 #include "Webserv.hpp"
 #include "Server.hpp"
 #include "Request.hpp"
-#include "CGI.hpp"
+#include "Cgi.hpp"
 
 
 int main(int ac, char **av)
@@ -30,7 +30,7 @@ int main(int ac, char **av)
     // "POST /script.php HTTP/1.1\n"
     // "Host: localhost:8080\n"
     // "Content-Type: application/x-www-form-urlencoded\n"
-    // "Content-Length: 19\n"
+    // "Content-Length: 19\n";
 
     // "name=john&age=20";
 
@@ -74,22 +74,13 @@ int main(int ac, char **av)
     //     "\r\n"
     //     "------XYZ789--\r\n";
 
-    // Request req;
-    // req.parseRequest(raw_request);
+    Request req;
+    req.parseRequest(raw_request3);
 
-    // CGI cgi;
-    // cgi.execute();
+    // std::string path = "some path";
+    Cgi cgi_test;
+    cgi_test.execute();
 
-    // Schema schema(1);
-    // if (req.parseRequest(raw_request)) {
-    //     std::cout << "Method: " << req.getMethod() << "\n";
-    //     std::cout << "Path: " << req.getPath() << "\n";
-    //     std::cout << "Query: " << req.getQuery() << "\n";
-    //     std::cout << "HTTP Version: " << req.getHttpVersion() << "\n";
-    //     std::cout << "Host: " << req.getHostname() << "\n";
-    //     std::cout << "Port: " << req.getPort() << "\n";
-    //     std::cout << "Connection: " << req.getConnStatus() << "\n";
-    // }
     return 0;
     // Server	server;
 	// int		status;

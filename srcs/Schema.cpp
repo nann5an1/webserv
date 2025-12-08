@@ -10,9 +10,9 @@ Schema::Schema(int request_cat){
     switch (request_cat)
     {
     case 0:
-        CGI cgi();
-        cgi.execute("path from the server's config file");
-        break;
+        // CGI cgi("/bin/bash");
+        // cgi.execute();
+        // break;
     default:
         break;
     }

@@ -4,6 +4,8 @@
 #include <algorithm>
 #include <string>
 
+std::string cgi_env = "";
+
 Request::Request():
     method(""),
     path(""),
@@ -18,8 +20,8 @@ Request::Request():
     bool_cgi(false),
     bool_boundary(false),
     bool_referer(false),
-    bool_binary(false),
-    cgi_env("")
+    bool_binary(false)
+    // cgi_env("")
 {
     content_types["application/json"] = JSON;
     content_types["application/x-www-form-urlencoded"] = URLENCODED;
@@ -198,11 +200,8 @@ void Request::parseRequest(const char *raw_request){
                         request_category = CGI;
                     }
                 }
-                if(this->method == "GET" && queryIdx != std::string::npos){ //query parsing
+                if(this->method == "GET" && queryIdx != std::string::npos) //query parsing
                     this->query = token.substr(queryIdx + 1, token.length() - queryIdx);
-                    // std::cout << "query >> " << query << std::endl;
-                    this->cgi_env += query + "\n";
-                }
                 this->path = token;
                 
             }
@@ -217,7 +216,7 @@ void Request::parseRequest(const char *raw_request){
             }
             else if(bool_content_len){
                 if(validate_len(token)) this->content_len = atoi(token.c_str());
-                this->cgi_env += "CONTENT_LENGTH=" + token + "\n";
+                cgi_env += "CONTENT_LENGTH=" + token + "\n";
                 bool_content_len = false;
             }
             else if(hostname){
@@ -226,7 +225,7 @@ void Request::parseRequest(const char *raw_request){
                 this->hostname = token.substr(0, idx);
                 token = token.substr(idx + 1, (token.length()) - idx - 1).c_str();
                 this->port = atoi(token.c_str());
-                this->cgi_env += "SERVER_PORT=" + token + "\n";
+                cgi_env += "SERVER_PORT=" + token + "\n";
                 hostname = false;
             }
             else if(bool_connection){
@@ -239,7 +238,7 @@ void Request::parseRequest(const char *raw_request){
                 this->content_type = this->content_types[token];
                 
                 // std::cout << "content type >> " << content_type << std::endl;
-                this->cgi_env += "CONTENT_TYPE=" + token + "\n";
+                cgi_env += "CONTENT_TYPE=" + token + "\n";
                 bool_cont_type = false;
             }
             else if(token.find("boundary=") != std::string::npos){
@@ -270,7 +269,7 @@ void Request::parseRequest(const char *raw_request){
     }
 
     if(bool_cgi){
-        this->cgi_env += "REQUEST_METHOD=" + this->method + "\n" +
+        cgi_env += "REQUEST_METHOD=" + this->method + "\n" +
                          "QUERY_STRING=" + this->query + "\n" +
                          "SERVER_NAME=" + this->hostname + "\n" +
                          "SERVER_PROTOCOL=" + this->version + "\n" +
@@ -285,10 +284,10 @@ void Request::parseRequest(const char *raw_request){
               << "Content-Type >> " << this->content_type << "\n"
               << "CGI boolean >> " << this->bool_cgi << "\n"
               << "Body >> " << this->body << "\n"
-              << "\n << CGI env >> \n" << this->cgi_env << "\n"
+              << "\n << CGI env >> \n" << cgi_env << "\n"
               << "File upload filename >> " << this->filename << "\n"
               << "Boolean boundary >> " << this->bool_boundary << "\n"
-            //   << "Binary content >> " << this->binary_data
+              << "Request category >> " << request_category
               << std::endl;
 }
 

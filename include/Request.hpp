@@ -11,8 +11,9 @@
 #include <sstream>
 #include <bits/stdc++.h>
 
-extern request_cat request_category;
-
+extern int request_category;
+extern std::string cgi_env;
+extern std::string filename;
 
 enum content_category{
     ERROR,
@@ -51,7 +52,7 @@ class Request{
         bool bool_boundary;
         bool bool_referer;
         bool bool_binary;
-        std::string cgi_env;
+        // std::string cgi_env;
         std::string boundary;
         std::string referer;
         std::string filename;
