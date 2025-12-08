@@ -19,14 +19,6 @@
 // TEMP~ i want to overload the sock, but not as int, 
 // bcuz i rather overload int as port but not sure yet. Let me test this first. Thank you :)
 
-struct	fd 
-{
-   	int fd_;
-	fd();
-    fd(int FD);
-    operator int() const;
-};
-
 //location scope that is to be under Server
 typedef struct	s_location
 {
@@ -42,6 +34,8 @@ typedef struct	s_location
 	std::vector<std::string>	page_seq;
 	std::map<std::string, std::string>	cgi;
 	std::map<int, std::string> ret_pages;
+
+	std::string	rproxy;
 }	t_location;
 
 

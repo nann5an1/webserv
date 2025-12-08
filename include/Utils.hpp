@@ -11,6 +11,14 @@
 #define	RED	"\033[31m"
 #define	RESET "\033[0m"
 
+struct	fd 
+{
+   	int fd_;
+	fd();
+    fd(int FD);
+    operator int() const;
+};
+
 extern std::map<int, const char*>	gphrase;
 
 extern const std::string	CRLF;

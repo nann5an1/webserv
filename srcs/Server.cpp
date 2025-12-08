@@ -1,11 +1,5 @@
 #include "Server.hpp"
 
-fd::fd() : fd_(-1) {}
-
-fd::fd(int fd_) : fd_(fd_) {}
-
-fd::operator int() const {return (fd_);}
-
 Server::Server() :	_sock_fd(-1), _name(""), _port(""), _ip(""), 
 					_root(""), _max_size(0), location_path ("")
 {
@@ -147,6 +141,11 @@ int Server::inputLocation(std::string line, t_location &location){
 			val = trimSemiColon(val);
 			if(!validateHTTPCode(key)) return 0;
 			location.ret_pages.insert(std::pair<int, std::string>(atoi(key.c_str()), val));
+		}
+		else if (token == "proxy_pass")
+		{
+			ss >> token;
+			location.rproxy = trimSemiColon(token);
 		}
 	}
 	
@@ -325,8 +324,8 @@ void Server::print() const {
                   << (loc.post ? "POST " : "")
                   << (loc.del ? "DELETE " : "") << "\n";
         std::cout << "  root: " << loc.root << "\n";
-        std::cout << "  upload_dir: " << loc.upload_dir << "\n";
-
+        std::cout << "  upload_dir: " << loc.upload_dir << "\n"
+				  << "  proxy_pass: " << loc.rproxy << "\n";
         std::cout << "  index files: ";
         for (size_t i = 0; i < loc.index_files.size(); i++)
             std::cout << loc.index_files[i] << " ";

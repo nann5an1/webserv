@@ -2,6 +2,13 @@
 
 const std::string	CRLF = "\r\n";
 
+fd::fd() : fd_(-1) {}
+
+fd::fd(int fd_) : fd_(fd_) {}
+
+fd::operator int() const {return (fd_);}
+
+
 std::map<int, const char*>	gphrase;
 
 void	init_gphrase()
