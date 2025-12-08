@@ -10,9 +10,9 @@ Schema::Schema(int request_cat){
     switch (request_cat)
     {
     case 0:
-        // CGI cgi("/bin/bash");
+        // CGI cgi;
         // cgi.execute();
-        // break;
+        // break;   
     default:
         break;
     }

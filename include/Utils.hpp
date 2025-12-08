@@ -14,6 +14,9 @@
 extern std::map<int, const char*>	gphrase;
 
 extern const std::string	CRLF;
+// extern int   request_category;
+// extern std::string cgi_env;
+// extern std::string filename;
 
 void	init_gphrase();
 int		fail(std::string head, int err_no);

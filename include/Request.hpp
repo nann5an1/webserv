@@ -11,9 +11,6 @@
 #include <sstream>
 #include <bits/stdc++.h>
 
-extern int request_category;
-extern std::string cgi_env;
-extern std::string filename;
 
 enum content_category{
     ERROR,
@@ -57,7 +54,7 @@ class Request{
         std::string referer;
         std::string filename;
         std::string binary_data;
-        std::map<std::string, content_category> content_types;
+        std::map<std::string, content_category> content_types;>
         std::vector<binary_file> upload_files;
     public:
         Request();

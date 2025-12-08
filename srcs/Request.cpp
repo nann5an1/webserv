@@ -236,8 +236,6 @@ void Request::parseRequest(const char *raw_request){
                 if(!this->content_types[token])
                     std::cout << "error content type" << std::endl;
                 this->content_type = this->content_types[token];
-                
-                // std::cout << "content type >> " << content_type << std::endl;
                 cgi_env += "CONTENT_TYPE=" + token + "\n";
                 bool_cont_type = false;
             }
@@ -270,11 +268,11 @@ void Request::parseRequest(const char *raw_request){
 
     if(bool_cgi){
         cgi_env += "REQUEST_METHOD=" + this->method + "\n" +
-                         "QUERY_STRING=" + this->query + "\n" +
-                         "SERVER_NAME=" + this->hostname + "\n" +
-                         "SERVER_PROTOCOL=" + this->version + "\n" +
-                         "SCRIPT_NAME=" + this->path + "\n";
-    }
+                    "QUERY_STRING=" + this->query + "\n" +
+                    "SERVER_NAME=" + this->hostname + "\n" +
+                    "SERVER_PROTOCOL=" + this->version + "\n" +
+                    "SCRIPT_NAME=" + this->path + "\n";
+}
     std::cout << "-------- Request parsing -------" << "\n"
               << "Method >> " << this->method << "\n"
               << "Hostname >> " << this->hostname << "\n"
@@ -292,9 +290,7 @@ void Request::parseRequest(const char *raw_request){
 }
 
 //-------------------- fetch the correct server scope from webserv 
-void Request::fetchServerScope(){
 
-}
 
 void Request::printUploadedFiles() const
 {
