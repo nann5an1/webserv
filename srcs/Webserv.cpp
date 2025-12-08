@@ -171,10 +171,8 @@ void	Webserv::print_server_head() const
 	}
 }
 
-
 int	Webserv::server_add(std::set<fd> &server_fds)
 {
-	std::cerr << "[webserv] Registering " << _servers.size() << " server(s) with epoll" << std::endl;
 	for(std::size_t i = 0; i < _servers.size(); ++i)
 	{
 		fd	s_fd = _servers[i];
@@ -221,10 +219,12 @@ int	Webserv::start()
 	if (_ep_fd < 0)
 		return (fail("Epoll", errno));
 	servers_start();
+	// print_server_head();
 	_status = server_add(server_fds);
-	std::cerr << "[webserv] server_add returned status: " << _status << std::endl;
+
 	if (_status)
 		return (_status);
+	std::cerr << "[webserv]\tservers registering succeed" << std::endl;
 
 	epoll_event	events[MAX_EVENTS];
 
@@ -255,7 +255,7 @@ int	Webserv::start()
 				Connection	&cur_con = it->second;
 				if (events[i].events & EPOLLIN)
 				{
-					if (cur_con.getRequest())
+					if (cur_con.request())
 					{
 						struct	epoll_event	mod_event;
 						mod_event.events = EPOLLOUT | EPOLLET;
@@ -263,21 +263,17 @@ int	Webserv::start()
 						epoll_ctl(_ep_fd, EPOLL_CTL_MOD, event_fd, &mod_event);
 					}
 					else
-					{
-						epoll_ctl(_ep_fd, EPOLL_CTL_DEL, event_fd, NULL);
-						_cons.erase(event_fd);
-					}
+						con_close(event_fd);
 				}
 				else if (events[i].events & EPOLLOUT)
 				{
-					cur_con.response();
-					epoll_ctl(_ep_fd, EPOLL_CTL_DEL, event_fd, NULL);
-					_cons.erase(event_fd);
+					if (cur_con.response())
+						con_close(event_fd);
 				}
 				else if (events[i].events & (EPOLLHUP | EPOLLERR))
 				{
-					epoll_ctl(_ep_fd, EPOLL_CTL_DEL, event_fd, NULL);
-					_cons.erase(event_fd);
+					std::cout << "epollhup epollerr" << std::endl;
+					con_close(event_fd);
 				}
 			}
 		}
@@ -297,10 +293,9 @@ void	Webserv::timeout()
 		int	c_fd = it->first;
 		if (now - it->second > WAIT_TIME)
 		{
-			std::cout << "Client " << c_fd << " time out" << std::endl;
-			epoll_ctl(_ep_fd, EPOLL_CTL_DEL, c_fd, NULL);
+			std::cout << "[webserv]\tclient timeout\t\t\t| socket:" << c_fd << std::endl;
 			std::map<fd, Connection>::iterator	tmp = it++;
-			_cons.erase(tmp);
+			con_close(c_fd);
 		}
 		else
 			++it;
@@ -310,7 +305,7 @@ void	Webserv::timeout()
 int	Webserv::servers_start()
 {
 	int	size = _servers.size();
-	std::cerr << "[webserv] Starting " << size << " server(s)" << std::endl;
+	std::cerr << "[webserv]\tstarting " << size << " server(s)" << std::endl;
 	for (int i = 0; i < size; ++i)
 	{
 		_status = _servers[i].start();
@@ -318,6 +313,14 @@ int	Webserv::servers_start()
 			return (_status);
 	}
 	return (0);
+}
+
+void	Webserv::con_close(fd fd_)
+{
+	epoll_ctl(_ep_fd, EPOLL_CTL_DEL, fd_, NULL);
+	std::cout << "[webserv]\tclient disconnected\t\t| socket:" << fd_ << std::endl;
+	_cons.erase(fd_);
+	close(fd_);
 }
 
 //trim spaces/tabs and validate
