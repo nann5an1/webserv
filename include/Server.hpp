@@ -72,6 +72,8 @@ class Server{
 		std::string trimSemiColon(std::string val);
 		int validateHTTPCode(std::string &val);
 		void print() const;
+
+		int response();
 };
 
 class ConfigFileError : public std::runtime_error {
