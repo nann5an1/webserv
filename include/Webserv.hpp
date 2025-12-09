@@ -27,8 +27,9 @@
 class	Webserv
 {
 	private:
-		std::vector<Server> 		_servers;	//take the sever class as type and save a collection of servers
-		std::map <fd, Connection>	_cons;
+		std::vector<Server> 			_s_configs;	//take the sever class as type and save a collection of servers
+		std::map <fd, const Server&>	_servers;		
+		std::map <fd, Connection>		_cons;
 
 		fd	_ep_fd;
 		int	_status;

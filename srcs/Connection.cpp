@@ -19,8 +19,10 @@ Connection::~Connection()
 {
 }
 
-Connection::Connection(fd server_fd)
+Connection::Connection(const Server &server)
 {
+	_server = server;
+	fd	server_fd = _server;
 	sockaddr_in	client_addr;
 	socklen_t	client_len = sizeof(client_addr);
 	_fd = accept(server_fd, (sockaddr *)&client_addr, &client_len);

@@ -12,14 +12,15 @@ class	Connection
 		fd	_fd;
 		std::time_t	_time;
 		// Request	_req;
-		Response _rep;
+		Response	_rep;
+		Server		_server;
 	public:
 		Connection();
 		Connection(const Connection &other);
 		Connection	&operator=(const Connection &other);
 		~Connection();
 
-		Connection(fd server_fd);
+		Connection(const Server &server);
 
 		bool	request();
 		bool	response();
