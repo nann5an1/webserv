@@ -65,6 +65,8 @@ class Server{
 		std::string	port() const;
 		std::string	ip() const;
 		std::string	name() const;
+		std::string	root() const;
+		const std::map<std::string, t_location>&	locations() const;
 
 		// int scopeValidation(std::ifstream &file);
 		int inputData(std::string &line);

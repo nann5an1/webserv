@@ -268,13 +268,13 @@ int	Server::start()
 		fcntl(_sock_fd, F_SETFL, fcntl(_sock_fd, F_GETFL, 0) | O_NONBLOCK) < 0 ||
 		listen(_sock_fd, SOMAXCONN) < 0)
 	{
-		int status = fail("Server", errno);
+		int status = fail("Server: " + std::string(*this), errno);
 		if (_sock_fd > 0)
 			close(_sock_fd);
 		_sock_fd = -1;
 		return (status);
 	}
-	std::cerr << "[server]\t" << std::string(*this) << "\t| socket:" << _sock_fd << " started - http://" << _ip << ":" << _port << std::endl;
+	std::cout << "[server]\t" << std::string(*this) << "\t| socket:" << _sock_fd << " started - http://" << _ip << ":" << _port << std::endl;
 	return (0);
 }
 
@@ -359,3 +359,12 @@ std::string	Server::name() const
 	return (_name);
 }
 
+const std::map<std::string, t_location>&	Server::locations() const
+{
+	return (_locations);
+}
+
+std::string	Server::root() const
+{
+	return (_root);
+}

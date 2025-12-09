@@ -1,8 +1,8 @@
 #include "Connection.hpp"
 
-Connection::Connection() : _fd(-1), _time(0), _rep() {}
+Connection::Connection() : _fd(-1), _time(0), _rep(), _server(NULL) {}
 
-Connection::Connection(const Connection &other) : _fd(other._fd), _time(other._time), _rep(other._rep) {}
+Connection::Connection(const Connection &other) : _fd(other._fd), _time(other._time), _rep(other._rep), _server(other._server) {}
 
 Connection	&Connection::operator=(const Connection &other)
 {
@@ -11,6 +11,7 @@ Connection	&Connection::operator=(const Connection &other)
 		_fd = other._fd;
 		_time = other._time;
 		_rep = other._rep;
+		_server = other._server;
 	}
 	return (*this);
 }
@@ -19,10 +20,9 @@ Connection::~Connection()
 {
 }
 
-Connection::Connection(const Server &server)
+Connection::Connection(const Server *server) : _server(server)
 {
-	_server = server;
-	fd	server_fd = _server;
+	fd	server_fd = *_server;
 	sockaddr_in	client_addr;
 	socklen_t	client_len = sizeof(client_addr);
 	_fd = accept(server_fd, (sockaddr *)&client_addr, &client_len);
@@ -80,11 +80,13 @@ bool	Connection::request()
 	}
 	std::cout << "[connection]\tclient request\t\t\t| socket:" << _fd << "\n\n"
 			  << req << std::endl;
+	
 	return (true);
 }
 
 bool	Connection::response()
 {
+	route();
 	const char* str = _rep.build();
     size_t size = std::strlen(str);
     ssize_t n = write(_fd, str, size);
@@ -99,6 +101,43 @@ bool	Connection::response()
     // all bytes sent (or small responses handled in one write)
     std::cout << "[connection]\tclient received response \t| socket:" << _fd << "\n\n" << str << std::endl;
     return true;
+}
+int Connection::route()
+{
+    std::string path = "/gh.html";
+    std::string final = "", loc = "", root = _server->root();
+
+    std::cout << "path: " << path << std::endl;
+    const t_location* location = NULL;
+
+    for (int i = path.size() - 1; i >= 0; --i)
+    {
+        if (path[i] == '/')
+        {
+            loc = path.substr(0, i);
+            location = get(_server->locations(), loc.empty() ? "/" : loc);
+            if (location)
+            {
+                // Use location root if set
+                root = location->root.empty() ? _server->root() : location->root;
+
+                final = root;
+                if (loc != "/")
+                    final += loc;            // append matched location
+                if (i + 1 < path.size())
+                    final += path.substr(i); // append remaining path after slash
+
+                break;
+            }
+        }
+    }
+
+    // Fallback if no location matched
+    if (!location)
+        final = root + path;
+
+    std::cout << "loc: " << loc << ", final: " << final << std::endl;
+    return 200;
 }
 
 std::time_t	Connection::contime() const

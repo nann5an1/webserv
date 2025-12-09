@@ -9,21 +9,23 @@
 class	Connection
 {
 	private:
-		fd	_fd;
-		std::time_t	_time;
+		fd				_fd;
+		std::time_t		_time;
 		// Request	_req;
-		Response	_rep;
-		Server		_server;
+		Response		_rep;
+		const Server	*_server;
 	public:
 		Connection();
 		Connection(const Connection &other);
 		Connection	&operator=(const Connection &other);
 		~Connection();
 
-		Connection(const Server &server);
+		Connection(const Server *server);
 
 		bool	request();
 		bool	response();
+		
+		int		route();
 
 		operator	fd() const;
 		operator	std::time_t() const;

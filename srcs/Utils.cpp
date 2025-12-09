@@ -61,9 +61,24 @@ void	init_gphrase()
 	gphrase[505] = "HTTP Version Not Supported";
 }
 
-
 int	fail(std::string head, int err_no)
 {
-	std::cerr << RED << "Error: " << head << ": " << strerror(err_no) << RESET << std::endl;
+	std::cerr << RED << "[error]\t\t" << head;
+	if (err_no > 0)
+		std::cerr << ": " << strerror(err_no);
+	std::cerr << RESET << std::endl;
 	return (err_no);
+}
+
+std::vector<std::string>	split(std::string str, const char delimiter)
+{
+	std::vector<std::string> result;
+    
+    std::stringstream ss(str);
+    std::string token;
+    
+    while (std::getline(ss, token, delimiter)) {
+        result.push_back(token);
+    }
+	return (result);
 }
