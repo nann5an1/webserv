@@ -9,6 +9,7 @@
 #include <iostream>
 #include <unistd.h>
 #include <errno.h>
+#include <sys/stat.h>
 
 #define	RED	"\033[31m"
 #define	RESET "\033[0m"
@@ -29,6 +30,7 @@ extern const std::string	CRLF;
 // extern std::string filename;
 
 void	init_gphrase();
+int		file_check(const char* path, bool dir, int mod);
 int		fail(std::string head, int err_no);
 std::vector<std::string>	split(std::string str, const char delimiter);
 

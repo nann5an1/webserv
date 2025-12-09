@@ -82,3 +82,38 @@ std::vector<std::string>	split(std::string str, const char delimiter)
     }
 	return (result);
 }
+
+int	file_check(const char* path, bool dir, int mod)
+{
+	struct stat st;
+	if (stat(path, &st) < 0)
+		return (404);
+	if (dir && !S_ISDIR(st.st_mode))
+		return (403);
+	if (access(path, mod) != 0)
+		return (403);
+	return (200);
+}
+// bool fileExists(const char* path) {
+//     struct stat st;
+//     return (stat(path, &st) == 0);
+// }
+
+// bool isDirectory(const char* path) {
+//     struct stat st;
+//     if (stat(path, &st) != 0) return false;
+//     return S_ISDIR(st.st_mode);
+// }
+
+// bool canRead(const char* path) {
+//     return (access(path, R_OK) == 0);
+// }
+
+// bool canWrite(const char* path) {
+//     return (access(path, W_OK) == 0);
+// }
+
+// bool canExecute(const char* path) {
+//     return (access(path, X_OK) == 0);
+// }
+
