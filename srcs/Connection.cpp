@@ -46,16 +46,6 @@ Connection::Connection(const Server *server) : _server(server)
 
 }
 
-Connection::operator	fd() const
-{
-	return (_fd);
-}
-
-Connection::operator std::time_t() const
-{
-	return (_time);
-}
-
 bool	Connection::request()
 {
 	char	buffer[4096];
@@ -144,4 +134,14 @@ std::time_t	Connection::contime() const
 {
 	std::time_t	now = time(0);
 	return (now - _time);
+}
+
+Connection::operator	fd() const
+{
+	return (_fd);
+}
+
+Connection::operator std::time_t() const
+{
+	return (_time);
 }
