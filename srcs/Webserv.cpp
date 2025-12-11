@@ -241,7 +241,7 @@ int	Webserv::start()
 		return (fail("Epoll", errno));
 	if (servers_start(server_fds) < 0)
 		return (fail("Servers: No servers were started successfully!", -1));
-	if (status = server_add())
+	if ((status = server_add()))
 		return (status);
 	std::cout << "[webserv]\tservers registering succeed" << std::endl;
 
@@ -298,7 +298,7 @@ int	Webserv::start()
 				}
 			}
 		}
-		timeout();
+		// timeout();
 	}
 	for (std::set<fd>::iterator it = server_fds.begin(); it != server_fds.end(); ++it)
 		close(*it);
