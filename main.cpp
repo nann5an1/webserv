@@ -15,10 +15,10 @@ int main(int ac, char **av)
 		av[1] = (char *)"aoo.conf";
 	#endif
 	webserv.fileParser(av[1]);
-	Connection	con(&webserv._servers[0]);
-	con.route();
+	// Connection	con(&webserv._servers[0]);
+	// con.route();
 	// webserv.printServers();
-	// if (webserv.start())
-	// 	return (1);
+	if (webserv.start())
+		return (1);
     return (0);
 }
