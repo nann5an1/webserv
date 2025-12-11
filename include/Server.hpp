@@ -34,7 +34,6 @@ typedef struct	s_location
 	std::vector<std::string>	page_seq;
 	std::map<std::string, std::string>	cgi;
 	std::map<int, std::string> ret_pages;
-
 	std::string	rproxy;
 }	t_location;
 

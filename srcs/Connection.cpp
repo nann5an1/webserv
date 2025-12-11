@@ -48,12 +48,12 @@ Connection::Connection(const Server *server) : _server(server)
 
 bool	Connection::request()
 {
-	char	buffer[4096];
+	char		buffer[4096];
 	std::string	req;
 
 	while (true)
 	{
-		ssize_t bytes = read(_fd, buffer, sizeof(buffer));
+		ssize_t bytes = read(1, buffer, sizeof(buffer));
 		if (bytes > 0)
 		{
 			req += std::string(buffer, bytes);
@@ -68,6 +68,7 @@ bool	Connection::request()
 			return (false);
 		}
 	}
+	_req.parseRequest(req.c_str());
 	std::cout << "[connection]\tclient request\t\t\t| socket:" << _fd << "\n\n"
 			  << req << std::endl;
 	
@@ -78,56 +79,57 @@ bool	Connection::response()
 {
 	route();
 	const char* str = _rep.build();
-    size_t size = std::strlen(str);
-    ssize_t n = write(_fd, str, size);
+	size_t size = std::strlen(str);
+	ssize_t n = write(0, str, size);
 
-    if (n < 0)
-    {
-        if (errno == EAGAIN || errno == EWOULDBLOCK)
-            return false;   // wait for next epoll notification
-        return fail("Response", errno), true;
-    }
+	if (n < 0)
+	{
+		if (errno == EAGAIN || errno == EWOULDBLOCK)
+			return (false);   // wait for next epoll notification
+		return (fail("Response", errno), true);
+	}
 
-    // all bytes sent (or small responses handled in one write)
-    std::cout << "[connection]\tclient received response \t| socket:" << _fd << "\n\n" << str << std::endl;
-    return true;
+	// all bytes sent (or small responses handled in one write)
+	std::cout << "[connection]\tclient received response \t| socket:" << _fd << "\n\n" << str << std::endl;
+	return (true);
 }
-int Connection::route()
+
+void	Connection::route()
 {
-    std::string path = "/gh.html";
-    std::string final = "", loc = "", root = _server->root();
+	std::string	path = _req.path();
+	std::string	final = "", loc = "", root = _server->root();
 
-    std::cout << "path: " << path << std::endl;
-    const t_location* location = NULL;
+	std::cout << "path: " << path << std::endl;
+	const t_location*	location = NULL;
 
-    for (int i = path.size() - 1; i >= 0; --i)
-    {
-        if (path[i] == '/')
-        {
-            loc = path.substr(0, i);
-            location = get(_server->locations(), loc.empty() ? "/" : loc);
-            if (location)
-            {
-                // Use location root if set
-                root = location->root.empty() ? _server->root() : location->root;
-
-                final = root;
-                if (loc != "/")
-                    final += loc;            // append matched location
-                if (i + 1 < path.size())
-                    final += path.substr(i); // append remaining path after slash
-
-                break;
-            }
-        }
-    }
-
-    // Fallback if no location matched
-    if (!location)
-        final = root + path;
-
-    std::cout << "loc: " << loc << ", final: " << final << std::endl;
-    return 200;
+	for (int i = path.size() - 1; i >= 0; --i)
+	{
+		if (path[i] == '/')
+		{
+			loc = path.substr(0, i);
+			location = get(_server->locations(), loc.empty() ? "/" : loc);
+			if (location)
+			{
+				root = location->root.empty() ? _server->root() : location->root;
+				final = root;
+				if (loc != "/")
+					final += loc;            // append matched location
+				if (i + 1 < path.size())
+					final += path.substr(i); // append remaining path after slash
+				break;
+			}
+		}
+	}
+	if (!location)
+		final = root + path;
+	std::cout << "loc: " << loc << ", final: " << final << std::endl;
+	
+	switch (_req.category())
+	{
+		case NORMAL:
+			normFeature::handle(final, _req, _rep, location);
+			break;
+	}
 }
 
 std::time_t	Connection::contime() const

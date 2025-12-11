@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <sys/stat.h>
+#include <fcntl.h>
 
 #define	RED	"\033[31m"
 #define	RESET "\033[0m"
@@ -24,14 +25,20 @@ struct	fd
 
 extern std::map<int, const char*>	gphrase;
 
+extern std::map<std::string, std::string> mime_types;
+
 extern const std::string	CRLF;
 // extern int   request_category;
 // extern std::string cgi_env;
 // extern std::string filename;
 
-void	init_gphrase();
-int		file_check(const char* path, bool dir, int mod);
+void	init_global();
+bool	is_dir(std::string path);
+int		file_check(std::string path, int mod);
 int		fail(std::string head, int err_no);
+int		read_file(std::string &path, std::string &data);
+
+
 std::vector<std::string>	split(std::string str, const char delimiter);
 
 template	<typename T>

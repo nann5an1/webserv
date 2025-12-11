@@ -5,15 +5,17 @@
 #include "Server.hpp"
 #include "Request.hpp"
 #include "Response.hpp"
+#include "IFeature.hpp"
 
 class	Connection
 {
 	private:
 		fd				_fd;
 		std::time_t		_time;
-		// Request	_req;
+		Request			_req;
 		Response		_rep;
 		const Server	*_server;
+
 	public:
 		Connection();
 		Connection(const Connection &other);
@@ -25,7 +27,7 @@ class	Connection
 		bool	request();
 		bool	response();
 		
-		int		route();
+		void	route();
 
 		operator	fd() const;
 		operator	std::time_t() const;

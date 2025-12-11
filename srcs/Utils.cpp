@@ -8,11 +8,28 @@ fd::fd(int fd_) : fd_(fd_) {}
 
 fd::operator int() const {return (fd_);}
 
-
 std::map<int, const char*>	gphrase;
 
-void	init_gphrase()
+std::map<std::string, std::string> mime_types;
+
+void	init_global()
 {
+	mime_types["html"] = "text/html";
+    mime_types["htm"]  = "text/html";
+    mime_types["css"]  = "text/css";
+    mime_types["js"]   = "application/javascript";
+    mime_types["json"] = "application/json";
+    mime_types["txt"]  = "text/plain";
+    mime_types["png"]  = "image/png";
+    mime_types["jpg"]  = "image/jpeg";
+    mime_types["jpeg"] = "image/jpeg";
+    mime_types["gif"]  = "image/gif";
+    mime_types["ico"]  = "image/x-icon";
+    mime_types["pdf"]  = "application/pdf";
+    mime_types["svg"]  = "image/svg+xml";
+    mime_types["xml"]  = "application/xml";
+    mime_types["zip"]  = "application/zip";
+
 	// 0xx Not found
 	gphrase[0] = "";
 
@@ -70,6 +87,25 @@ int	fail(std::string head, int err_no)
 	return (err_no);
 }
 
+int read_file(std::string &path, std::string &data)
+{
+	int	fd = open(path.c_str(), O_RDONLY);
+	if (fd < 0)
+		return (fail("File: " + path, errno), 206);
+
+	char	buffer[4096];
+	ssize_t n;
+	while ((n = read(fd, buffer, sizeof(buffer))) > 0)
+		data.append(buffer, n);
+	if (n < 0)
+	{
+		data.clear();
+		return (fail("File: " + path, errno), 206);
+	}
+	close(fd);
+	return (200);
+}
+
 std::vector<std::string>	split(std::string str, const char delimiter)
 {
 	std::vector<std::string> result;
@@ -83,14 +119,23 @@ std::vector<std::string>	split(std::string str, const char delimiter)
 	return (result);
 }
 
-int	file_check(const char* path, bool dir, int mod)
+bool	is_dir(std::string path)
+{
+	struct stat	st;
+
+	if (stat(path.c_str(), &st) == 0)
+	 	return (!S_ISDIR(st.st_mode));
+	return (false);
+}
+
+int	file_check(std::string path, int mod)
 {
 	struct stat st;
-	if (stat(path, &st) < 0)
+	const char *loc = path.c_str();
+
+	if (stat(loc, &st) < 0)
 		return (404);
-	if (dir && !S_ISDIR(st.st_mode))
-		return (403);
-	if (access(path, mod) != 0)
+	if (access(loc, mod) != 0)
 		return (403);
 	return (200);
 }
