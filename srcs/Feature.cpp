@@ -9,10 +9,12 @@ int	normFeature::handle(std::string	&path, Request &req, Response &rep, const t_
 		int status = file_check(path, R_OK);
 		if (status == 200)
 		{
-			rep._status = read_file(path, rep._body);
-			type = get(mime_types, req.ext());
-			if (!type)
-				*type = std::string("text/plain");
+			status = read_file(path, rep._body);
+			std::cout << "normal: " << status << std::endl;
+			std::cout << "req.ext(): " << req.ext() << std::endl;
+			// type = get(mime_types, req.ext());
+			// if (!type)
+			// 	*type = std::string("text/plain");
 			rep._type = *type;
 		}
 		else	

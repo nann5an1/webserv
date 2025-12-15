@@ -103,6 +103,7 @@ int read_file(std::string &path, std::string &data)
 		return (fail("File: " + path, errno), 206);
 	}
 	close(fd);
+	std::cout << "read file\n";
 	return (200);
 }
 
@@ -124,7 +125,7 @@ bool	is_dir(std::string path)
 	struct stat	st;
 
 	if (stat(path.c_str(), &st) == 0)
-	 	return (!S_ISDIR(st.st_mode));
+	 	return (S_ISDIR(st.st_mode));
 	return (false);
 }
 

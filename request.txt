@@ -79,6 +79,12 @@ DELETE /uploads/file.txt HTTP/1.1
 Host: localhost
 Connection: close
 
+=============== NORMAL GET Request ==============
+GET /index.html HTTP/1.1\r\n
+Host: 127.0.0.1:8081
+User-Agent: Mozilla/5.0
+Accept: text/html
+Connection: close
 
 
 

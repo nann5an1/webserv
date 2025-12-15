@@ -16,10 +16,8 @@ int main(int ac, char **av)
 	#endif
 	webserv.fileParser(av[1]);
 	// webserv.printServers();
-	Connection	con(&webserv._servers[0]);
-	con.request();
-	con.response();
-	// if (webserv.start())
-	// 	return (1);
+
+	if (webserv.start())
+		return (1);
     return (0);
 }

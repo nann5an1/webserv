@@ -4,6 +4,8 @@
 #include <algorithm>
 #include <string>
 
+std::string cgi_env = "";
+
 Request::Request():
     _method(""),
     _path(""),
@@ -13,14 +15,18 @@ Request::Request():
     content_type(-1),
     content_len(0),
     conn_status(""),
+    _query(""),
     _body(""),
-	_category(NORMAL),
+    _ext(""),
+    _category(NORMAL),
     bool_cgi(false),
     bool_boundary(false),
     bool_referer(false),
     bool_binary(false),
-	_ext(""),
-    cgi_env("")
+
+    cgi_env(""),
+    boundary(""),
+    referer("")
 {
     content_types["application/json"] = JSON;
     content_types["application/x-www-form-urlencoded"] = URLENCODED;
@@ -44,16 +50,14 @@ Request::~Request() {}
 //     return *this;
 // }
 
-bool	validate_len(std::string token)
-{
+bool validate_len(std::string token){
     for(size_t i = 0; i < token.length(); i++){
-		if(!isdigit(token[i]))
-			return false;
+        if(!isdigit(token[i]))  return false;
     }
     return true;
 }
 
-std::string	toLower(std::string token){
+std::string toLower(std::string token){
     std::string result = "";
     for(size_t i = 0; i < token.length(); i++){
         if(isalpha(token[i]))  result += (char)std::tolower(token[i]);
@@ -147,7 +151,10 @@ std::string	toLower(std::string token){
 
 //----------------- request parsing --------------------
 void Request::parseRequest(const char *raw_request){
-
+    // std::map<std::string, content_category> content_types;
+    request_cat request_category;
+    
+    bool_cgi = false;
     bool hostname = false;
     bool bool_content_len = false;
     bool bool_connection = false;
@@ -195,11 +202,10 @@ void Request::parseRequest(const char *raw_request){
                     // std::cout << "extension >> " << ext << std::endl;
                     if(ext == "php" || ext == "py" || ext == "pl" || ext == "sh" || ext == "rb") {
                         this->bool_cgi = true;
-                        _category = CGI;
-						_ext = ext;
+                        request_category = CGI;
                     }
                 }
-                if(this->_method == "GET" && queryIdx != std::string::npos) //_query parsing
+                if(this->_method == "GET" && queryIdx != std::string::npos) //query parsing
                     this->_query = token.substr(queryIdx + 1, token.length() - queryIdx);
                 this->_path = token;
                 
@@ -211,7 +217,7 @@ void Request::parseRequest(const char *raw_request){
             else if(!bool_boundary && toLower(token) == "content-type:") bool_cont_type = true;
             else if(toLower(token) == "referer:"){ 
                 bool_referer = true;
-                _category = REDIRECTION;
+                request_category = REDIRECTION;
             }
             else if(bool_content_len){
                 if(validate_len(token)) this->content_len = atoi(token.c_str());
@@ -242,7 +248,7 @@ void Request::parseRequest(const char *raw_request){
                 int idx = token.find("=");
                 this->boundary = token.substr(idx + 1, token.length() - idx - 1);
                 bool_boundary = true;
-                _category = UPLOAD;
+                request_category = UPLOAD;
                 std::cout << "boundary >> " << this->boundary << std::endl;
             }
             // else if(token.find("filename") != std::string::npos){
@@ -262,7 +268,7 @@ void Request::parseRequest(const char *raw_request){
         // extractMultipartFile(body);
         // printUploadedFiles();
         std::cout << "multipart size" << "\n"
-                    << _body.size() << std::endl;
+                    << body.size() << std::endl;
     }
 
     if(bool_cgi){
@@ -271,7 +277,8 @@ void Request::parseRequest(const char *raw_request){
                     "SERVER_NAME=" + this->hostname + "\n" +
                     "SERVER_PROTOCOL=" + this->version + "\n" +
                     "SCRIPT_NAME=" + this->_path + "\n";
-}
+}   
+    std::cout << "body part header >> " << this->_body << "\n";
     std::cout << "-------- Request parsing -------" << "\n"
               << "Method >> " << this->_method << "\n"
               << "Hostname >> " << this->hostname << "\n"
@@ -282,8 +289,9 @@ void Request::parseRequest(const char *raw_request){
               << "CGI boolean >> " << this->bool_cgi << "\n"
               << "Body >> " << this->_body << "\n"
               << "\n << CGI env >> \n" << cgi_env << "\n"
+            //   << "File upload filename >> " << this->_filename << "\n"
               << "Boolean boundary >> " << this->bool_boundary << "\n"
-              << "Request category >> " << _category
+              << "Request category >> " << request_category
               << std::endl;
 }
 
@@ -318,28 +326,27 @@ void Request::printUploadedFiles() const
     }
 }
 
-std::string	Request::path() const
+std::string Request::path() const
 {
-	return (_path);
+    return (_path);
 }
 
-std::string	Request::method() const
+std::string Request::method() const
 {
-	return (_method);
+    return (_method);
 }
 
-request_cat	Request::category() const
+request_cat Request::category() const
 {
-	return (_category);
+    return (_category);
 }
 
-std::vector<binary_file>	Request::binary_data() const
+std::vector<binary_file>    Request::binary_data() const
 {
-	return (_upload_files);
+    return (_upload_files);
 }
 
-std::string	Request::ext() const
+std::string Request::ext() const
 {
-	return (_ext);
+    return (_ext);
 }
-

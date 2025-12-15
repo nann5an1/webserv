@@ -53,7 +53,7 @@ bool	Connection::request()
 
 	while (true)
 	{
-		ssize_t bytes = read(1, buffer, sizeof(buffer));
+		ssize_t bytes = read(_fd, buffer, sizeof(buffer));
 		if (bytes > 0)
 		{
 			req += std::string(buffer, bytes);
@@ -79,15 +79,15 @@ bool	Connection::response()
 {
 	route();
 	const char* str = _rep.build();
-	size_t size = std::strlen(str);
-	ssize_t n = write(0, str, size);
+	// size_t size = std::strlen(str);
+	// ssize_t n = write(_fd, str, size);
 
-	if (n < 0)
-	{
-		if (errno == EAGAIN || errno == EWOULDBLOCK)
-			return (false);   // wait for next epoll notification
-		return (fail("Response", errno), true);
-	}
+	// if (n < 0)
+	// {
+	// 	if (errno == EAGAIN || errno == EWOULDBLOCK)
+	// 		return (false);   // wait for next epoll notification
+	// 	return (fail("Response", errno), true);
+	// }
 
 	// all bytes sent (or small responses handled in one write)
 	std::cout << "[connection]\tclient received response \t| socket:" << _fd << "\n\n" << str << std::endl;
@@ -127,9 +127,18 @@ void	Connection::route()
 	switch (_req.category())
 	{
 		case NORMAL:
-			normFeature::handle(final, _req, _rep, location);
+			_rep._status = normFeature::handle(final, _req, _rep, location);
 			break;
+		case CGI: break;
+
+		case REDIRECTION: break;
+
+		case UPLOAD: break;
+
+		case AUTOINDEX: break;
+
 	}
+	std::cout << "this is the status: " << _rep._status << std::endl;
 }
 
 std::time_t	Connection::contime() const
