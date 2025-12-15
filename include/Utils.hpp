@@ -37,6 +37,7 @@ bool	is_dir(std::string path);
 int		file_check(std::string path, int mod);
 int		fail(std::string head, int err_no);
 int		read_file(std::string &path, std::string &data);
+std::string	get_ext(const std::string& filename);
 
 
 std::vector<std::string>	split(std::string str, const char delimiter);

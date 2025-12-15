@@ -47,7 +47,6 @@ class Request{
 		std::string conn_status;	// Keep Alive or Close
 		std::string _query;
 		std::string _body;
-		std::string	_ext;
 		request_cat	_category;		// Request Category : CGI, Upload, etc.
 		bool bool_cgi;				// 
 		bool bool_boundary;
@@ -64,7 +63,7 @@ class Request{
 	public:
 		Request();
 		~Request();
-		Request(const Request &other);
+		// Request(const Request &other);
 		// Request &operator=(const Request &other);
 		void parseRequest(const char *raw_request);
 		void fetchServerScope();
@@ -78,7 +77,6 @@ class Request{
 		std::string	method() const;
 		request_cat	category() const;
 		std::vector<binary_file>	binary_data() const;
-		std::string	ext() const;
 };
 
 #endif

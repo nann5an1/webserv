@@ -17,7 +17,7 @@ Request::Request():
     conn_status(""),
     _query(""),
     _body(""),
-    _ext(""),
+    _ext("txt"),
     _category(NORMAL),
     bool_cgi(false),
     bool_boundary(false),

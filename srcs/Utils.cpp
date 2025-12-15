@@ -140,6 +140,23 @@ int	file_check(std::string path, int mod)
 		return (403);
 	return (200);
 }
+
+std::string	get_ext(const std::string& filename)
+{
+    if (filename.empty())
+        return "";
+
+    std::string::size_type dot_pos = filename.find_last_of('.');
+    std::string::size_type slash_pos = filename.find_last_of("/\\");
+
+    // No dot, or dot is part of a directory name
+    if (dot_pos == std::string::npos ||
+        (slash_pos != std::string::npos && dot_pos < slash_pos))
+        return "";
+
+    return filename.substr(dot_pos + 1);
+}
+
 // bool fileExists(const char* path) {
 //     struct stat st;
 //     return (stat(path, &st) == 0);
