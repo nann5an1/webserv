@@ -2,32 +2,33 @@
 
 int	normFeature::handle(std::string	&path, Request &req, Response &rep, const t_location* location)
 {
+	int	status;
 	std::string	*type;
+	const std::vector<std::string>	&indexs = location->index_files;
 
-	if	(!is_dir(path))
+	if (is_dir(path))
 	{
-		int status = file_check(path, R_OK);
+		if (indexs.empty() && location->autoindex)
+			return (std::cout << "autoindex" << std::endl, 200);
+		for (int i = 0; i < indexs.size(); ++i)
+		{
+			if (file_check(path + "/" + indexs[i], R_OK) == 200)
+			{
+				path += "/" + indexs[i];
+				goto response;
+			}
+		}
+		return (403);
+	}
+	response:
+
+		status = file_check(path, R_OK);
 		if (status == 200)
 		{
 			status = read_file(path, rep._body);
-			
-		}
-		else	
+			rep._type = "text/" + get_ext(path);
 			return (status);
-	}
-	else
-	{
-		get(location, final)
-	}
-	// else
-	// {
-	// 	location
-	// }
-
-	std::cout << "normal: " << status << std::endl;
-			std::cout << "req.ext(): " << req.ext() << std::endl;
-			type = get(mime_types, req.ext());
-			if (!type)
-				*type = std::string("text/plain");
-			rep._type = *type;
+		}
+		return (status);
+	// status = file_check(path, R_OK);
 }

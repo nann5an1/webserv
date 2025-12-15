@@ -11,6 +11,7 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <iterator>
 
 #define	RED	"\033[31m"
 #define	RESET "\033[0m"
@@ -81,5 +82,15 @@ typename MapType::mapped_type* get(MapType& m, const KeyType& key)
     else
         return NULL;
 }
+
+template <typename T>
+void	print_container(T container)
+{
+	typedef typename T::value_type	value_type;
+
+	std::copy(container.begin(), container.end(), std::ostream_iterator<value_type>(std::cout, " "));
+	std::cout << std::endl;
+}
+
 
 #endif

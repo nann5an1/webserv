@@ -15,7 +15,7 @@ int main(int ac, char **av)
 		av[1] = (char *)"aoo.conf";
 	#endif
 	webserv.fileParser(av[1]);
-	// webserv.printServers();
+	webserv.printServers();
 
 	if (webserv.start())
 		return (1);

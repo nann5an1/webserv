@@ -157,6 +157,8 @@ std::string	get_ext(const std::string& filename)
     return filename.substr(dot_pos + 1);
 }
 
+
+
 // bool fileExists(const char* path) {
 //     struct stat st;
 //     return (stat(path, &st) == 0);

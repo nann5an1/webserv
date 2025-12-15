@@ -79,15 +79,15 @@ bool	Connection::response()
 {
 	route();
 	const char* str = _rep.build();
-	// size_t size = std::strlen(str);
-	// ssize_t n = write(_fd, str, size);
+	size_t size = std::strlen(str);
+	ssize_t n = write(_fd, str, size);
 
-	// if (n < 0)
-	// {
-	// 	if (errno == EAGAIN || errno == EWOULDBLOCK)
-	// 		return (false);   // wait for next epoll notification
-	// 	return (fail("Response", errno), true);
-	// }
+	if (n < 0)
+	{
+		if (errno == EAGAIN || errno == EWOULDBLOCK)
+			return (false);   // wait for next epoll notification
+		return (fail("Response", errno), true);
+	}
 
 	// all bytes sent (or small responses handled in one write)
 	std::cout << "[connection]\tclient received response \t| socket:" << _fd << "\n\n" << str << std::endl;

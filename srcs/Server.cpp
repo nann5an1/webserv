@@ -126,7 +126,7 @@ int Server::inputLocation(std::string line, t_location &location){
 		}
 		else if(token == "index"){
 			while(ss >> val)
-				location.index_files.push_back(val);
+				location.index_files.push_back(trimSemiColon(val));
 			// std::cout << location.index_files[0] << " " << location.index_files[1] << std::endl;
 		}
 		else if(token == "cgi"){
