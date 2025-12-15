@@ -1,11 +1,5 @@
 #include "Server.hpp"
 
-fd::fd() : fd_(-1) {}
-
-fd::fd(int fd_) : fd_(fd_) {}
-
-fd::operator int() const {return (fd_);}
-
 Server::Server() :	_sock_fd(-1), _name(""), _port(""), _ip(""), 
 					_root(""), _max_size(0), location_path ("")
 {
@@ -132,7 +126,7 @@ int Server::inputLocation(std::string line, t_location &location){
 		}
 		else if(token == "index"){
 			while(ss >> val)
-				location.index_files.push_back(val);
+				location.index_files.push_back(trimSemiColon(val));
 			// std::cout << location.index_files[0] << " " << location.index_files[1] << std::endl;
 		}
 		else if(token == "cgi"){
@@ -147,6 +141,11 @@ int Server::inputLocation(std::string line, t_location &location){
 			val = trimSemiColon(val);
 			if(!validateHTTPCode(key)) return 0;
 			location.ret_pages.insert(std::pair<int, std::string>(atoi(key.c_str()), val));
+		}
+		else if (token == "proxy_pass")
+		{
+			ss >> token;
+			location.rproxy = trimSemiColon(token);
 		}
 	}
 	
@@ -269,13 +268,13 @@ int	Server::start()
 		fcntl(_sock_fd, F_SETFL, fcntl(_sock_fd, F_GETFL, 0) | O_NONBLOCK) < 0 ||
 		listen(_sock_fd, SOMAXCONN) < 0)
 	{
-		int status = fail("Server", errno);
+		int status = fail("Server: " + std::string(*this), errno);
 		if (_sock_fd > 0)
 			close(_sock_fd);
 		_sock_fd = -1;
 		return (status);
 	}
-	std::cerr << "[server]\t" << std::string(*this) << "\t| socket:" << _sock_fd << " started - http://" << _ip << ":" << _port << std::endl;
+	std::cout << "[server]\t" << std::string(*this) << "\t| socket:" << _sock_fd << " started - http://" << _ip << ":" << _port << std::endl;
 	return (0);
 }
 
@@ -325,8 +324,8 @@ void Server::print() const {
                   << (loc.post ? "POST " : "")
                   << (loc.del ? "DELETE " : "") << "\n";
         std::cout << "  root: " << loc.root << "\n";
-        std::cout << "  upload_dir: " << loc.upload_dir << "\n";
-
+        std::cout << "  upload_dir: " << loc.upload_dir << "\n"
+				  << "  proxy_pass: " << loc.rproxy << "\n";
         std::cout << "  index files: ";
         for (size_t i = 0; i < loc.index_files.size(); i++)
             std::cout << loc.index_files[i] << " ";
@@ -360,3 +359,12 @@ std::string	Server::name() const
 	return (_name);
 }
 
+const std::map<std::string, t_location>&	Server::locations() const
+{
+	return (_locations);
+}
+
+std::string	Server::root() const
+{
+	return (_root);
+}

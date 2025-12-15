@@ -165,33 +165,52 @@ void	Webserv::print_server_head() const
 	std::cout << "server count : " << _servers.size() << std::endl;
 	for (int i = 0; i < _servers.size(); ++i)
 	{
-		Server	server = _servers[i];
+		const Server	&server = _servers[i];
 		fd	s_fd = server;
 		std::cout << std::string(server) << "\t: " << s_fd << std::endl;
 	}
 }
 
-int	Webserv::server_add(std::set<fd> &server_fds)
+int	Webserv::servers_start(std::set<fd>& server_fds)
+{
+	int status = 0;
+	int	size = _servers.size();
+	std::cerr << "[webserv]\tstarting " << size << " server(s)" << std::endl;
+	for (int i = 0; i < size; ++i)
+	{
+		Server	&server = _servers[i];
+		if (server.start())
+			continue ;
+		_servers_map[server] = &server;
+		server_fds.insert(server);
+	}
+	if (!server_fds.size())
+		return (-1);
+	return (0);
+}
+
+int	Webserv::server_add()
 {
 	for(std::size_t i = 0; i < _servers.size(); ++i)
 	{
 		fd	s_fd = _servers[i];
+		if (s_fd < 0)
+			continue;
 		struct epoll_event	s_event;
 		s_event.events = EPOLLIN;
 		s_event.data.fd = s_fd;
 		// register server socket with epoll
 		if (epoll_ctl(_ep_fd, EPOLL_CTL_ADD, s_fd, &s_event) <  0)
 			return (fail("Epoll: Server", errno));
-		server_fds.insert(s_fd);
 	}
 	return (0);
 }
 
-int	Webserv::create_con(fd event_fd)
+int	Webserv::create_con(const Server* server)
 {
 	while (true)
 	{
-		Connection	con(event_fd);
+		Connection	con(server);
 		fd c_fd = con;
 		if (c_fd < 0)
 			break;
@@ -203,7 +222,7 @@ int	Webserv::create_con(fd event_fd)
 		// FAIL~
 		if (epoll_ctl(_ep_fd, EPOLL_CTL_ADD, c_fd, &c_event) < 0)
 		{
-			int	status = fail("Epoll: Client", errno); 
+			int status = fail("Epoll: Client", errno); 
 			close(c_fd);
 			return (status);
 		}
@@ -214,17 +233,17 @@ int	Webserv::create_con(fd event_fd)
 
 int	Webserv::start()
 {
+	int	status = 0;
+
 	_ep_fd = epoll_create(1);
 	std::set<fd>	server_fds;
 	if (_ep_fd < 0)
 		return (fail("Epoll", errno));
-	servers_start();
-	// print_server_head();
-	_status = server_add(server_fds);
-
-	if (_status)
-		return (_status);
-	std::cerr << "[webserv]\tservers registering succeed" << std::endl;
+	if (servers_start(server_fds) < 0)
+		return (fail("Servers: No servers were started successfully!", -1));
+	if ((status = server_add()))
+		return (status);
+	std::cout << "[webserv]\tservers registering succeed" << std::endl;
 
 	epoll_event	events[MAX_EVENTS];
 
@@ -243,9 +262,11 @@ int	Webserv::start()
 			fd	event_fd = events[i].data.fd;
 			if (server_fds.count(event_fd))
 			{
-				_status = create_con(event_fd);
-				if (_status)
-					return (_status);
+				if (create_con(_servers_map[event_fd]))
+				{
+					fail("Connection", errno);
+					continue;
+				}
 			}
 			else
 			{
@@ -277,7 +298,7 @@ int	Webserv::start()
 				}
 			}
 		}
-		timeout();
+		// timeout();
 	}
 	for (std::set<fd>::iterator it = server_fds.begin(); it != server_fds.end(); ++it)
 		close(*it);
@@ -300,19 +321,6 @@ void	Webserv::timeout()
 		else
 			++it;
 	}
-}
-
-int	Webserv::servers_start()
-{
-	int	size = _servers.size();
-	std::cerr << "[webserv]\tstarting " << size << " server(s)" << std::endl;
-	for (int i = 0; i < size; ++i)
-	{
-		_status = _servers[i].start();
-		if (_status)
-			return (_status);
-	}
-	return (0);
 }
 
 void	Webserv::con_close(fd fd_)

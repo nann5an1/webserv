@@ -27,19 +27,19 @@
 class	Webserv
 {
 	private:
-		std::vector<Server> 		_servers;	//take the sever class as type and save a collection of servers
-		std::map <fd, Connection>	_cons;
+		std::map <fd, const Server*>	_servers_map;		
+		std::map <fd, Connection>		_cons;
 
 		fd	_ep_fd;
-		int	_status;
 	
-		int		server_add(std::set<fd> &sever_fds);
-		int		create_con(fd event_fd);
+		int		server_add();
+		int		create_con(const Server*);
 		void	timeout();
-		int		servers_start();
+		int		servers_start(std::set<fd>&);
 		void	con_close(fd _fd);
 
 	public:
+		std::vector<Server> 			_servers;	//take the sever class as type and save a collection of server
 		Webserv();
 		~Webserv();
 		Webserv(const Webserv &other);

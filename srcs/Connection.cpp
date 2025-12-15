@@ -1,8 +1,8 @@
 #include "Connection.hpp"
 
-Connection::Connection() : _fd(-1), _time(0), _rep() {}
+Connection::Connection() : _fd(-1), _time(0), _rep(), _server(NULL) {}
 
-Connection::Connection(const Connection &other) : _fd(other._fd), _time(other._time), _rep(other._rep) {}
+Connection::Connection(const Connection &other) : _fd(other._fd), _time(other._time), _rep(other._rep), _server(other._server) {}
 
 Connection	&Connection::operator=(const Connection &other)
 {
@@ -11,6 +11,7 @@ Connection	&Connection::operator=(const Connection &other)
 		_fd = other._fd;
 		_time = other._time;
 		_rep = other._rep;
+		_server = other._server;
 	}
 	return (*this);
 }
@@ -19,8 +20,9 @@ Connection::~Connection()
 {
 }
 
-Connection::Connection(fd server_fd)
+Connection::Connection(const Server *server) : _server(server)
 {
+	fd	server_fd = *_server;
 	sockaddr_in	client_addr;
 	socklen_t	client_len = sizeof(client_addr);
 	_fd = accept(server_fd, (sockaddr *)&client_addr, &client_len);
@@ -44,19 +46,9 @@ Connection::Connection(fd server_fd)
 
 }
 
-Connection::operator	fd() const
-{
-	return (_fd);
-}
-
-Connection::operator std::time_t() const
-{
-	return (_time);
-}
-
 bool	Connection::request()
 {
-	char	buffer[4096];
+	char		buffer[4096];
 	std::string	req;
 
 	while (true)
@@ -76,31 +68,91 @@ bool	Connection::request()
 			return (false);
 		}
 	}
+	_req.parseRequest(req.c_str());
 	std::cout << "[connection]\tclient request\t\t\t| socket:" << _fd << "\n\n"
 			  << req << std::endl;
+	
 	return (true);
 }
 
 bool	Connection::response()
 {
+	route();
 	const char* str = _rep.build();
-    size_t size = std::strlen(str);
-    ssize_t n = write(_fd, str, size);
+	size_t size = std::strlen(str);
+	ssize_t n = write(_fd, str, size);
 
-    if (n < 0)
-    {
-        if (errno == EAGAIN || errno == EWOULDBLOCK)
-            return false;   // wait for next epoll notification
-        return fail("Response", errno), true;
-    }
+	if (n < 0)
+	{
+		if (errno == EAGAIN || errno == EWOULDBLOCK)
+			return (false);   // wait for next epoll notification
+		return (fail("Response", errno), true);
+	}
 
-    // all bytes sent (or small responses handled in one write)
-    std::cout << "[connection]\tclient received response \t| socket:" << _fd << "\n\n" << str << std::endl;
-    return true;
+	// all bytes sent (or small responses handled in one write)
+	std::cout << "[connection]\tclient received response \t| socket:" << _fd << "\n\n" << str << std::endl;
+	return (true);
+}
+
+void	Connection::route()
+{
+	std::string	path = _req.path();
+	std::string	final = "", loc = "", root = _server->root();
+
+	std::cout << "path: " << path << std::endl;
+	const t_location*	location = NULL;
+
+	for (int i = path.size() - 1; i >= 0; --i)
+	{
+		if (path[i] == '/')
+		{
+			loc = path.substr(0, i);
+			location = get(_server->locations(), loc.empty() ? "/" : loc);
+			if (location)
+			{
+				root = location->root.empty() ? _server->root() : location->root;
+				final = root;
+				if (loc != "/")
+					final += loc;            // append matched location
+				if (i + 1 < path.size())
+					final += path.substr(i); // append remaining path after slash
+				break;
+			}
+		}
+	}
+	if (!location)
+		final = root + path;
+	std::cout << "loc: " << loc << ", final: " << final << std::endl;
+	
+	switch (_req.category())
+	{
+		case NORMAL:
+			_rep._status = normFeature::handle(final, _req, _rep, location);
+			break;
+		case CGI: break;
+
+		case REDIRECTION: break;
+
+		case UPLOAD: break;
+
+		case AUTOINDEX: break;
+
+	}
+	std::cout << "this is the status: " << _rep._status << std::endl;
 }
 
 std::time_t	Connection::contime() const
 {
 	std::time_t	now = time(0);
 	return (now - _time);
+}
+
+Connection::operator	fd() const
+{
+	return (_fd);
+}
+
+Connection::operator std::time_t() const
+{
+	return (_time);
 }
