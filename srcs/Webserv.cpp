@@ -123,29 +123,23 @@ void Webserv::fileParser(char *av)
 	else config_file = "def.conf";
 
 	// std::cout << "config file >> "<< config_file << std::endl;
-	std::ifstream file(config_file.c_str());
+	std::ifstream	file(config_file.c_str());
 	std::string line;
 
-	if(scopeValidation(file) == 0) throw ConfigFileError();
-		file.clear();
-		file.seekg(0);
+	// if(scopeValidation(file) == 0) throw ConfigFileError();
+	// 	file.clear();
+	// 	file.seekg(0);
 		
-		while(getline(file, line)){ //read the whole file line by line
-			// std::cout << "line >> " << line << std::endl;
-			if(line.find("server") != std::string::npos){
-				std::string tok;
-				std::stringstream ss(line);
-				int server_scope = 1;
-				
-				while(ss >> tok){
-					if(tok == "server") {
-						server_scope++;
-						_servers.push_back(Server(file, server_scope)); //ther first scope of the server will be done
-					}
-					else break;
-				}
-			}
+	while(getline(file, line))
+	{
+		std::stringstream	ss(line);
+		std::string			tok;
+		while (ss >> tok)
+		{
+			if (tok == "server")
+				_servers.push_back(Server(file));
 		}
+	}
 }
 
 //print each of the servers frin the webserv

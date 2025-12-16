@@ -7,86 +7,74 @@ Server::Server() :	_sock_fd(-1), _name(""), _port(""), _ip(""),
 
 Server::~Server() {}
 
-std::string Server::trimSemiColon(std::string val){
+std::string Server::
+trimSemiColon(std::string val){
 	if(val.find(";") == std::string::npos)	throw ConfigFileError();
 	return (val.substr(0, val.length() - 1));
 }
 
-int Server::validateHTTPCode(std::string &val){
-	for(size_t i = 0; i < val.length(); i++){
-		if(!isdigit(val[i]))	return 0; //not digit
-	}
-	if(val.length() > 3 || val.length() < 3) return 0;
-	return 1;
+int Server::validateHTTPCode(int &code){
+	// for(size_t i = 0; i < val.length(); i++){
+	// 	if(!isdigit(val[i]))	return 0; //not digit
+	// }
+	// if(val.length() > 3 || val.length() < 3) return 0;
+	return (code >= 100 && code <= 599);
 }
 
 //get the data from the config file by line iteration
-int Server::inputData(std::string &line){
-	std::string token;  
-	std::stringstream ss(line);
+int Server::inputData(std::string &line) {
+	std::string			token;
+	std::stringstream	ss(line);
 	// bool server_name = false, listen = false, _root= true, max_body = true, err_page = true;
 	// std::cout << "line in inputData >> " << line << std::endl;
-	
 	//line is the line by line
-	while(ss >> token){
-		std::string value;
+	ss >> token;
+	std::string	value;
 		// std::cout << "token >> " << token << std::endl;
-		if(token == "server_name")	{
-			// std::string value;
-			if(!(ss >> value)) return 0;
-			else {
-				
-				this->_name = trimSemiColon(value);
-				// std::cout << "server name debug >> " << this->_name << std::endl;
-				break;
-			}
-			
-		}
-		else if(token == "listen"){ 
-			// std::string value;
-			if(!(ss >> value)) return 0;
-			else{
-				int idx = value.find(":");
-				this->_ip  = value.substr(0, idx);
-				this->_port = trimSemiColon(value.substr(idx + 1, value.length() - idx - 1));
-				break;
-				// std::cout << "listen >> " << this->_ip << ":" << this->_port << std::endl;
-			}
-		}
-		else if(token == "root"){
-			if(!(ss >> value)) return 0;
-			else {
-				this->_root = trimSemiColon(value);
-				break;
-			}
-		}
-		else if(token == "max_body_size"){
-			if(!(ss >> value)) return 0;
-			else{
-				this->_max_size = atoi(value.c_str());
-				break;
-			}
-		}
-		else if(token == "error_page"){
-			
-			ss >> value;
-			// std::cout << "error page status code >> " << value << std::endl;
-			if(!validateHTTPCode(value)) return 0;
-			else{ //http code is validated
-				std::string path;
-				if(!(ss >> path)) return 0;
-				else{
-					this->_err_pages.insert(std::pair<int, std::string>(atoi(value.c_str()), trimSemiColon(path)));
-					// break;
-				}
-			}
-		}
+	if(token == "server_name") {
+		// std::string value;
+		if(!(ss >> value))
+			return 0;
+		else
+			this->_name = trimSemiColon(value);
+			// std::cout << "server name debug >> " << this->_name << std::endl;		
+	}
+	else if(token == "listen") {
+		// std::string value;
+		if(!(ss >> value)) return 0;
 		else{
-			break;
+			int idx = value.find(":");
+			this->_ip  = value.substr(0, idx);
+			this->_port = trimSemiColon(value.substr(idx + 1, value.length() - idx - 1));
+			// std::cout << "listen >> " << this->_ip << ":" << this->_port << std::endl;
 		}
 	}
-	
-	
+	else if(token == "root"){
+		if(!(ss >> value))
+			return 0;
+		else
+			this->_root = trimSemiColon(value);
+	}
+	else if(token == "max_body_size"){
+		if(!(ss >> value)) return 0;
+		else{
+			this->_max_size = atoi(value.c_str());
+		}
+	}
+	else if(token == "error_page"){
+		
+		int	key;
+		if (!(ss >> key) || !validateHTTPCode(key))
+			return (0);
+		// std::cout << "error page status code >> " << value << std::endl;
+		else{ //http code is validated
+			std::string path;
+			if(!(ss >> path)) return 0;
+			else{
+				this->_err_pages.insert(std::pair<int, std::string>(key, trimSemiColon(path)));
+			}
+		}
+	}
 	return 1;	
 }
 
@@ -94,67 +82,85 @@ int Server::inputLocation(std::string line, t_location &location){
 	std::string token;
 	std::stringstream ss(line);
 
-	while(ss >> token){
+	ss >> token;
 		// std::cout << "token  in inputLocation>> " << token << std::endl;
+	std::string val;
+	if(token == "autoindex")
+	{
+		ss >> val;
+		val = trimSemiColon(val);
+		if(val == "on") location.autoindex = true;
+		else location.autoindex = false;
+	}
+	else if(token == "methods"){
+		while(ss >> val){
+			if(val.find(";") != std::string::npos)	val = trimSemiColon(val);
+			if(val == "GET")	location.get = true;
+			if(val == "POST")	location.post = true;
+			if(val == "DELETE")	location.del = true;
+		}
+		// std::cout << "methods >> " << method1 << " " << method2 << " " << method3 << std::endl;	
+	}
+	else if(token == "root"){
+		ss >> val;
+		val = trimSemiColon(val);
+		location.root = val;
+		// std::cout <<"location _root >> " << location._root << std::endl;
+	}
+	else if(token == "upload_dir"){
+		ss >> val;
+		val = trimSemiColon(val);
+		location.upload_dir = val;
+	}
+	else if(token == "index"){
+		while(ss >> val)
+			location.index_files.push_back(trimSemiColon(val));
+		// std::cout << location.index_files[0] << " " << location.index_files[1] << std::endl;
+	}
+	else if(token == "cgi"){
+		std::string key, val;
+		ss >> key >> val;
+		val = trimSemiColon(val);
+		location.cgi.insert(std::pair<std::string, std::string>(key, val));
+	}
+	else if(token == "return" && location.r_status == 0){
 		std::string val;
-		if(token == "autoindex"){
-			ss >> val;
-			val = trimSemiColon(val);
-			if(val == "on") location.autoindex = true;
-			else location.autoindex = false;
-		}
-		else if(token == "methods"){
-			while(ss >> val){
-				if(val.find(";") != std::string::npos)	val = trimSemiColon(val);
-
-				if(val == "GET")	location.get = true;
-				if(val == "POST")	location.post = true;
-				if(val == "DELETE")	location.del = true;
-			}
-			// std::cout << "methods >> " << method1 << " " << method2 << " " << method3 << std::endl;	
-		}
-		else if(token == "root"){
-			ss >> val;
-			val = trimSemiColon(val);
-			location.root = val;
-			// std::cout <<"location _root >> " << location._root << std::endl;
-		}
-		else if(token == "upload_dir"){
-			ss >> val;
-			val = trimSemiColon(val);
-			location.upload_dir = val;
-		}
-		else if(token == "index"){
-			while(ss >> val)
-				location.index_files.push_back(trimSemiColon(val));
-			// std::cout << location.index_files[0] << " " << location.index_files[1] << std::endl;
-		}
-		else if(token == "cgi"){
-			std::string key, val;
-			ss >> key >> val;
-			val = trimSemiColon(val);
-			location.cgi.insert(std::pair<std::string, std::string>(key, val));
-		}
-		else if(token == "return"){
-			std::string key, val;
-			ss >> key >> val;
-			val = trimSemiColon(val);
-			if(!validateHTTPCode(key)) return 0;
-			location.ret_pages.insert(std::pair<int, std::string>(atoi(key.c_str()), val));
-		}
-		else if (token == "proxy_pass")
+		int			key;
+		
+		if(!(ss >> key) || !validateHTTPCode(key))
+			return (0);
+		location.r_status = key;
+		if (ss >> val)
+			location.r_url = val;
+		// location..insert(std::pair<int, std::string>(atoi(key.c_str()), val));
+	}
+	else if (token == "proxy_pass")
+	{
+		ss >> token;
+		location.rproxy = trimSemiColon(token);
+	}
+	else if(token == "error_page")
+	{
+		std::vector<std::string> temp;
+		while (ss >> token)
+			temp.push_back(token);
+		if (temp.size() <= 1)
+			return (0);
+		std::string	err_path = trimSemiColon(temp[temp.size() - 1]);
+		for (int i = 0; i < temp.size() - 1; ++i)
 		{
-			ss >> token;
-			location.rproxy = trimSemiColon(token);
+			int	key = std::atoi(temp[i].c_str());
+			if (!validateHTTPCode(key))
+				return (0);
+			location.err_pages[key] = err_path;
 		}
 	}
-	
 	return 1;
 }
 
 
 //will retrive the strating from the next line of the server scope
-Server::Server(std::ifstream &file, int serv_scope_start)
+Server::Server(std::ifstream &file)
 : _name("default"), 
   _port("default"),
   _ip("default"),
@@ -165,56 +171,47 @@ Server::Server(std::ifstream &file, int serv_scope_start)
 	// std::cout << "Server parameterized constructor" << std::endl;
 	std::string line, tok;
 	
-	int location_scope = 1, location_key = 1;
-	int server_scope = serv_scope_start;
+	bool location_scope;
 	t_location location;
 
-	// std::cout << "servere scope count >> " << server_scope << std::endl;
-	//going line by line inside the server scope now
-	while(getline(file, line) && server_scope > 1){
-		std::stringstream ss(line);
-		// std::cout << "line now at >> " << line << std::endl;
-		while(ss >> tok){
-			if(tok == "location"){
-				location = t_location();
-				std::string path, scope;
-				ss >> path >> scope;
-				
-				this->location_path = path;
-				location_key++;
-				if(scope == " ") break;
-				else location_scope++;
-			}
-			else if(tok == "{"){
-				location_scope++;
-				// std::cout << "location scope start" << location_scope << std::endl;
-			}
-			else if(server_scope > 1 && location_scope <= 1 && tok == "}"){
-				server_scope--;
-			}
-			else if(tok == "}"){
-				location_scope--;
-				location_key--;
-				this->_locations.insert(std::pair<std::string, t_location>(this->location_path, location));
-				this->location_path = "default";
-			}
-			
+	while(getline(file, line))
+	{
+		std::stringstream	ss(line);
+		ss >> tok;
+
+		if (tok == "{")
+			continue ;
+		if (tok == "location")
+		{
+			location_scope = true;
+			location = t_location();
+			ss >> this->location_path;
+			continue;
 		}
-		if(server_scope > 1){ //inside the scope 
-			//parsing will come in
-			
-			// std::cout << "line under server scope >> " << line << std::endl;
-			if(inputData(line) != 1) throw ConfigFileError();
-			// std::cout << "location scope count" << location_scope << std::endl;
-			if(location_scope > 1){
-				if (line.find("{") != std::string::npos ||
-					line.find("}") != std::string::npos ||
-					line.find("location") != std::string::npos)
-					continue; 
-				if(!inputLocation(line, location)) throw ConfigFileError();
-			}
+		else if(tok == "}")
+		{
+			std::cout << "found }" << location_scope << std::endl;
+			if (!location_scope)
+				break ;
+			this->_locations[location_path] = location;
+			location_scope = false;
 		}
-		else if(server_scope <= 1)	break;
+		else if (location_scope)
+			inputLocation(line, location);
+		else
+			inputData(line);
+		// 	if(!location_scope && inputData(line) != 1) throw ConfigFileError();
+		// 	// std::cout << "location scope count" << location_scope << std::endl;
+		// 	if(location_scope > 1){
+		// 		if (line.find("{") != std::string::npos ||
+		// 			line.find("}") != std::string::npos ||
+		// 			line.find("location") != std::string::npos)
+		// 			continue; 
+		// 		// if(!inputLocation(line, location)) throw ConfigFileError();
+		// 		if(!inputLocation(line, location)) throw ConfigFileError();
+		// 	}
+		// }
+		// else if(server_scope <= 1)	break;
 	}
 	// std::cout << "server name >> " << this->_name << "\n"
 	// 			<< "listen >> " << this->_ip << ":" << this->_port << "\n"
@@ -337,9 +334,11 @@ void Server::print() const {
         std::cout << "\n";
 
         std::cout << "  Return pages: ";
-        for (std::map<int, std::string>::const_iterator rp = loc.ret_pages.begin(); rp != loc.ret_pages.end(); ++rp)
-            std::cout << rp->first << " => " << rp->second << " ";
-        std::cout << "\n\n";
+			std::cout << loc.r_status << " " << loc.r_url << std::endl;
+		std::cout << "  Error pages: ";
+		print_map(loc.err_pages);
+		std::cout << "\n\n";
+
     }
     std::cout << "=================================================\n";
 }
