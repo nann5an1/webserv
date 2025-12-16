@@ -131,8 +131,7 @@ int Server::inputLocation(std::string line, t_location &location){
 			return (0);
 		location.r_status = key;
 		if (ss >> val)
-			location.r_url = val;
-		// location..insert(std::pair<int, std::string>(atoi(key.c_str()), val));
+			location.r_url = trimSemiColon(val);
 	}
 	else if (token == "proxy_pass")
 	{
@@ -176,7 +175,6 @@ Server::Server(std::ifstream &file)
 
 	while(getline(file, line))
 	{
-		std::cout << "line : " << line << std::endl;
 		std::stringstream	ss(line);
 		ss >> tok;
 
