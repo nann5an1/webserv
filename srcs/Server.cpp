@@ -176,12 +176,13 @@ Server::Server(std::ifstream &file)
 
 	while(getline(file, line))
 	{
+		std::cout << "line : " << line << std::endl;
 		std::stringstream	ss(line);
 		ss >> tok;
 
-		if (tok == "{")
+		if (tok == "{" && tok == "\n")
 			continue ;
-		if (tok == "location")
+		if (tok == "location" && !location_scope)
 		{
 			location_scope = true;
 			location = t_location();
@@ -195,6 +196,7 @@ Server::Server(std::ifstream &file)
 				break ;
 			this->_locations[location_path] = location;
 			location_scope = false;
+			tok = "";
 		}
 		else if (location_scope)
 			inputLocation(line, location);

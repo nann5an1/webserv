@@ -92,5 +92,13 @@ void	print_container(T container)
 	std::cout << std::endl;
 }
 
+template <typename MapType>
+void print_map(const MapType& container)
+{
+    for (typename MapType::const_iterator ci = container.begin(); ci != container.end(); ++ci)
+        std::cout << ci->first << " " << ci->second << ", ";
+    std::cout << std::endl;
+}
+
 
 #endif

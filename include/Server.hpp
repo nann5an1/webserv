@@ -26,14 +26,15 @@ typedef struct	s_location
 	bool		get;
 	bool		post;
 	bool		del;
-	int			return_code;
-	std::string return_url;
+	int			r_status;
+	std::string r_url;
 	std::string	root;
 	std::string	upload_dir;
 	std::vector<std::string>	index_files;
 	std::vector<std::string>	page_seq;
 	std::map<std::string, std::string>	cgi;
 	std::map<int, std::string> ret_pages;
+	std::map<int, std::string> err_pages;
 	std::string	rproxy;
 }	t_location;
 
@@ -51,7 +52,7 @@ class Server{
 		std::map<int, std::string>			_err_pages;
     public:
         Server();
-		Server(std::ifstream &file, int server_scope);
+		Server(std::ifstream &file);
         Server(const Server &other);
         ~Server();
         Server &operator=(const Server &other);
@@ -71,7 +72,7 @@ class Server{
 		int inputData(std::string &line);
 		int inputLocation(std::string line, t_location &location);
 		std::string trimSemiColon(std::string val);
-		int validateHTTPCode(std::string &val);
+		int validateHTTPCode(int &code);
 		void print() const;
 
 		int response();

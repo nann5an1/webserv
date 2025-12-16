@@ -9,15 +9,21 @@ int main(int ac, char **av)
 	int	status = 0;
 	if(ac > 2) 
 		return (1);
+
 	init_global();
+	try
+	{
     Webserv webserv;
 	#if defined(__x86_64__)
 		av[1] = (char *)"aoo.conf";
 	#endif
 	webserv.fileParser(av[1]);
 	webserv.printServers();
-
-	if (webserv.start())
-		return (1);
+	} catch (std::exception &e)
+	{
+		std::cerr << e.what() << std::endl;
+	}
+	// if (webserv.start())
+	// 	return (1);
     return (0);
 }
