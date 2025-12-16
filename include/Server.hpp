@@ -50,6 +50,8 @@ class Server{
 		std::string location_path;
 		std::map<std::string, t_location>	_locations;
 		std::map<int, std::string>			_err_pages;
+
+		int	parse_err_pages(std::stringstream&, std::map<int,std::string>&);
     public:
         Server();
 		Server(std::ifstream &file);
@@ -72,7 +74,7 @@ class Server{
 		int inputData(std::string &line);
 		int inputLocation(std::string line, t_location &location);
 		std::string trimSemiColon(std::string val);
-		int validateHTTPCode(int &code);
+		static int validateHTTPCode(int &code);
 		void print() const;
 
 		int response();

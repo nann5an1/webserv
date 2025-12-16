@@ -13,6 +13,8 @@ trimSemiColon(std::string val){
 	return (val.substr(0, val.length() - 1));
 }
 
+
+
 int Server::validateHTTPCode(int &code){
 	// for(size_t i = 0; i < val.length(); i++){
 	// 	if(!isdigit(val[i]))	return 0; //not digit
@@ -21,6 +23,24 @@ int Server::validateHTTPCode(int &code){
 	return (code >= 100 && code <= 599);
 }
 
+int	Server::parse_err_pages(std::stringstream &ss, std::map<int,std::string> &err_pg_container)
+{
+	std::vector<std::string> temp;
+	std::string	token;
+	while (ss >> token)
+		temp.push_back(token);
+	if (temp.size() <= 1)
+		return (0);
+	std::string	err_path = trimSemiColon(temp[temp.size() - 1]);
+	for (int i = 0; i < temp.size() - 1; ++i)
+	{
+		int	key = std::atoi(temp[i].c_str());
+		if (!validateHTTPCode(key))
+			return (0);
+		err_pg_container[key] = err_path;
+	}
+	return (1);
+}
 //get the data from the config file by line iteration
 int Server::inputData(std::string &line) {
 	std::string			token;
@@ -63,17 +83,18 @@ int Server::inputData(std::string &line) {
 	}
 	else if(token == "error_page"){
 		
-		int	key;
-		if (!(ss >> key) || !validateHTTPCode(key))
-			return (0);
-		// std::cout << "error page status code >> " << value << std::endl;
-		else{ //http code is validated
-			std::string path;
-			if(!(ss >> path)) return 0;
-			else{
-				this->_err_pages.insert(std::pair<int, std::string>(key, trimSemiColon(path)));
-			}
-		}
+		parse_err_pages(ss, _err_pages);
+		// int	key;
+		// if (!(ss >> key) || !validateHTTPCode(key))
+		// 	return (0);
+		// // std::cout << "error page status code >> " << value << std::endl;
+		// else{ //http code is validated
+		// 	std::string path;
+		// 	if(!(ss >> path)) return 0;
+		// 	else{
+		// 		this->_err_pages.insert(std::pair<int, std::string>(key, trimSemiColon(path)));
+		// 	}
+		// }
 	}
 	return 1;	
 }
@@ -139,35 +160,18 @@ int Server::inputLocation(std::string line, t_location &location){
 		location.rproxy = trimSemiColon(token);
 	}
 	else if(token == "error_page")
-	{
-		std::vector<std::string> temp;
-		while (ss >> token)
-			temp.push_back(token);
-		if (temp.size() <= 1)
-			return (0);
-		std::string	err_path = trimSemiColon(temp[temp.size() - 1]);
-		for (int i = 0; i < temp.size() - 1; ++i)
-		{
-			int	key = std::atoi(temp[i].c_str());
-			if (!validateHTTPCode(key))
-				return (0);
-			location.err_pages[key] = err_path;
-		}
-	}
-	return 1;
+		parse_err_pages(ss, location.err_pages);
+	return (1);
 }
 
-
-//will retrive the strating from the next line of the server scope
 Server::Server(std::ifstream &file)
-: _name("default"), 
-  _port("default"),
-  _ip("default"),
-  _root("default"),
+: _name(""), 
+  _port(""),
+  _ip(""),
+  _root(""),
   _max_size(0),
-  location_path("default")
+  location_path("")
 {
-	// std::cout << "Server parameterized constructor" << std::endl;
 	std::string line, tok;
 	
 	bool location_scope;
@@ -189,7 +193,6 @@ Server::Server(std::ifstream &file)
 		}
 		else if(tok == "}")
 		{
-			std::cout << "found }" << location_scope << std::endl;
 			if (!location_scope)
 				break ;
 			this->_locations[location_path] = location;
@@ -200,23 +203,7 @@ Server::Server(std::ifstream &file)
 			inputLocation(line, location);
 		else
 			inputData(line);
-		// 	if(!location_scope && inputData(line) != 1) throw ConfigFileError();
-		// 	// std::cout << "location scope count" << location_scope << std::endl;
-		// 	if(location_scope > 1){
-		// 		if (line.find("{") != std::string::npos ||
-		// 			line.find("}") != std::string::npos ||
-		// 			line.find("location") != std::string::npos)
-		// 			continue; 
-		// 		// if(!inputLocation(line, location)) throw ConfigFileError();
-		// 		if(!inputLocation(line, location)) throw ConfigFileError();
-		// 	}
-		// }
-		// else if(server_scope <= 1)	break;
 	}
-	// std::cout << "server name >> " << this->_name << "\n"
-	// 			<< "listen >> " << this->_ip << ":" << this->_port << "\n"
-	// 			<< "_root >> " << this->_root << "\n"
-	// 			<< "_max_size >> " << this->_max_size << "\n" << std::endl;	
 }
 
 Server::Server(const Server &other):
