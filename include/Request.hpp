@@ -73,6 +73,7 @@ class Request{
 							const std::string &binary);
 		void printUploadedFiles() const;
 		
+		void	set_category(request_cat type);
 		std::string	path() const;
 		std::string	method() const;
 		request_cat	category() const;

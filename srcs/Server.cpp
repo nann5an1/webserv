@@ -145,7 +145,7 @@ int Server::inputLocation(std::string line, t_location &location){
 		location.cgi.insert(std::pair<std::string, std::string>(key, val));
 	}
 	else if(token == "return" && location.r_status == 0){
-		std::string val;
+		std::string	val;
 		int			key;
 		
 		if(!(ss >> key) || !validateHTTPCode(key))
@@ -353,4 +353,14 @@ const std::map<std::string, t_location>&	Server::locations() const
 std::string	Server::root() const
 {
 	return (_root);
+}
+
+std::string	Server::r_url() const
+{
+	return (_r_url);
+}
+
+int	Server::r_status() const
+{
+	return (_r_status);
 }

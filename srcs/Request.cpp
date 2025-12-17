@@ -325,6 +325,11 @@ void Request::printUploadedFiles() const
     }
 }
 
+void	Request::set_category(request_cat type)
+{
+	_category = type;
+}
+
 std::string Request::path() const
 {
     return (_path);

@@ -48,6 +48,8 @@ class Server{
 		std::string _root;
 		long long	_max_size;
 		std::string location_path;
+		std::string	_r_url;
+		int			_r_status;
 		std::map<std::string, t_location>	_locations;
 		std::map<int, std::string>			_err_pages;
 
@@ -68,6 +70,8 @@ class Server{
 		std::string	ip() const;
 		std::string	name() const;
 		std::string	root() const;
+		std::string	r_url() const;
+		int			r_status() const;
 		const std::map<std::string, t_location>&	locations() const;
 
 		// int scopeValidation(std::ifstream &file);
@@ -77,7 +81,6 @@ class Server{
 		static int validateHTTPCode(int &code);
 		void print() const;
 
-		int response();
 };
 
 class ConfigFileError : public std::runtime_error {

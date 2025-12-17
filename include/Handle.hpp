@@ -5,16 +5,11 @@
 #include "Request.hpp"
 #include "Utils.hpp"
 
-struct	IFeature
-{
-	virtual ~IFeature();
-	virtual int	handle() = 0;
-};
+std::string	status_page(int status);
 
-struct	normFeature : IFeature
-{
-	static int handle(std::string	&path, Request &req, Response &rep, const t_location* location);
-};
+int norm_handle(std::string	&path, Request &req, Response &rep, const t_location* location);
+
+void	redirect_handle(int status, const std::string &path, Response& rep);
 
 // struct	errorFeature : IFeature
 // {

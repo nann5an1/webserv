@@ -19,11 +19,12 @@ int main(int ac, char **av)
 	#endif
 	webserv.fileParser(av[1]);
 	webserv.printServers();
+	if (webserv.start())
+		return (1);
 	} catch (std::exception &e)
 	{
 		std::cerr << e.what() << std::endl;
 	}
-	// if (webserv.start())
-	// 	return (1);
+	
     return (0);
 }

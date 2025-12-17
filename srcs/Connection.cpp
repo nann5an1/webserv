@@ -97,9 +97,10 @@ bool	Connection::response()
 void	Connection::route()
 {
 	std::string	path = _req.path();
+	
 	std::string	final = "", loc = "", root = _server->root();
 
-	std::cout << "path: " << path << std::endl;
+	// std::cout << "path: " << path << std::endl;
 	const t_location*	location = NULL;
 
 	for (int i = path.size() - 1; i >= 0; --i)
@@ -122,23 +123,25 @@ void	Connection::route()
 	}
 	if (!location)
 		final = root + path;
-	std::cout << "loc: " << loc << ", final: " << final << std::endl;
-	
+	// std::cout << "loc: " << loc << ", final: " << final << std::endl;
+	if (location->r_status > 0)
+		_req.set_category(REDIRECTION);
 	switch (_req.category())
 	{
 		case NORMAL:
-			_rep._status = normFeature::handle(final, _req, _rep, location);
+			_rep._status = norm_handle(final, _req, _rep, location);
 			break;
 		case CGI: break;
 
-		case REDIRECTION: break;
-
+		case REDIRECTION:
+			redirect_handle(location->r_status, location->r_url, _rep);
+			return ;
 		case UPLOAD: break;
 
 		case AUTOINDEX: break;
-
 	}
-	std::cout << "this is the status: " << _rep._status << std::endl;
+	
+	// std::cout << "this is the status: " << _rep._status << std::endl;
 }
 
 std::time_t	Connection::contime() const

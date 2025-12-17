@@ -5,7 +5,7 @@
 #include "Server.hpp"
 #include "Request.hpp"
 #include "Response.hpp"
-#include "IFeature.hpp"
+#include "Handle.hpp"
 
 class	Connection
 {
