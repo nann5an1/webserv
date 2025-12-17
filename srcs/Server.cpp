@@ -41,32 +41,35 @@ int	Server::parse_err_pages(std::stringstream &ss, std::map<int,std::string> &er
 	}
 	return (1);
 }
-//get the data from the config file by line iteration
+
+int	Server::parse_return(std::stringstream& ss, int& r_status, std::string& r_url)
+{
+	std::string	val;
+		
+	if(!(ss >> r_status) || !validateHTTPCode(r_status))
+		return (0);
+	if (ss >> val)
+		r_url = trimSemiColon(val);
+	return (1);
+}
+
 int Server::inputData(std::string &line) {
-	std::string			token;
 	std::stringstream	ss(line);
-	// bool server_name = false, listen = false, _root= true, max_body = true, err_page = true;
-	// std::cout << "line in inputData >> " << line << std::endl;
-	//line is the line by line
+	std::string			token, value;
+
 	ss >> token;
-	std::string	value;
-		// std::cout << "token >> " << token << std::endl;
 	if(token == "server_name") {
-		// std::string value;
 		if(!(ss >> value))
 			return 0;
 		else
 			this->_name = trimSemiColon(value);
-			// std::cout << "server name debug >> " << this->_name << std::endl;		
 	}
 	else if(token == "listen") {
-		// std::string value;
 		if(!(ss >> value)) return 0;
 		else{
 			int idx = value.find(":");
 			this->_ip  = value.substr(0, idx);
-			this->_port = trimSemiColon(value.substr(idx + 1, value.length() - idx - 1));
-			// std::cout << "listen >> " << this->_ip << ":" << this->_port << std::endl;
+			this->_port = trimSemiColon(value.substr(idx + 1));
 		}
 	}
 	else if(token == "root"){
@@ -81,20 +84,17 @@ int Server::inputData(std::string &line) {
 			this->_max_size = atoi(value.c_str());
 		}
 	}
-	else if(token == "error_page"){
+	else if (token == "return" && this->_r_status == 0)
+	{
+		std::cout << "return got in" << std::endl;
+		if (!parse_return(ss, _r_status, _r_url))
+			return (0);
+		std::cout << "_r_status : " << _r_status << ", " << _r_url << std::endl;
 		
+	}
+	else if(token == "error_page")
+	{
 		parse_err_pages(ss, _err_pages);
-		// int	key;
-		// if (!(ss >> key) || !validateHTTPCode(key))
-		// 	return (0);
-		// // std::cout << "error page status code >> " << value << std::endl;
-		// else{ //http code is validated
-		// 	std::string path;
-		// 	if(!(ss >> path)) return 0;
-		// 	else{
-		// 		this->_err_pages.insert(std::pair<int, std::string>(key, trimSemiColon(path)));
-		// 	}
-		// }
 	}
 	return 1;	
 }
@@ -144,7 +144,8 @@ int Server::inputLocation(std::string line, t_location &location){
 		val = trimSemiColon(val);
 		location.cgi.insert(std::pair<std::string, std::string>(key, val));
 	}
-	else if(token == "return" && location.r_status == 0){
+	else if(token == "return" && location.r_status == 0)
+	{
 		std::string	val;
 		int			key;
 		
@@ -170,6 +171,8 @@ Server::Server(std::ifstream &file)
   _ip(""),
   _root(""),
   _max_size(0),
+  _r_status(0),
+  _r_url(""),
   location_path("")
 {
 	std::string line, tok;
@@ -214,8 +217,9 @@ Server::Server(const Server &other):
 	_max_size(other._max_size),
 	location_path(other.location_path),
 	_locations(other._locations),
-	_err_pages(other._err_pages)
-
+	_err_pages(other._err_pages),
+	_r_status(other._r_status),
+	_r_url(other._r_url)
 {
     (void)other;
 }
@@ -232,6 +236,8 @@ Server& Server:: operator=(const Server &other) {
 		location_path = other.location_path;
 		_locations = other._locations;
 		_err_pages = other._err_pages;
+		_r_status = other._r_status;
+		_r_url = other._r_url;
 	}
     return *this;
 }
@@ -295,6 +301,10 @@ void Server::print() const {
     for (std::map<int, std::string>::const_iterator it = _err_pages.begin(); it != _err_pages.end(); ++it) {
         std::cout << it->first << " => " << it->second << "\n";
     }
+
+    std::cout << "\n-- Return Pages --\n";
+	if (_r_status)
+		std::cout << _r_status << (_r_url.empty() ? "" : " => ") << _r_url << std::endl;
 
     std::cout << "\n-- Locations --\n";
     for (std::map<std::string, t_location>::const_iterator it = _locations.begin(); it != _locations.end(); ++it) {

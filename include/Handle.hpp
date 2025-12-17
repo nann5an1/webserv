@@ -11,10 +11,7 @@ int norm_handle(std::string	&path, Request &req, Response &rep, const t_location
 
 void	redirect_handle(int status, const std::string &path, Response& rep);
 
-// struct	errorFeature : IFeature
-// {
-// 	errorFeature(int file_status, )
-// 	int	handle();
-// }
+// void	error_handle();
+
 
 #endif

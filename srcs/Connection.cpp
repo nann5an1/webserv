@@ -100,14 +100,23 @@ void	Connection::route()
 	
 	std::string	final = "", loc = "", root = _server->root();
 
-	// std::cout << "path: " << path << std::endl;
+	if (_server->r_status())
+	{
+		redirect_handle(_server->r_status(), _server->r_url(), _rep);
+		return ;
+	}
+	std::cout << "path: " << path << std::endl;
 	const t_location*	location = NULL;
 
-	for (int i = path.size() - 1; i >= 0; --i)
+	location = get(_server->locations(), path.empty() ? "/" : path);
+
+	for (int i = path.size(); i >= 0; --i)
 	{
-		if (path[i] == '/')
+
+		if (path[i] == '/' || i == path.size())
 		{
 			loc = path.substr(0, i);
+			std::cout << "loc: " << loc << std::endl;
 			location = get(_server->locations(), loc.empty() ? "/" : loc);
 			if (location)
 			{
@@ -122,8 +131,11 @@ void	Connection::route()
 		}
 	}
 	if (!location)
+	{
 		final = root + path;
-	// std::cout << "loc: " << loc << ", final: " << final << std::endl;
+		// error shold handle here;
+	}
+	std::cout << "loc: " << loc << ", final: " << final << std::endl;
 	if (location->r_status > 0)
 		_req.set_category(REDIRECTION);
 	switch (_req.category())
@@ -140,7 +152,8 @@ void	Connection::route()
 
 		case AUTOINDEX: break;
 	}
-	
+	// if (_rep._status >= 400)
+	// 	error_handle();
 	// std::cout << "this is the status: " << _rep._status << std::endl;
 }
 

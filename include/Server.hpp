@@ -54,6 +54,7 @@ class Server{
 		std::map<int, std::string>			_err_pages;
 
 		int	parse_err_pages(std::stringstream&, std::map<int,std::string>&);
+		int	parse_return(std::stringstream&, int&, std::string&);
     public:
         Server();
 		Server(std::ifstream &file);
