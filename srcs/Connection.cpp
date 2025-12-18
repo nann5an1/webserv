@@ -143,7 +143,7 @@ void	Connection::route()
 				return ;
 			case UPLOAD: break;
 
-			case AUTOINDEX: break;
+			case RPROXY: break;
 		}
 	}
 

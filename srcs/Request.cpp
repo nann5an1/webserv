@@ -276,22 +276,7 @@ void Request::parseRequest(const char *raw_request){
                     "SERVER_NAME=" + this->hostname + "\n" +
                     "SERVER_PROTOCOL=" + this->version + "\n" +
                     "SCRIPT_NAME=" + this->_path + "\n";
-}   
-    // std::cout << "body part header >> " << this->_body << "\n";
-    // std::cout << "-------- Request parsing -------" << "\n"
-    //           << "Method >> " << this->_method << "\n"
-    //           << "Hostname >> " << this->hostname << "\n"
-    //           << "Port >> " << this->port << "\n"
-    //           << "Content-Length >> " << this->content_len << "\n"
-    //           << "Connection >> " << this->conn_status << "\n"
-    //           << "Content-Type >> " << this->content_type << "\n"
-    //           << "CGI boolean >> " << this->bool_cgi << "\n"
-    //           << "Body >> " << this->_body << "\n"
-    //           << "\n << CGI env >> \n" << cgi_env << "\n"
-    //         //   << "File upload filename >> " << this->_filename << "\n"
-    //           << "Boolean boundary >> " << this->bool_boundary << "\n"
-    //           << "Request category >> " << request_category
-    //           << std::endl;
+    }
 }
 
 //-------------------- fetch the correct server scope from webserv 

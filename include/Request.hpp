@@ -25,7 +25,7 @@ enum request_cat
 	CGI,
 	REDIRECTION,
 	UPLOAD,
-	AUTOINDEX
+	RPROXY
 };
 
 struct binary_file{
