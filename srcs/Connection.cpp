@@ -16,9 +16,7 @@ Connection	&Connection::operator=(const Connection &other)
 	return (*this);
 }
 
-Connection::~Connection()
-{
-}
+Connection::~Connection() {}
 
 Connection::Connection(const Server *server) : _server(server)
 {
@@ -108,8 +106,6 @@ void	Connection::route()
 	std::cout << "path: " << path << std::endl;
 	const t_location*	location = NULL;
 
-	location = get(_server->locations(), path.empty() ? "/" : path);
-
 	for (int i = path.size(); i >= 0; --i)
 	{
 
@@ -130,28 +126,31 @@ void	Connection::route()
 			}
 		}
 	}
-	if (!location)
+	if (location)
 	{
-		final = root + path;
-		// error shold handle here;
-	}
-	std::cout << "loc: " << loc << ", final: " << final << std::endl;
-	if (location->r_status > 0)
-		_req.set_category(REDIRECTION);
-	switch (_req.category())
-	{
-		case NORMAL:
-			_rep._status = norm_handle(final, _req, _rep, location);
-			break;
-		case CGI: break;
+		std::cout << "loc: " << loc << ", final: " << final << std::endl;
+		if (location->r_status > 0)
+			_req.set_category(REDIRECTION);
+		switch (_req.category())
+		{
+			case NORMAL:
+				_rep._status = norm_handle(final, _req, _rep, location);
+				break;
+			case CGI: break;
 
-		case REDIRECTION:
-			redirect_handle(location->r_status, location->r_url, _rep);
-			return ;
-		case UPLOAD: break;
+			case REDIRECTION:
+				redirect_handle(location->r_status, location->r_url, _rep);
+				return ;
+			case UPLOAD: break;
 
-		case AUTOINDEX: break;
+			case AUTOINDEX: break;
+		}
 	}
+
+	// final = root + path;
+	// error shold handle here;
+
+	
 	// if (_rep._status >= 400)
 	// 	error_handle();
 	// std::cout << "this is the status: " << _rep._status << std::endl;
