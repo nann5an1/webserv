@@ -17,7 +17,7 @@ int main(int ac, char **av)
 		Webserv webserv;
 
 		av[1] = (char *)(std::string(getpwuid(getuid())->pw_name) + ".conf").c_str();
-
+		std::cout << av[1] << std::endl;
 		webserv.fileParser(av[1]);
 		webserv.printServers();
 		// if (webserv.start())
