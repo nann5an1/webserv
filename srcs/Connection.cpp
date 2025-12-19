@@ -147,7 +147,6 @@ void	Connection::route()
 				return ;
 			case UPLOAD: break;
 
-			case RPROXY: break;
 		}
 	}
 

@@ -16,10 +16,6 @@
 
 #include "Utils.hpp"
 
-// TEMP~ i want to overload the sock, but not as int, 
-// bcuz i rather overload int as port but not sure yet. Let me test this first. Thank you :)
-
-//location scope that is to be under Server
 typedef struct	s_location
 {
 	bool		autoindex;
@@ -78,7 +74,7 @@ class Server{
 		int inputLocation(std::string line, t_location &location);
 		std::string trimSemiColon(std::string val);
 		static int validateHTTPCode(int &code);
-		void print() const;
+		void	print() const;
 
 };
 
