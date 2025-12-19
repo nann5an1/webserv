@@ -157,6 +157,22 @@ std::string	get_ext(const std::string& filename)
     return filename.substr(dot_pos + 1);
 }
 
+int	identify_method(const char *method)
+{
+	std::string	mth(method);
+	return (identify_method(mth));
+}
+
+int	identify_method(const std::string& method)
+{
+	if (method == "GET")
+		return GET;
+	else if (method == "POST")
+		return POST;
+	else if (method == "DELETE")
+		return DELETE;
+	return (UNKNOWN);
+}
 
 
 // bool fileExists(const char* path) {

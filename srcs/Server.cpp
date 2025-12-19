@@ -86,11 +86,8 @@ int Server::inputData(std::string &line) {
 	}
 	else if (token == "return" && this->_r_status == 0)
 	{
-		std::cout << "return got in" << std::endl;
 		if (!parse_return(ss, _r_status, _r_url))
-			return (0);
-		std::cout << "_r_status : " << _r_status << ", " << _r_url << std::endl;
-		
+			return (0);		
 	}
 	else if(token == "error_page")
 	{
@@ -113,25 +110,24 @@ int Server::inputLocation(std::string line, t_location &location){
 		if(val == "on") location.autoindex = true;
 		else location.autoindex = false;
 	}
-	else if(token == "methods"){
-		while(ss >> val){
-			if(val.find(";") != std::string::npos)	val = trimSemiColon(val);
-			if(val == "GET")	location.get = true;
-			if(val == "POST")	location.post = true;
-			if(val == "DELETE")	location.del = true;
+	else if(token == "methods")
+	{
+		while(ss >> val)
+		{
+			if (val.find(";") != std::string::npos)
+				val = trimSemiColon(val);
+			location.methods |= identify_method(val);
 		}
 		// std::cout << "methods >> " << method1 << " " << method2 << " " << method3 << std::endl;	
 	}
 	else if(token == "root"){
 		ss >> val;
-		val = trimSemiColon(val);
-		location.root = val;
+		location.root = trimSemiColon(val);
 		// std::cout <<"location _root >> " << location._root << std::endl;
 	}
 	else if(token == "upload_dir"){
 		ss >> val;
-		val = trimSemiColon(val);
-		location.upload_dir = val;
+		location.upload_dir = trimSemiColon(val);
 	}
 	else if(token == "index"){
 		while(ss >> val)
@@ -139,26 +135,19 @@ int Server::inputLocation(std::string line, t_location &location){
 		// std::cout << location.index_files[0] << " " << location.index_files[1] << std::endl;
 	}
 	else if(token == "cgi"){
-		std::string key, val;
+		std::string key;
 		ss >> key >> val;
-		val = trimSemiColon(val);
-		location.cgi.insert(std::pair<std::string, std::string>(key, val));
+		location.cgi.insert(std::pair<std::string, std::string>(key, trimSemiColon(val)));
 	}
 	else if(token == "return" && location.r_status == 0)
 	{
-		std::string	val;
-		int			key;
-		
-		if(!(ss >> key) || !validateHTTPCode(key))
+		if (!parse_return(ss, location.r_status, location.r_url))
 			return (0);
-		location.r_status = key;
-		if (ss >> val)
-			location.r_url = trimSemiColon(val);
 	}
 	else if (token == "proxy_pass")
 	{
-		ss >> token;
-		location.rproxy = trimSemiColon(token);
+		ss >> val;
+		location.rproxy = trimSemiColon(val);
 	}
 	else if(token == "error_page")
 		parse_err_pages(ss, location.err_pages);
@@ -191,6 +180,7 @@ Server::Server(std::ifstream &file)
 		{
 			location_scope = true;
 			location = t_location();
+			location.methods = GET;
 			ss >> this->location_path;
 			continue;
 		}
@@ -314,9 +304,9 @@ void Server::print() const {
         std::cout << "Location: " << path << "\n";
         std::cout << "  autoindex: " << (loc.autoindex ? "on" : "off") << "\n";
         std::cout << "  methods: "
-                  << (loc.get ? "GET " : "")
-                  << (loc.post ? "POST " : "")
-                  << (loc.del ? "DELETE " : "") << "\n";
+                  << (loc.methods & GET ? "GET " : "")
+                  << (loc.methods & POST ? "POST " : "")
+                  << (loc.methods & DELETE ? "DELETE " : "") << "\n";
         std::cout << "  root: " << loc.root << "\n";
         std::cout << "  upload_dir: " << loc.upload_dir << "\n"
 				  << "  proxy_pass: " << loc.rproxy << "\n";

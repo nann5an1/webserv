@@ -14,14 +14,20 @@
 #include <iterator>
 
 #define	RED	"\033[31m"
+#define YELLOW "\033[33m"
 #define	RESET "\033[0m"
+
+#define UNKNOWN 0
+#define GET (1 << 0)
+#define POST (1 << 1)
+#define DELETE (1 << 2)
 
 struct	fd 
 {
    	int fd_;
 	fd();
-    fd(int FD);
-    operator int() const;
+	fd(int FD);
+	operator int() const;
 };
 
 extern std::map<int, const char*>	gphrase;
@@ -38,6 +44,9 @@ bool	is_dir(std::string path);
 int		file_check(std::string path, int mod);
 int		fail(std::string head, int err_no);
 int		read_file(std::string &path, std::string &data);
+int     identify_method(const std::string& method);
+int		identify_method(const char *method);
+
 std::string	get_ext(const std::string& filename);
 
 
@@ -56,31 +65,31 @@ std::string	to_string(T value)
 // Template function to print any map
 template <typename K, typename V>
 void	printMap(const std::map<K, V> &m) {
-    for (typename std::map<K, V>::const_iterator it = m.begin(); it != m.end(); ++it) {
-        std::cout << it->first << " -> " << it->second << std::endl;
-    }
+	for (typename std::map<K, V>::const_iterator it = m.begin(); it != m.end(); ++it) {
+		std::cout << it->first << " -> " << it->second << std::endl;
+	}
 }
 
 // For const maps
 template <typename MapType, typename KeyType>
 const typename MapType::mapped_type* get(const MapType& m, const KeyType& key)
 {
-    typename MapType::const_iterator it = m.find(key);
-    if (it != m.end())
-        return &it->second;
-    else
-        return NULL;  // nullptr doesn't exist in C++98
+	typename MapType::const_iterator it = m.find(key);
+	if (it != m.end())
+		return &it->second;
+	else
+		return NULL;  // nullptr doesn't exist in C++98
 }
 
 // For non-const maps
 template <typename MapType, typename KeyType>
 typename MapType::mapped_type* get(MapType& m, const KeyType& key)
 {
-    typename MapType::iterator it = m.find(key);
-    if (it != m.end())
-        return &it->second;
-    else
-        return NULL;
+	typename MapType::iterator it = m.find(key);
+	if (it != m.end())
+		return &it->second;
+	else
+		return NULL;
 }
 
 template <typename T>
@@ -93,11 +102,11 @@ void	print_container(T container)
 }
 
 template <typename MapType>
-void print_map(const MapType& container)
+void	print_map(const MapType& container)
 {
-    for (typename MapType::const_iterator ci = container.begin(); ci != container.end(); ++ci)
-        std::cout << ci->first << " " << ci->second << ", ";
-    std::cout << std::endl;
+	for (typename MapType::const_iterator ci = container.begin(); ci != container.end(); ++ci)
+		std::cout << ci->first << " " << ci->second << ", ";
+	std::cout << std::endl;
 }
 
 

@@ -18,10 +18,11 @@ int main(int ac, char **av)
 
 		av[1] = (char *)(std::string(getpwuid(getuid())->pw_name) + ".conf").c_str();
 
-		webserv.fileParser(av[1]);
-		// webserv.printServers();
-		if (webserv.start())
-			return (1);
+        std::cout << "========== " << av[1] << " ==========" << std::endl;
+		webserv.fileParser((char *)"aoo.conf");
+		webserv.printServers();
+		// if (webserv.start())
+		// 	return (1);
 	} catch (std::exception &e)
 	{
 		std::cerr << e.what() << std::endl;

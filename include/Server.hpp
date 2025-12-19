@@ -23,9 +23,7 @@
 typedef struct	s_location
 {
 	bool		autoindex;
-	bool		get;
-	bool		post;
-	bool		del;
+	int			methods;
 	int			r_status;
 	std::string r_url;
 	std::string	root;
