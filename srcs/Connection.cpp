@@ -129,6 +129,7 @@ void	Connection::route()
 	if (location)
 	{
 		std::cout << "loc: " << loc << ", final: " << final << std::endl;
+		if (_server._req.method())
 		if (location->r_status > 0)
 			_req.set_category(REDIRECTION);
 		switch (_req.category())

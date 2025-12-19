@@ -11,7 +11,7 @@ int	norm_handle(std::string	&path, Request &req, Response &rep, const t_location
 {
 	int	status;
 	const std::vector<std::string>	&indexs = location->index_files;
-
+	
 	if (is_dir(path))
 	{
 		if (indexs.empty() && location->autoindex)
