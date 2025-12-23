@@ -24,6 +24,8 @@ Content-Length: 20
 
 //content-type should be highly consdiered since if it's www-form-urlencoded it means the request has the body
 //in this case only need to parse the the values into body attribute cux (POST) method
+//normal parsing
+
 POST /script.php HTTP/1.1
 Host: localhost:8080
 Content-Type: application/x-www-form-urlencoded
@@ -54,7 +56,7 @@ POST /upload HTTP/1.1
 Host: localhost:8080
 Content-Type: multipart/form-data; boundary=----XYZ789
 Content-Length: 200
-
+/r/n/r/n
 ------XYZ789
 Content-Disposition: form-data; name="file1"; filename="test.jpg"
 Content-Type: image/jpeg
@@ -66,7 +68,7 @@ Content-Type: application/octet-stream
 
 <binary data here>
 ------XYZ789--
-
+=========== body ends here==================
 
 =========== Redirect Request with Referer Header ===========
 GET /old-page HTTP/1.1
@@ -85,6 +87,13 @@ Host: 127.0.0.1:8081
 User-Agent: Mozilla/5.0
 Accept: text/html
 Connection: close
+
+*Has transfter-encoding: chunked* and doesn't have "content-length"
+============== CHUNKED ENCODING ==================
+POST /upload HTTP/1.1
+Host: localhost:8080
+Transfer-Encoding: chunked
+Content-Type: application/x-www-form-urlencoded
 
 
 

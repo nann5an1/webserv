@@ -29,7 +29,7 @@ enum request_cat
 
 struct binary_file{
 	std::string filename;
-	std::string binary_data;
+	// std::string binary_data;
 	std::string content_type;
 	std::string data; 
 };
@@ -51,6 +51,7 @@ class Request{
 		bool bool_boundary;
 		bool bool_referer;
 		bool bool_binary;
+		bool bool_chunked;
 		
 		std::string	cgi_env;
 		std::string boundary;
@@ -65,11 +66,6 @@ class Request{
 		// Request(const Request &other);
 		// Request &operator=(const Request &other);
 		void parseRequest(const char *raw_request);
-		void fetchServerScope();
-		// void extractMultipartFile(std::istream &iss);
-		void extractMultipartFile(const std::string &body);
-		void parseSinglePart(const std::string &headers,
-							const std::string &binary);
 		void printUploadedFiles() const;
 		
 		void	set_category(request_cat type);
@@ -77,6 +73,10 @@ class Request{
 		std::string	method() const;
 		request_cat	category() const;
 		std::vector<binary_file>	binary_data() const;
+		void handleChunkedBody(const char* body);
+		void extractMultipartFiles(const std::string &body);
+		void parseSinglePart(const std::string &headers, 
+			const std::string &binary);
 };
 
 #endif

@@ -65,92 +65,110 @@ std::string toLower(std::string token){
     return result;
 }
 
-// void Request::parseSinglePart(const std::string &headers,
-//                               const std::string &binary)
-// {
-//     binary_file filePart;
+void Request::handleChunkedBody(const char* raw_body)
+{
+    const char* ptr = raw_body;
+    _body.clear();
 
-//     // --- Extract filename="..." ---
-//     std::string filename_key = "filename=\"";
-//     size_t filename_pos = headers.find(filename_key);
-//     if (filename_pos != std::string::npos) {
-//         filename_pos += filename_key.size();
-//         size_t end = headers.find("\"", filename_pos);
-//         if (end != std::string::npos)
-//             filePart.filename = headers.substr(filename_pos, end - filename_pos);
-//     }
+    while (true)
+    {
+        // 1. read chunk size
+        const char* line_end = strstr(ptr, "\r\n");
+        if (!line_end) break; // malformed
+        
+        std::string size_str(ptr, line_end - ptr);
+        size_t chunk_size = 0;
+        std::stringstream ss;
+        ss << std::hex << size_str;
+        ss >> chunk_size;
 
-//     // --- Extract Content-Type: ---
-//     std::string ct_key = "Content-Type:";
-//     size_t ct_pos = headers.find(ct_key);
-//     if (ct_pos != std::string::npos) {
-//         ct_pos += ct_key.size();
+        ptr = line_end + 2; // move past \r\n
 
-//         // Skip spaces after Content-Type:
-//         while (ct_pos < headers.size() && (headers[ct_pos] == ' ' || headers[ct_pos] == '\t'))
-//             ct_pos++;
+        if (chunk_size == 0) break;
 
-//         // End at newline
-//         size_t end = headers.find("\r\n", ct_pos);
-//         if (end == std::string::npos)
-//             end = headers.size();
+        // 2. append chunk data
+        _body.append(ptr, chunk_size);
 
-//         filePart.content_type = headers.substr(ct_pos, end - ct_pos);
-//     }
+        ptr += chunk_size + 2; // move past chunk + trailing \r\n
+    }
+}
 
-//     // --- Store binary data ---
-//     filePart.data = binary;
+void Request::extractMultipartFiles(const std::string &body)
+{
+    std::string delimiter = "--" + boundary;
+    std::string close_delimiter = delimiter + "--";
 
-//     // Save to request
-//     this->upload_files.push_back(filePart);
-// }
+    size_t pos = 0;
 
+    while (true)
+    {
+        size_t start = body.find(delimiter, pos);
+        if (start == std::string::npos)
+            break;
 
-// void Request::extractMultipartFile(const std::string &body) {
-//     std::string boundary = "--" + this->boundary;
-//     size_t pos = 0;
+        start += delimiter.length();
 
-//     while (true) {
-//         // 1. Find boundary
-//         size_t boundary_pos = body.find(boundary, pos);
-//         if (boundary_pos == std::string::npos)
-//             break;
+        // End marker
+        if (body.compare(start, 2, "--") == 0)
+            break;
 
-//         // Move to after boundary line
-//         size_t headers_start = body.find("\r\n", boundary_pos);
-//         if (headers_start == std::string::npos)
-//             break;
-//         headers_start += 2;
+        // Skip CRLF
+        if (body.compare(start, 2, "\r\n") == 0)
+            start += 2;
 
-//         // 2. Find header/body separator
-//         size_t data_start = body.find("\r\n\r\n", headers_start);
-//         if (data_start == std::string::npos)
-//             break;
-//         data_start += 4; // skip the empty line
+        size_t header_end = body.find("\r\n\r\n", start);
+        if (header_end == std::string::npos)
+            break;
 
-//         // 3. Find next boundary FROM data_start
-//         size_t next_boundary = body.find(boundary, data_start);
-//         if (next_boundary == std::string::npos)
-//             break; // last part
+        std::string headers = body.substr(start, header_end - start);
 
-//         // 4. Extract headers and binary safely
-//         std::string headers = body.substr(headers_start,
-//                                           (data_start - 4) - headers_start);
+        size_t data_start = header_end + 4;
+        size_t data_end = body.find("\r\n" + delimiter, data_start);
+        if (data_end == std::string::npos)
+            break;
 
-//         std::string binary = body.substr(data_start,
-//                                          next_boundary - data_start);
+        std::string binary = body.substr(data_start, data_end - data_start);
 
-//         parseSinglePart(headers, binary);
+        parseSinglePart(headers, binary);
 
-//         pos = next_boundary;
-//     }
-// }
+        pos = data_end;
+    }
+}
+void Request::parseSinglePart(const std::string &headers,
+                              const std::string &binary)
+{
+    binary_file file;
 
+    std::istringstream iss(headers);
+    std::string line;
+
+    while (std::getline(iss, line))
+    {
+        if (line.find("Content-Disposition") != std::string::npos)
+        {
+            size_t fn = line.find("filename=\"");
+            if (fn != std::string::npos)
+            {
+                fn += 10;
+                size_t end = line.find("\"", fn);
+                file.filename = line.substr(fn, end - fn);
+            }
+        }
+        else if (line.find("Content-Type") != std::string::npos)
+        {
+            size_t pos = line.find(":");
+            file.content_type = line.substr(pos + 1);
+            file.content_type.erase(0, file.content_type.find_first_not_of(" "));
+        }
+    }
+
+    file.data = binary;
+    _upload_files.push_back(file);
+}
 
 
 //----------------- request parsing --------------------
 void Request::parseRequest(const char *raw_request){
-    // std::map<std::string, content_category> content_types;
     request_cat request_category;
     
     bool_cgi = false;
@@ -159,28 +177,26 @@ void Request::parseRequest(const char *raw_request){
     bool bool_connection = false;
     bool bool_cont_type = false;
     bool bool_main_headers = false;
+    bool bool_transfer = false;
 
     size_t idx2;
     int length;
     std::string line;
-    
-    const char* body_start = strstr(raw_request, "\r\n\r\n"); //returns the pointer to the first \r\n\r\n
-    size_t header_len = body_start - raw_request;
-    size_t body_len = strlen(raw_request) - header_len;
-
-    std::string header(raw_request, header_len);
-    std::string body(body_start + 4, body_len); //binary safe since the remaining data is dumped into body
-
 
     /*-------------------------header handler  ----------------------*/
+    const char* body_start = strstr(raw_request, "\r\n\r\n"); //returns the pointer to the first \r\n\r\n
     //will only process the header's 
+
+    if (!body_start) return;
+    size_t header_len = body_start - raw_request;
+    std::string header(raw_request, header_len); //the main header of the request
     std::istringstream iss(header); //take hte request as a string stream
 
+    //identify the parsing type by getting the headers first
     //process each header line
     while(std::getline(iss, line)){
         std::stringstream stream(line);
         std::string token;
-        
         while(stream >> token){ //toLower is applied because headers are case-insensitive
             // std::cout << token << std::endl;
             if(token == "POST" || token == "GET"  || token == "DELETE") this->_method = token;
@@ -214,10 +230,14 @@ void Request::parseRequest(const char *raw_request){
             else if(toLower(token)  == "content-length:") bool_content_len = true;
             else if(toLower(token)  == "connection:") bool_connection = true;
             else if(!bool_boundary && toLower(token) == "content-type:") bool_cont_type = true;
+            else if (toLower(token) == "transfer-encoding:") bool_transfer = true;
             else if(toLower(token) == "referer:"){ 
                 bool_referer = true;
                 request_category = REDIRECTION;
             }
+            else if(bool_transfer){
+                if(token == "chunked") this->bool_chunked = true;
+            } 
             else if(bool_content_len){
                 if(validate_len(token)) this->content_len = atoi(token.c_str());
                 cgi_env += "CONTENT_LENGTH=" + token + "\n";
@@ -250,12 +270,6 @@ void Request::parseRequest(const char *raw_request){
                 request_category = UPLOAD;
                 std::cout << "boundary >> " << this->boundary << std::endl;
             }
-            // else if(token.find("filename") != std::string::npos){
-            //     int firstIdx = token.find("\"");
-            //     int lastIdx = token.length() - 1;
-            //     this->filename = token.substr(firstIdx + 1, lastIdx - firstIdx - 1);
-
-            // }
             else if(bool_referer){
                 this->referer = token;
                 bool_referer = false;
@@ -263,11 +277,28 @@ void Request::parseRequest(const char *raw_request){
         }
     }
     /*-------------------------body handler  ----------------------*/
+
+    
+    // size_t body_len = strlen(raw_request) - header_len;
+    body_start += 4;  //the real starting of the body context
+
+     //normal and unchunked parsing (without the transfer-encoding: chunked)
+    if(!bool_chunked){         
+        _body.assign(body_start, this->content_len);
+        if(bool_boundary)  extractMultipartFiles(_body);
+    }
+    else                                        //chunked parsing
+       { handleChunkedBody(body_start);
+        std::cout << "handling of chunk working" << std::endl;
+    }
+
+    std::cout << "body print out >> " << _body << std::endl;
+
     if(this->bool_boundary){
         // extractMultipartFile(body);
         // printUploadedFiles();
         std::cout << "multipart size" << "\n"
-                    << body.size() << std::endl;
+                    << _body.size() << std::endl;
     }
 
     if(bool_cgi){
