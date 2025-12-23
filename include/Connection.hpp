@@ -32,6 +32,8 @@ class	Connection
 		operator	fd() const;
 		operator	std::time_t() const;
 
+		void		set_req(Request &req);
+		void		set_server(Server *server);
 		std::time_t	contime() const;
 };
 

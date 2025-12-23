@@ -95,37 +95,35 @@ bool	Connection::response()
 void	Connection::route()
 {
 	std::string	path = _req.path();
-	
-	std::string	final = "", loc = "", root = _server->root();
+	std::string	final = "", loc = "", remain = "";
 
 	if (_server->r_status())
 	{
 		redirect_handle(_server->r_status(), _server->r_url(), _rep);
 		return ;
 	}
-	std::cout << "path: " << path << std::endl;
+
 	const t_location*	location = NULL;
 
 	for (int i = path.size(); i >= 0; --i)
 	{
-
 		if (path[i] == '/' || i == path.size())
 		{
 			loc = path.substr(0, i);
-			std::cout << "loc: " << loc << std::endl;
-			location = get(_server->locations(), loc.empty() ? "/" : loc);
+			location = get(_server->locations(), !i ? "/" : loc);
 			if (location)
 			{
-				root = location->root.empty() ? _server->root() : location->root;
-				final = root;
-				if (loc != "/")
-					final += loc;            // append matched location
-				if (i + 1 < path.size())
-					final += path.substr(i); // append remaining path after slash
-				break;
+				std::string	root = location->root.empty() ? _server->root() : location->root;
+				remain = path.substr(i);
+				final = root + (loc == "/" ? "" : loc) + remain;
+				break ;
 			}
 		}
 	}
+
+	// std::cout << "final: " << final << std::endl;
+
+	
 	if (location)
 	{
 		if (!(location->methods & identify_method(_req.method())))
@@ -141,7 +139,7 @@ void	Connection::route()
 				_rep._status = norm_handle(final, _req, _rep, location);
 				break;
 			case CGI: break;
-
+				
 			case REDIRECTION:
 				redirect_handle(location->r_status, location->r_url, _rep);
 				return ;
@@ -173,4 +171,14 @@ Connection::operator	fd() const
 Connection::operator std::time_t() const
 {
 	return (_time);
+}
+
+void	Connection::set_req(Request &req)
+{
+	_req = req;
+}
+
+void	Connection::set_server(Server *server)
+{
+	_server = server;
 }
