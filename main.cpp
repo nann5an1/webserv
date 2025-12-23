@@ -4,95 +4,69 @@
 #include "Utils.hpp"
 #include "Cgi.hpp"
 
+#include <pwd.h>
 
 int main(int ac, char **av)
 {
+	int	status = 0;
 	if(ac > 2) 
 		return (1);
+	init_global();
+	try
+	{
+		Webserv webserv;
 
-	init_gphrase();
-    Webserv webserv;
+		av[1] = (char *)(std::string(getpwuid(getuid())->pw_name) + ".conf").c_str();
+        
+		webserv.fileParser(av[1]);
+		webserv.printServers();
+		std::cout << "========== " << av[1] << " ==========" << std::endl;
+		// if (webserv.start())
+		// 	return (1);
+		
 
-    // webserv.fileParser("test.conf");
-    // webserv.start();
-
-	// const char* raw_request = 
-    //     "POST /upload HTTP/1.1\n"
-    //     "Host: localhost:8080\n"
-    //     "Content-Type: application/json\n" 
-    //     "Content-Length: 27\n"                     
-    //     "Connection: keep-alive\n";
-
-    // const char* raw_request2 =
-    //     "GET /script.pl?name=john&age=20 HTTP/1.1\n"
-    //     "Host: localhost:8080\n"
-    //     "Accept: text/html\n"
-    //     "Connection: close";
-
-    const char* raw_request3 = 
-    "POST /script.php HTTP/1.1\n"
-    "Host: localhost:8080\n"
-    "Content-Type: application/x-www-form-urlencoded\n"
-    "Content-Length: 19\n";
-
-    // "name=john&age=20";
+	} catch (std::exception &e)
+	{
+		std::cerr << e.what() << std::endl;
+	}
+	
+    return (0);
+}
 
 
-//    const char* raw_request4 =
-//     "POST /upload HTTP/1.1\r\n"
-//     "Host: localhost:8080\r\n"
-//     "Content-Type: multipart/form-data; boundary=----ABC123\r\n"
-//     "Content-Length: 514\r\n"
-//     "\r\n"
-//     "------ABC123\r\n"
-//     "Content-Disposition: form-data; name=\"file\"; filename=\"test.jpg\"\r\n"
-//     "Content-Type: image/jpeg\r\n"
-//     "\r\n"
-//     "\xFF\xD8\xFF\xE0\x00\x10\x4A\x46\x49\x46\x00\x01"
-//     "hello world"
-//     "\xFF\xD9"
-//     "\r\n"
-//     "------ABC123--\r\n";
+void	testing_path(Webserv &webserv)
+{
+	const char* tempPaths[] = {"/autoindex/", "/autoindex", "/autoindex/smth", "/smth", "/"};
+	std::vector<std::string> paths(tempPaths, tempPaths + 5);
+	std::string loc;
 
-    //  const char raw_request[] =
-    //     "POST /upload HTTP/1.1\r\n"
-    //     "Host: localhost:8080\r\n"
-    //     "Content-Type: multipart/form-data; boundary=----XYZ789\r\n"
-    //     "Content-Length: 500\r\n"
-    //     "\r\n"
-    //     "------XYZ789\r\n"
-    //     "Content-Disposition: form-data; name=\"file1\"; filename=\"test.jpg\"\r\n"
-    //     "Content-Type: image/jpeg\r\n"
-    //     "\r\n"
-    //     "\xFF\xD8\xFF\xE0\x00\x10\x4A\x46\x49\x46\x00\x01"   // fake JPEG header
-    //     "HelloWorld1"
-    //     "\xFF\xD9"
-    //     "\r\n"
-    //     "------XYZ789\r\n"
-    //     "Content-Disposition: form-data; name=\"file2\"; filename=\"example.bin\"\r\n"
-    //     "Content-Type: application/octet-stream\r\n"
-    //     "\r\n"
-    //     "\xDE\xAD\xBE\xEF\x00\x01\x02\x03"   // fake binary
-    //     "HelloWorld2"
-    //     "\xAA\xBB\xCC\xDD"
-    //     "\r\n"
-    //     "------XYZ789--\r\n";
+	const t_location	*location = NULL;
+	Server	server = webserv._servers[0];
+	for (int j = 0; j < paths.size(); ++j)
+	{
+		std::string path = paths[j], final = "", remain = "";
+		for (int i = path.size(); i >= 0; --i)
+		{
+			if (path[i] == '/' || i == path.size())
+			{
+				loc = path.substr(0, i);
+				if (i == 0)
+					loc = "/";
+				location = get(webserv._servers[0].locations(), loc);
+				if (location)
+				{
 
-    Request req;
-    req.parseRequest(raw_request3);
+					std::string	root = location->root.empty() ? server.root() : location->root;
+					remain = path.substr(i);
+					if (loc == "/")
+						loc = "";
+					final = root + loc + remain;
+					std::cout << j << " final: " << final << std::endl;
 
-    // std::string path = "some path";
-    Cgi cgi_test;
-    cgi_test.execute();
+					break ;
+				}
 
-    return 0;
-    // Server	server;
-	// int		status;
-	// if ((status = server.start()) != 0)
-	// 	std::cerr << RED << "Error: Socket: " << strerror(status) << RESET << std::endl;
-
-	// fd	sock = server;
-	// std::cout << "port: " << server << std::endl;
-	// std::cout << "sock: " << sock << std::endl;
-	// std::cout << "id: " << (std::string)server << std::endl;
+			}
+		}
+	}
 }

@@ -7,20 +7,20 @@ Cgi::~Cgi() {}
 
 
 void Cgi::addToEnv(){
-    std::stringstream ss(cgi_env);
-    std::string token;
+    // std::stringstream ss(cgi_env);
+//     std::string token;
 
-    int i = 0;
+//     int i = 0;
     
-    while(ss >> token){
-        env[i] = strdup(token.c_str());
-        i++;
-    }
-    env[i] = NULL;
-    // int j = 0;
-    // while(env[j] != '\0'){
-    //     printf("%s\n", env[j++]);
-    // }
+//     while(ss >> token){
+//         env[i] = strdup(token.c_str());
+//         i++;
+//     }
+//     env[i] = NULL;
+//     // int j = 0;
+//     // while(env[j] != '\0'){
+//     //     printf("%s\n", env[j++]);
+//     // }
 }
 
 
