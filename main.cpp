@@ -137,8 +137,8 @@ int main(int ac, char **av)
 		std::cout << "========== " << av[1] << " ==========" << std::endl;
 		
 		testing_request();
-		// if (webserv.start())
-		// 	return (1);
+		if (webserv.start())
+			return (1);
 		
 
 	} catch (std::exception &e)

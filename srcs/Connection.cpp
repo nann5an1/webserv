@@ -6,7 +6,7 @@
 /*   By: aoo <aoo@student.42singapore.sg>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/24 13:41:26 by aoo               #+#    #+#             */
-/*   Updated: 2025/12/24 13:43:30 by aoo              ###   ########.fr       */
+/*   Updated: 2025/12/24 19:05:01 by aoo              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -123,6 +123,7 @@ const t_location*	Connection::find_location(std::string &req_url, std::string &f
 			}
 		}
 	}
+	
 	return (NULL);
 }
 
@@ -158,6 +159,12 @@ void	Connection::route()
 				return ;
 			case UPLOAD: break;
 		}
+	}
+	else
+	{
+		_rep._type = "text/html";
+		_rep._status = 404;
+		_rep._body = status_page(404);
 	}
 
 	// final = root + path;
