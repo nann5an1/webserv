@@ -92,10 +92,31 @@ bool	Connection::response()
 	return (true);
 }
 
+const t_location*	Connection::find_location(std::string &req_url, std::string &final_path)
+{
+	std::string	loc = "";
+	const t_location*	location = NULL;
+
+	for (int i = req_url.size(); i >= 0; --i)
+	{
+		if (req_url[i] == '/' || i == req_url.size())
+		{
+			loc = req_url.substr(0, i);
+			location = get(_server->locations(), !i ? "/" : loc);
+			if (location)
+			{
+				std::string	root = location->root.empty() ? _server->root() : location->root;
+				final_path = root + (loc == "/" ? "" : loc) + req_url.substr(i);
+				return (location);
+			}
+		}
+	}
+	return (NULL);
+}
+
 void	Connection::route()
 {
-	std::string	path = _req.path();
-	std::string	final = "", loc = "", remain = "";
+	std::string	url = _req.path(), final_path = "";
 
 	if (_server->r_status())
 	{
@@ -103,40 +124,20 @@ void	Connection::route()
 		return ;
 	}
 
-	const t_location*	location = NULL;
+	const t_location*	location = find_location(url, final_path);
 
-	for (int i = path.size(); i >= 0; --i)
-	{
-		if (path[i] == '/' || i == path.size())
-		{
-			loc = path.substr(0, i);
-			location = get(_server->locations(), !i ? "/" : loc);
-			if (location)
-			{
-				std::string	root = location->root.empty() ? _server->root() : location->root;
-				remain = path.substr(i);
-				final = root + (loc == "/" ? "" : loc) + remain;
-				break ;
-			}
-		}
-	}
-
-	// std::cout << "final: " << final << std::endl;
-
-	
 	if (location)
 	{
 		if (!(location->methods & identify_method(_req.method())))
 		{
 			std::cout << "method not allowed " << std::endl;
 		}
-		std::cout << "loc: " << loc << ", final: " << final << std::endl;
 		if (location->r_status > 0)
 			_req.set_category(REDIRECTION);
 		switch (_req.category())
 		{
 			case NORMAL:
-				_rep._status = norm_handle(final, _req, _rep, location);
+				_rep._status = norm_handle(final_path, _req, _rep, location);
 				break;
 			case CGI: break;
 				
@@ -144,7 +145,6 @@ void	Connection::route()
 				redirect_handle(location->r_status, location->r_url, _rep);
 				return ;
 			case UPLOAD: break;
-
 		}
 	}
 
