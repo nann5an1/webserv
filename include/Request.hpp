@@ -66,17 +66,21 @@ class Request{
 		// Request(const Request &other);
 		// Request &operator=(const Request &other);
 		void parseRequest(const char *raw_request);
+		void handleChunkedBody(const char* body);
+		void extractMultipartFiles(const std::string &body);
+		void parseSinglePart(const std::string &headers, const std::string &binary);
 		void printUploadedFiles() const;
 		
 		void	set_category(request_cat type);
+
 		std::string	path() const;
 		std::string	method() const;
+		std::string	body() const;
 		request_cat	category() const;
-		std::vector<binary_file>	binary_data() const;
-		void handleChunkedBody(const char* body);
-		void extractMultipartFiles(const std::string &body);
-		void parseSinglePart(const std::string &headers, 
-			const std::string &binary);
+		std::vector<binary_file>	upload_files() const;
+
+
+		
 };
 
 #endif

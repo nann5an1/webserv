@@ -6,6 +6,119 @@
 
 #include <pwd.h>
 
+void	testing_request()
+{
+	const char* raw_reqs[] = {
+
+    /* 1. Simple text body */
+    "POST /echo HTTP/1.1\r\n"
+    "Host: example.com\r\n"
+    "Transfer-Encoding: chunked\r\n"
+    "Content-Type: text/plain\r\n"
+    "\r\n"
+    "5\r\n"
+    "Hello\r\n"
+    "6\r\n"
+    " World\r\n"
+    "0\r\n"
+    "\r\n",
+
+    /* 2. Chunk split logically */
+    "POST /data HTTP/1.1\r\n"
+    "Host: example.com\r\n"
+    "Transfer-Encoding: chunked\r\n"
+    "\r\n"
+    "A\r\n"
+    "01234"
+    "56789\r\n"
+    "0\r\n"
+    "\r\n",
+
+    /* 3. JSON request (CGI) */
+    "POST /cgi-bin/api HTTP/1.1\r\n"
+    "Host: example.com\r\n"
+    "Transfer-Encoding: chunked\r\n"
+    "Content-Type: application/json\r\n"
+    "\r\n"
+    "7\r\n"
+    "{\"id\":\r\n"
+    "8\r\n"
+    " 42,\"ok\"\r\n"
+    "7\r\n"
+    ":true}\r\n"
+    "0\r\n"
+    "\r\n",
+
+    // /* 4. Multipart file upload */
+    "POST /upload HTTP/1.1\r\n"
+    "Host: example.com\r\n"
+    "Transfer-Encoding: chunked\r\n"
+    "Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryX\r\n"
+    "\r\n"
+    "1A\r\n"
+    "------WebKitFormBoundaryX\r\n"
+    "Content-Disposition: form-data; name=\"file\"; filename=\"a.txt\"\r\n"
+    "Content-Type: text/plain\r\n"
+    "\r\n"
+    "Hello\r\n"
+    "1A\r\n"
+    "World\r\n"
+    "------WebKitFormBoundaryX--\r\n"
+    "0\r\n"
+    "\r\n",
+
+    /* 5. Chunk extensions */
+    "POST /ext HTTP/1.1\r\n"
+    "Host: example.com\r\n"
+    "Transfer-Encoding: chunked\r\n"
+    "\r\n"
+    "5;foo=bar\r\n"
+    "Hello\r\n"
+    "0\r\n"
+    "\r\n",
+
+    /* 6. Trailers */
+    "POST /trail HTTP/1.1\r\n"
+    "Host: example.com\r\n"
+    "Transfer-Encoding: chunked\r\n"
+    "Trailer: X-Checksum\r\n"
+    "\r\n"
+    "4\r\n"
+    "Data\r\n"
+    "0\r\n"
+    "X-Checksum: abc123\r\n"
+    "\r\n",
+	
+	/* 7. Normal Upload */
+	"POST /upload HTTP/1.1\r\n"
+	"Host: example.com\r\n"
+	"Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryX\r\n"
+	"Content-Length: 165\r\n"
+	"\r\n"
+	"------WebKitFormBoundaryX\r\n"
+	"Content-Disposition: form-data; name=\"file\"; filename=\"a.txt\"\r\n"
+	"Content-Type: text/plain\r\n"
+	"\r\n"
+	"Hello\n"
+	"World\n"
+	"------WebKitFormBoundaryX--\r\n",
+
+    NULL
+	};
+
+	
+	for (size_t i = 0; raw_reqs[i] != NULL; ++i)
+	{
+		const char* req_str = raw_reqs[i];
+		Request req;
+		req.parseRequest(req_str);
+		std::cout << "body: " << req.body() << std::endl;
+		req.printUploadedFiles();
+		std::cout << "\n" << std::endl;
+		/* feed req into your parser */
+	}
+}
+
 int main(int ac, char **av)
 {
 	int	status = 0;
@@ -23,51 +136,7 @@ int main(int ac, char **av)
 
 		std::cout << "========== " << av[1] << " ==========" << std::endl;
 		
-
-		// const char* raw_request = 
-		// "POST /upload HTTP/1.1\r\n"
-		// "Host: localhost:8080\r\n"
-		// "Transfer-Encoding: chunked\r\n"
-		// "Content-Type: application/x-www-form-urlencoded\r\n"
-		// "\r\n"
-		// "8\r\n"            // chunk size in hex (7 bytes)
-		// "username\r\n"     // chunk data
-		// "3\r\n"            // next chunk (3 bytes)
-		// "=ab\r\n"
-		// "2\r\n"            // next chunk (2 bytes)
-		// "&x\r\n"
-		// "2\r\n"            // next chunk (1 byte)
-		// "=1\r\n"
-		// "0\r\n"            // last chunk, 0 size
-		// "\r\n";            // end of chunks
-
-
-		 const char* raw_request = 
-        "POST /upload HTTP/1.1\r\n"
-        "Host: localhost:8080\r\n"
-        "Content-Type: multipart/form-data; boundary=----XYZ789\r\n"
-        "Content-Length: 407\r\n"
-        "\r\n"
-        "------XYZ789\r\n"
-        "Content-Disposition: form-data; name=\"file1\"; filename=\"test.jpg\"\r\n"
-        "Content-Type: image/jpeg\r\n"
-        "\r\n"
-        "FAKEBINARYDATA1FAKEBINARYDATA1FAKEBINARYDATA1\r\n"
-        "------XYZ789\r\n"
-        "Content-Disposition: form-data; name=\"file2\"; filename=\"example.bin\"\r\n"
-        "Content-Type: application/octet-stream\r\n"
-        "\r\n"
-        "FAKEBINARYDATA2FAKEBINARYDATA2FAKEBINARYDATA2\r\n"
-        "------XYZ789\r\n"
-        "Content-Disposition: form-data; name=\"file3\"; filename=\"sample.txt\"\r\n"
-        "Content-Type: text/plain\r\n"
-        "\r\n"
-        "Hello world from sample.txt\r\n"
-        "------XYZ789--\r\n";
-		
-		Request req;
-		req.parseRequest(raw_request);
-		// testing_request();
+		testing_request();
 		// if (webserv.start())
 		// 	return (1);
 		
@@ -78,30 +147,6 @@ int main(int ac, char **av)
 	}
 	
     return (0);
-}
-
-void	testing_request()
-{
-	// const char* raw_req = 
-    // "POST /script.php HTTP/1.1\r\n"
-    // "Host: localhost:8080\r\n"
-    // "Content-Type: application/x-www-form-urlencoded\r\n"
-    // "Content-Length: 19\r\n";
-
-	const char* raw_req = 
-	"POST /upload HTTP/1.1\r\n"
-	"Host: localhost:8080\r\n"
-	"Transfer-Encoding: chunked\r\n"
-	"Content-Type: application/x-www-form-urlencoded\r\n"
-	"\r\n"
-	"13\r\n"
-	"username=abc&x=1\r\n"
-	"0\r\n"
-	"\r\n";
-
-	Request req;
-	req.parseRequest(raw_req);
-
 }
 
 void	testing_path(Webserv &webserv)

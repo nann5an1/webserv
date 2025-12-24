@@ -287,7 +287,7 @@ void Request::parseRequest(const char *raw_request){
         _body.assign(body_start, this->content_len);
         if(bool_boundary)  extractMultipartFiles(_body);
     }
-    else                                        //chunked parsing
+    else                                  //chunked parsing
        { handleChunkedBody(body_start);
         std::cout << "handling of chunk working" << std::endl;
     }
@@ -361,7 +361,13 @@ request_cat Request::category() const
     return (_category);
 }
 
-std::vector<binary_file>    Request::binary_data() const
+std::string Request::body() const
 {
-    return (_upload_files);
+	return (_body);
 }
+
+std::vector<binary_file>    Request::upload_files() const
+{
+	return (_upload_files);
+}
+
