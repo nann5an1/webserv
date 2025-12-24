@@ -15,6 +15,7 @@ class	Connection
 		Request			_req;
 		Response		_rep;
 		const Server	*_server;
+		const t_location*	find_location(std::string &req_url, std::string &final_path);
 
 	public:
 		Connection();
