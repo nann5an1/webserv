@@ -55,7 +55,7 @@ void	redirect_handle(int status, const std::string &path, Response& rep)
 	}
 }
 
-void	rproxy_handle()
+void	cgi_handle()
 {
 	
 }

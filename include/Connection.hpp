@@ -11,6 +11,8 @@ class	Connection
 {
 	private:
 		fd				_fd;
+		std::string		_ip;
+		int				_port;
 		std::time_t		_time;
 		Request			_req;
 		Response		_rep;

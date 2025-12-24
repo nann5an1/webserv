@@ -129,7 +129,7 @@ int main(int ac, char **av)
 
 		std::cout << "========== " << av[1] << " ==========" << std::endl;
 		
-		testing_request();
+		// testing_request();
 		if (webserv.start())
 			return (1);
 		

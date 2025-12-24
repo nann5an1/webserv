@@ -54,7 +54,7 @@ class Request{
 		bool bool_chunked;
 		
 		std::string binary_data; //data from the extractMultipleParts
-		std::string	cgi_env;
+		std::string	_cgi_env;
 		std::string boundary;
 		std::string referer;
 		// std::string filename;
@@ -78,6 +78,7 @@ class Request{
 		std::string	method() const;
 		std::string	body() const;
 		request_cat	category() const;
+		std::string	cgi_env() const;
 		std::vector<binary_file>	upload_files() const;
 
 

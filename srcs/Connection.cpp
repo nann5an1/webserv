@@ -6,15 +6,15 @@
 /*   By: aoo <aoo@student.42singapore.sg>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/24 13:41:26 by aoo               #+#    #+#             */
-/*   Updated: 2025/12/24 19:05:01 by aoo              ###   ########.fr       */
+/*   Updated: 2025/12/25 03:36:49 by aoo              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Connection.hpp"
 
-Connection::Connection() : _fd(-1), _time(0), _rep(), _server(NULL) {}
+Connection::Connection() : _fd(-1), _time(0), _rep(), _server(NULL), _ip(""), _port(0) {}
 
-Connection::Connection(const Connection &other) : _fd(other._fd), _time(other._time), _rep(other._rep), _server(other._server) {}
+Connection::Connection(const Connection &other) : _fd(other._fd), _time(other._time), _rep(other._rep), _server(other._server), _ip(other._ip), _port(other._port) {}
 
 Connection	&Connection::operator=(const Connection &other)
 {
@@ -24,6 +24,8 @@ Connection	&Connection::operator=(const Connection &other)
 		_time = other._time;
 		_rep = other._rep;
 		_server = other._server;
+		_ip = other._ip;
+		_port = other._port;
 	}
 	return (*this);
 }
@@ -42,6 +44,9 @@ Connection::Connection(const Server *server) : _server(server)
 			fail("Epoll", errno);
 		return ;
 	}
+	_ip = inet_ntoa(client_addr.sin_addr);
+	_port = ntohs(client_addr.sin_port);
+
 	// FAIL:
 	if (fcntl(_fd, F_SETFL, fcntl(_fd, F_GETFL, 0) | O_NONBLOCK) < 0)
 	{
@@ -52,7 +57,7 @@ Connection::Connection(const Server *server) : _server(server)
 		return;
 	}
 	_time = time(NULL);
-	std::cout << "[connection]\tclient connected\t\t| socket:" << _fd << std::endl;
+	std::cout << "[connection]\tclient connected\t\t| " << _ip << ":" << _port << " | socket:" << _fd << std::endl;
 
 }
 
@@ -138,6 +143,7 @@ void	Connection::route()
 	}
 
 	const t_location*	location = find_location(url, final_path);
+	std::cout << "final: " << final_path << std::endl;
 
 	if (location)
 	{
@@ -152,7 +158,11 @@ void	Connection::route()
 			case NORMAL:
 				_rep._status = norm_handle(final_path, _req, _rep, location);
 				break;
-			case CGI: break;
+			case CGI:
+				std::cout << "cgi request come in " << std::endl;
+				std::cout << "\n" << _req.cgi_env() <<  std::endl;
+				_rep._status = 200;
+				break;
 				
 			case REDIRECTION:
 				redirect_handle(location->r_status, location->r_url, _rep);

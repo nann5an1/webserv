@@ -164,9 +164,9 @@ Server::Server(std::ifstream &file)
   _r_url(""),
   location_path("")
 {
-	std::string line, tok;
+	std::string line, tok = "";
 	
-	bool location_scope;
+	bool location_scope = false;
 	t_location location;
 
 	while(getline(file, line))

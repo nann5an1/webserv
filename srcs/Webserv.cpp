@@ -133,7 +133,7 @@ void Webserv::fileParser(char *av)
 	while(getline(file, line))
 	{
 		std::stringstream	ss(line);
-		std::string			tok;
+		std::string			tok = "";
 		while (ss >> tok)
 		{
 			if (tok == "server")
