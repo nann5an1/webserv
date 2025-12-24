@@ -53,6 +53,7 @@ class Request{
 		bool bool_binary;
 		bool bool_chunked;
 		
+		std::string binary_data; //data from the extractMultipleParts
 		std::string	cgi_env;
 		std::string boundary;
 		std::string referer;

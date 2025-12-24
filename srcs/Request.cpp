@@ -3,6 +3,7 @@
 #include <iostream>
 #include <algorithm>
 #include <string>
+#include <cstring>
 
 std::string cgi_env = "";
 
@@ -22,7 +23,7 @@ Request::Request():
     bool_boundary(false),
     bool_referer(false),
     bool_binary(false),
-
+    bool_chunked(false),
     cgi_env(""),
     boundary(""),
     referer("")
@@ -30,24 +31,10 @@ Request::Request():
     content_types["application/json"] = JSON;
     content_types["application/x-www-form-urlencoded"] = URLENCODED;
     content_types["multipart/form-data"] = FORM;
+    // content_types["text/plain"] = NORMAL;
 }
 
 Request::~Request() {}
-// Request::Request(const Request &other):
-//     method(other.method),
-//     path(other.path),
-//     hostname(other.hostname),
-//     port(other.port),
-//     conn_status(other.conn_status),
-//     body(other.body)
-// {
-//     *this = other;
-// }
-
-// Request &Request::operator=(const Request &other){
-//     (void)other;
-//     return *this;
-// }
 
 bool validate_len(std::string token){
     for(size_t i = 0; i < token.length(); i++){
@@ -72,33 +59,47 @@ void Request::handleChunkedBody(const char* raw_body)
 
     while (true)
     {
-        // 1. read chunk size
+        // 1. read chunk size line
         const char* line_end = strstr(ptr, "\r\n");
         if (!line_end) break; // malformed
         
         std::string size_str(ptr, line_end - ptr);
+        
+        // Handle chunk extensions (e.g., "5;foo=bar")
+        size_t semicolon = size_str.find(';');
+        if (semicolon != std::string::npos) {
+            size_str = size_str.substr(0, semicolon);
+        }
+        
         size_t chunk_size = 0;
         std::stringstream ss;
         ss << std::hex << size_str;
         ss >> chunk_size;
 
-        ptr = line_end + 2; // move past \r\n
+        ptr = line_end + 2; // move past \r\n after chunk size
 
-        if (chunk_size == 0) break;
+        if (chunk_size == 0) break; // last chunk (0\r\n)
 
-        // 2. append chunk data
+        // 2. append EXACTLY chunk_size bytes to body
         _body.append(ptr, chunk_size);
-
-        ptr += chunk_size + 2; // move past chunk + trailing \r\n
+        ptr += chunk_size;
+        
+        // 3. Skip the mandatory \r\n after chunk data
+        // According to HTTP/1.1 spec, each chunk MUST end with \r\n
+        if (ptr[0] == '\r' && ptr[1] == '\n') {
+            ptr += 2;
+        }
     }
 }
 
 void Request::extractMultipartFiles(const std::string &body)
 {
     std::string delimiter = "--" + boundary;
-    std::string close_delimiter = delimiter + "--";
-
     size_t pos = 0;
+
+    std::cout << "=== Starting multipart extraction ===" << std::endl;
+    std::cout << "Boundary: [" << boundary << "]" << std::endl;
+    std::cout << "Body length: " << body.length() << std::endl;
 
     while (true)
     {
@@ -108,32 +109,54 @@ void Request::extractMultipartFiles(const std::string &body)
 
         start += delimiter.length();
 
-        // End marker
-        if (body.compare(start, 2, "--") == 0)
+        // Check for end marker "--"
+        if (start + 2 <= body.length() && body.compare(start, 2, "--") == 0)
             break;
 
-        // Skip CRLF
-        if (body.compare(start, 2, "\r\n") == 0)
+        // Skip CRLF or LF after boundary
+        if (start < body.length() && body[start] == '\r' && start + 1 < body.length() && body[start + 1] == '\n')
             start += 2;
+        else if (start < body.length() && body[start] == '\n')
+            start += 1;
 
+        // Find end of headers (blank line)
         size_t header_end = body.find("\r\n\r\n", start);
-        if (header_end == std::string::npos)
-            break;
-
-        std::string headers = body.substr(start, header_end - start);
-
-        size_t data_start = header_end + 4;
-        size_t data_end = body.find("\r\n" + delimiter, data_start);
-        if (data_end == std::string::npos)
-            break;
-
-        std::string binary = body.substr(data_start, data_end - data_start);
-
-        parseSinglePart(headers, binary);
-
-        pos = data_end;
+        if (header_end == std::string::npos) {
+            // Try just \n\n
+            header_end = body.find("\n\n", start);
+            if (header_end == std::string::npos)
+                break;
+            
+            std::string headers = body.substr(start, header_end - start);
+            size_t data_start = header_end + 2;
+            size_t data_end = body.find("\n" + delimiter, data_start);
+            if (data_end == std::string::npos)
+                data_end = body.find(delimiter, data_start);
+            if (data_end == std::string::npos)
+                break;
+            
+            std::string file_data = body.substr(data_start, data_end - data_start);
+            parseSinglePart(headers, file_data);
+            pos = data_end;
+        } else {
+            std::string headers = body.substr(start, header_end - start);
+            size_t data_start = header_end + 4;
+            size_t data_end = body.find("\r\n" + delimiter, data_start);
+            if (data_end == std::string::npos) {
+                data_end = body.find("\n" + delimiter, data_start);
+                if (data_end == std::string::npos)
+                    break;
+            }
+            
+            std::string file_data = body.substr(data_start, data_end - data_start);
+            parseSinglePart(headers, file_data);
+            pos = data_end;
+        }
+        
+        std::cout << "Parse Single Part called" << std::endl;
     }
 }
+
 void Request::parseSinglePart(const std::string &headers,
                               const std::string &binary)
 {
@@ -144,6 +167,10 @@ void Request::parseSinglePart(const std::string &headers,
 
     while (std::getline(iss, line))
     {
+        // Remove trailing \r if present
+        if (!line.empty() && line[line.length()-1] == '\r')
+            line.erase(line.length()-1);
+            
         if (line.find("Content-Disposition") != std::string::npos)
         {
             size_t fn = line.find("filename=\"");
@@ -157,26 +184,35 @@ void Request::parseSinglePart(const std::string &headers,
         else if (line.find("Content-Type") != std::string::npos)
         {
             size_t pos = line.find(":");
-            file.content_type = line.substr(pos + 1);
-            file.content_type.erase(0, file.content_type.find_first_not_of(" "));
+            if (pos != std::string::npos)
+            {
+                file.content_type = line.substr(pos + 1);
+                // Trim leading whitespace
+                file.content_type.erase(0, file.content_type.find_first_not_of(" \t"));
+                // Trim trailing whitespace
+                size_t end = file.content_type.find_last_not_of(" \t\r\n");
+                if (end != std::string::npos)
+                    file.content_type = file.content_type.substr(0, end + 1);
+            }
         }
     }
 
     file.data = binary;
     _upload_files.push_back(file);
+    
+    std::cout << "Added file: " << file.filename << " (" << file.data.size() << " bytes)" << std::endl;
 }
-
 
 //----------------- request parsing --------------------
 void Request::parseRequest(const char *raw_request){
-    request_cat request_category;
+    request_cat request_category = NORMAL;
     
     bool_cgi = false;
+    bool_chunked = false;
     bool hostname = false;
     bool bool_content_len = false;
     bool bool_connection = false;
     bool bool_cont_type = false;
-    bool bool_main_headers = false;
     bool bool_transfer = false;
 
     size_t idx2;
@@ -184,59 +220,60 @@ void Request::parseRequest(const char *raw_request){
     std::string line;
 
     /*-------------------------header handler  ----------------------*/
-    const char* body_start = strstr(raw_request, "\r\n\r\n"); //returns the pointer to the first \r\n\r\n
-    //will only process the header's 
-
+    const char* body_start = strstr(raw_request, "\r\n\r\n");
+    
     if (!body_start) return;
     size_t header_len = body_start - raw_request;
-    std::string header(raw_request, header_len); //the main header of the request
-    std::istringstream iss(header); //take hte request as a string stream
+    std::string header(raw_request, header_len);
+    std::istringstream iss(header);
 
-    //identify the parsing type by getting the headers first
-    //process each header line
+    // Process each header line
     while(std::getline(iss, line)){
+        // Remove trailing \r if present
+        if (!line.empty() && line[line.length()-1] == '\r')
+            line.erase(line.length()-1);
+            
         std::stringstream stream(line);
         std::string token;
-        while(stream >> token){ //toLower is applied because headers are case-insensitive
-            // std::cout << token << std::endl;
-            if(token == "POST" || token == "GET"  || token == "DELETE") this->_method = token;
+        while(stream >> token){
+            if(token == "POST" || token == "GET"  || token == "DELETE") {
+                this->_method = token;
+            }
             else if(token[0] == '/'){
                 size_t idx = token.find(".");
                 size_t queryIdx = token.find("?");
-                // std::cout << "idx >> " << idx << std::endl;
-                if(idx != std::string::npos){ //if the extension for the cgi is true
+                
+                if(idx != std::string::npos){
                     idx2 = token.find("?");
-                    // std::cout << "idx2 >> " << idx2 << std::endl;
                     if(idx2 == std::string::npos) {
                         idx2 = 0;
                         length = token.length() - idx - 1;
                     }
                     else length = idx2 - idx - 1;
-                    // std::cout << "ext length >> " << length << std::endl;
+                    
                     std::string ext = token.substr(idx + 1, length);
-                    // std::cout << "extension >> " << ext << std::endl;
                     if(ext == "php" || ext == "py" || ext == "pl" || ext == "sh" || ext == "rb") {
                         this->bool_cgi = true;
                         request_category = CGI;
                     }
                 }
-                if(this->_method == "GET" && queryIdx != std::string::npos) //query parsing
+                if(this->_method == "GET" && queryIdx != std::string::npos)
                     this->_query = token.substr(queryIdx + 1, token.length() - queryIdx);
                 this->_path = token;
-                
             }
             else if(token == "HTTP/1.1") this->version = token;
-            else if(toLower(token)  == "host:") hostname = true;
-            else if(toLower(token)  == "content-length:") bool_content_len = true;
-            else if(toLower(token)  == "connection:") bool_connection = true;
+            else if(toLower(token) == "host:") hostname = true;
+            else if(toLower(token) == "content-length:") bool_content_len = true;
+            else if(toLower(token) == "connection:") bool_connection = true;
             else if(!bool_boundary && toLower(token) == "content-type:") bool_cont_type = true;
-            else if (toLower(token) == "transfer-encoding:") bool_transfer = true;
+            else if(toLower(token) == "transfer-encoding:") bool_transfer = true;
             else if(toLower(token) == "referer:"){ 
                 bool_referer = true;
                 request_category = REDIRECTION;
             }
             else if(bool_transfer){
                 if(token == "chunked") this->bool_chunked = true;
+                bool_transfer = false;
             } 
             else if(bool_content_len){
                 if(validate_len(token)) this->content_len = atoi(token.c_str());
@@ -244,12 +281,13 @@ void Request::parseRequest(const char *raw_request){
                 bool_content_len = false;
             }
             else if(hostname){
-                //will be the value after the host
-                int idx = token.find(":"); //index of the ':'
+                int idx = token.find(":");
                 this->hostname = token.substr(0, idx);
-                token = token.substr(idx + 1, (token.length()) - idx - 1).c_str();
-                this->port = atoi(token.c_str());
-                cgi_env += "SERVER_PORT=" + token + "\n";
+                if(idx != (int)std::string::npos) {
+                    token = token.substr(idx + 1, (token.length()) - idx - 1).c_str();
+                    this->port = atoi(token.c_str());
+                    cgi_env += "SERVER_PORT=" + token + "\n";
+                }
                 hostname = false;
             }
             else if(bool_connection){
@@ -257,10 +295,20 @@ void Request::parseRequest(const char *raw_request){
                 bool_connection = false;
             }
             else if(bool_cont_type){
-                if(!this->content_types[token])
-                    std::cout << "error content type" << std::endl;
-                this->content_type = this->content_types[token];
-                cgi_env += "CONTENT_TYPE=" + token + "\n";
+                // Check if this token contains content type
+                std::string lower_token = toLower(token);
+                
+                // Handle "multipart/form-data;" case
+                if(lower_token.find(";") != std::string::npos) {
+                    lower_token = lower_token.substr(0, lower_token.find(";"));
+                }
+                
+                if(content_types.find(lower_token) != content_types.end()) {
+                    this->content_type = content_types[lower_token];
+                    cgi_env += "CONTENT_TYPE=" + lower_token + "\n";
+                } else {
+                    std::cout << "Unknown content type: " << token << std::endl;
+                }
                 bool_cont_type = false;
             }
             else if(token.find("boundary=") != std::string::npos){
@@ -276,31 +324,27 @@ void Request::parseRequest(const char *raw_request){
             }
         }
     }
-    /*-------------------------body handler  ----------------------*/
-
     
-    // size_t body_len = strlen(raw_request) - header_len;
-    body_start += 4;  //the real starting of the body context
+    /*-------------------------body handler  ----------------------*/
+    body_start += 4;  // Move to the actual body content
 
-     //normal and unchunked parsing (without the transfer-encoding: chunked)
-    if(!bool_chunked){         
+    // STEP 1: Decode chunked encoding if present
+    if(bool_chunked) {
+        handleChunkedBody(body_start); // This populates _body with decoded content
+    }
+    else {
+        // Not chunked - direct assignment
         _body.assign(body_start, this->content_len);
-        if(bool_boundary)  extractMultipartFiles(_body);
-    }
-    else                                  //chunked parsing
-       { handleChunkedBody(body_start);
-        std::cout << "handling of chunk working" << std::endl;
     }
 
-    std::cout << "body print out >> " << _body << std::endl;
-
-    if(this->bool_boundary){
-        // extractMultipartFile(body);
-        // printUploadedFiles();
-        std::cout << "multipart size" << "\n"
-                    << _body.size() << std::endl;
+    // STEP 2: Parse multipart files if boundary is present
+    if(bool_boundary && !_body.empty()) {
+        extractMultipartFiles(_body);
     }
 
+    std::cout << "body print out >> \n" << _body << std::endl;
+
+    // Set up CGI environment variables
     if(bool_cgi){
         cgi_env += "REQUEST_METHOD=" + this->_method + "\n" +
                     "QUERY_STRING=" + this->_query + "\n" +
@@ -308,10 +352,10 @@ void Request::parseRequest(const char *raw_request){
                     "SERVER_PROTOCOL=" + this->version + "\n" +
                     "SCRIPT_NAME=" + this->_path + "\n";
     }
+    
+    // Set the final category
+    this->_category = request_category;
 }
-
-//-------------------- fetch the correct server scope from webserv 
-
 
 void Request::printUploadedFiles() const
 {
@@ -328,22 +372,29 @@ void Request::printUploadedFiles() const
         std::cout << "Content-Type: " << f.content_type << "\n";
         std::cout << "Binary Size : " << f.data.size() << " bytes\n";
 
-        // Optional: show first 16 bytes of binary content
-        std::cout << "Binary Preview (hex): ";
-        for (size_t j = 0; j < f.data.size() && j < 16; ++j) {
-            unsigned char byte = (unsigned char)f.data[j];
-            std::cout << std::hex;
-            if (byte < 16) std::cout << '0';
-            std::cout << (int)byte << " ";
-            std::cout << std::dec;
+        // Show first 64 bytes of content (or full content if shorter)
+        std::cout << "Content Preview: ";
+        size_t preview_len = (f.data.size() < 64) ? f.data.size() : 64;
+        for (size_t j = 0; j < preview_len; ++j) {
+            char c = f.data[j];
+            if (c >= 32 && c <= 126) // printable ASCII
+                std::cout << c;
+            else if (c == '\n')
+                std::cout << "\\n";
+            else if (c == '\r')
+                std::cout << "\\r";
+            else
+                std::cout << ".";
         }
+        if (f.data.size() > 64)
+            std::cout << "...";
         std::cout << "\n";
     }
 }
 
-void	Request::set_category(request_cat type)
+void Request::set_category(request_cat type)
 {
-	_category = type;
+    _category = type;
 }
 
 std::string Request::path() const
@@ -363,11 +414,10 @@ request_cat Request::category() const
 
 std::string Request::body() const
 {
-	return (_body);
+    return (_body);
 }
 
-std::vector<binary_file>    Request::upload_files() const
+std::vector<binary_file> Request::upload_files() const
 {
-	return (_upload_files);
+    return (_upload_files);
 }
-

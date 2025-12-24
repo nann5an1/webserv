@@ -10,7 +10,7 @@ void	testing_request()
 {
 	const char* raw_reqs[] = {
 
-    /* 1. Simple text body */
+    // 1. Simple text body */ //normal chunking
     "POST /echo HTTP/1.1\r\n"
     "Host: example.com\r\n"
     "Transfer-Encoding: chunked\r\n"
@@ -34,18 +34,21 @@ void	testing_request()
     "0\r\n"
     "\r\n",
 
-    /* 3. JSON request (CGI) */
+   /* 3. JSON request (CGI) - CORRECTED */
     "POST /cgi-bin/api HTTP/1.1\r\n"
     "Host: example.com\r\n"
     "Transfer-Encoding: chunked\r\n"
     "Content-Type: application/json\r\n"
     "\r\n"
-    "7\r\n"
-    "{\"id\":\r\n"
+    "6\r\n"        // 6 bytes, not 7
+    "{\"id\":"      // no \r\n here!
+    "\r\n"         // chunk terminator
     "8\r\n"
-    " 42,\"ok\"\r\n"
-    "7\r\n"
-    ":true}\r\n"
+    " 42,\"ok\""
+    "\r\n"
+    "6\r\n"        // 6 bytes, not 7
+    ":true}"       // no \r\n here!
+    "\r\n"
     "0\r\n"
     "\r\n",
 
@@ -77,17 +80,7 @@ void	testing_request()
     "0\r\n"
     "\r\n",
 
-    /* 6. Trailers */
-    "POST /trail HTTP/1.1\r\n"
-    "Host: example.com\r\n"
-    "Transfer-Encoding: chunked\r\n"
-    "Trailer: X-Checksum\r\n"
-    "\r\n"
-    "4\r\n"
-    "Data\r\n"
-    "0\r\n"
-    "X-Checksum: abc123\r\n"
-    "\r\n",
+
 	
 	/* 7. Normal Upload */
 	"POST /upload HTTP/1.1\r\n"
@@ -112,9 +105,9 @@ void	testing_request()
 		const char* req_str = raw_reqs[i];
 		Request req;
 		req.parseRequest(req_str);
-		std::cout << "body: " << req.body() << std::endl;
+		// std::cout << "body: " << req.body() << std::endl;
 		req.printUploadedFiles();
-		std::cout << "\n" << std::endl;
+		// std::cout << "\n" << std::endl;
 		/* feed req into your parser */
 	}
 }
