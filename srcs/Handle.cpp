@@ -55,6 +55,13 @@ void	redirect_handle(int status, const std::string &path, Response& rep)
 	}
 }
 
+
+/* ====================== add the data from the upload_files of the server into the server's upload_dir ======================*/
+void	handleFileUpload(const t_location* location, Request &req, Response &rep){
+	std::cout << "Server's location upload dir >> " <<  location->upload_dir << std::endl;
+	
+}
+
 void	cgi_handle()
 {
 	
