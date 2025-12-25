@@ -44,7 +44,7 @@ bool	is_dir(std::string path);
 int		file_check(std::string path, int mod);
 int		fail(std::string head, int err_no);
 int		read_file(std::string &path, std::string &data);
-int     identify_method(const std::string& method);
+int		identify_method(const std::string& method);
 int		identify_method(const char *method);
 
 std::string	get_ext(const std::string& filename);

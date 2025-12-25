@@ -52,6 +52,7 @@ std::string toLower(std::string token){
 	return result;
 }
 
+/* ========================= Parse handling the chunked body  =========================*/
 void Request::handleChunkedBody(const char* raw_body)
 {
 	const char* ptr = raw_body;
@@ -92,6 +93,7 @@ void Request::handleChunkedBody(const char* raw_body)
 	}
 }
 
+/* ========================= Extraction of multipart files =========================*/
 void Request::extractMultipartFiles(const std::string &body)
 {
 	std::string delimiter = "--" + boundary;
@@ -122,7 +124,7 @@ void Request::extractMultipartFiles(const std::string &body)
 		// Find end of headers (blank line)
 		size_t header_end = body.find("\r\n\r\n", start);
 		if (header_end == std::string::npos) {
-			// Try just \n\n
+			// Try just \n\n    
 			header_end = body.find("\n\n", start);
 			if (header_end == std::string::npos)
 				break;
@@ -134,7 +136,6 @@ void Request::extractMultipartFiles(const std::string &body)
 				data_end = body.find(delimiter, data_start);
 			if (data_end == std::string::npos)
 				break;
-			
 			std::string file_data = body.substr(data_start, data_end - data_start);
 			parseSinglePart(headers, file_data);
 			pos = data_end;
@@ -157,6 +158,7 @@ void Request::extractMultipartFiles(const std::string &body)
 	}
 }
 
+/* ========================= parse single part of the multipart =========================*/
 void Request::parseSinglePart(const std::string &headers,
 							  const std::string &binary)
 {
@@ -203,7 +205,7 @@ void Request::parseSinglePart(const std::string &headers,
 	std::cout << "Added file: " << file.filename << " (" << file.data.size() << " bytes)" << std::endl;
 }
 
-//----------------- request parsing --------------------
+/* ========================= Main request Parsing =========================*/
 void Request::parseRequest(const char *raw_request){
 	request_cat request_category = NORMAL;
 	
@@ -236,14 +238,12 @@ void Request::parseRequest(const char *raw_request){
 		std::stringstream stream(line);
 		std::string token;
 		while(stream >> token){
-			if(token == "POST" || token == "GET"  || token == "DELETE") {
-				this->_method = token;
-			}
+			if(token == "POST" || token == "GET"  || token == "DELETE") this->_method = token;
 			else if(token[0] == '/'){
 				size_t idx = token.find(".");
 				size_t queryIdx = token.find("?");
 				
-				if(idx != std::string::npos){
+				if(idx != std::string::npos){ //consider if there's a '.' for extensions
 					idx2 = token.find("?");
 					if(idx2 == std::string::npos) {
 						idx2 = 0;
@@ -252,14 +252,19 @@ void Request::parseRequest(const char *raw_request){
 					else length = idx2 - idx - 1;
 					
 					std::string ext = token.substr(idx + 1, length);
-					if(ext == "php" || ext == "py" || ext == "pl" || ext == "sh" || ext == "rb") {
+ 					if((ext == "php" || ext == "py" || ext == "pl" || ext == "sh" || ext == "rb") && this->_method == "POST") {
 						this->bool_cgi = true;
 						request_category = CGI;
 					}
 				}
-				if(this->_method == "GET" && queryIdx != std::string::npos)
-					this->_query = token.substr(queryIdx + 1, token.length() - queryIdx);
-				this->_path = token;
+                else if(this->_method == "POST" && idx == std::string::npos){ //no extension and the token is "POST" -> upload directory 
+                    request_category = UPLOAD;
+                }
+				if(queryIdx != std::string::npos){
+                    this->_query = token.substr(queryIdx + 1, token.length() - queryIdx);
+                    size_t path_len = token.length() - this->_query.length();
+                    this->_path = token.substr(0, path_len - 1);
+                }
 			}
 			else if(token == "HTTP/1.1") this->version = token;
 			else if(toLower(token) == "host:") hostname = true;
@@ -311,12 +316,11 @@ void Request::parseRequest(const char *raw_request){
 				}
 				bool_cont_type = false;
 			}
-			else if(token.find("boundary=") != std::string::npos){
+			else if(token.find("boundary=") != std::string::npos){ //boundary does not help identify the file upload
 				int idx = token.find("=");
 				this->boundary = token.substr(idx + 1, token.length() - idx - 1);
 				bool_boundary = true;
-				request_category = UPLOAD;
-				std::cout << "boundary >> " << this->boundary << std::endl;
+				// std::cout << "boundary >> " << this->boundary << std::endl;
 			}
 			else if(bool_referer){
 				this->referer = token;
@@ -328,16 +332,10 @@ void Request::parseRequest(const char *raw_request){
 	/*-------------------------body handler  ----------------------*/
 	body_start += 4;  // Move to the actual body content
 
-	// STEP 1: Decode chunked encoding if present
-	if(bool_chunked) {
-		handleChunkedBody(body_start); // This populates _body with decoded content
-	}
-	else {
-		// Not chunked - direct assignment
-		_body.assign(body_start, this->content_len);
-	}
+	if(bool_chunked) handleChunkedBody(body_start); // This populates _body with decoded content
+	else _body.assign(body_start, this->content_len);
 
-	// STEP 2: Parse multipart files if boundary is present
+	//Parse multipart files if boundary is present
 	if(bool_boundary && !_body.empty()) {
 		extractMultipartFiles(_body);
 	}
@@ -356,6 +354,8 @@ void Request::parseRequest(const char *raw_request){
 	this->_category = request_category;
 }
 
+
+/*----------------------------Print Uploaded Files--------------------------------*/
 void Request::printUploadedFiles() const
 {
 	std::cout << "=== Uploaded Files (" 

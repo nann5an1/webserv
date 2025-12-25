@@ -47,7 +47,7 @@ class Request{
 		std::string _query;
 		std::string _body;
 		request_cat	_category;		// Request Category : CGI, Upload, etc.
-		bool bool_cgi;				// 
+		bool bool_cgi;
 		bool bool_boundary;
 		bool bool_referer;
 		bool bool_binary;
@@ -57,7 +57,6 @@ class Request{
 		std::string	_cgi_env;
 		std::string boundary;
 		std::string referer;
-		// std::string filename;
 		std::map<std::string, content_category> content_types;
 		std::vector<binary_file> _upload_files;
 

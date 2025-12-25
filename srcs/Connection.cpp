@@ -83,9 +83,10 @@ bool	Connection::request()
 			return (false);
 		}
 	}
-	_req.parseRequest(req.c_str());
 	std::cout << "[connection]\tclient request\t\t\t| socket:" << _fd << "\n\n"
 			  << req << std::endl;
+	_req.parseRequest(req.c_str());
+	
 	
 	return (true);
 }
@@ -145,6 +146,8 @@ void	Connection::route()
 	const t_location*	location = find_location(url, final_path);
 	std::cout << "final: " << final_path << std::endl;
 
+	std::cout << "req_category : " << _req.category() << std::endl;
+ 
 	if (location)
 	{
 		if (!(location->methods & identify_method(_req.method())))
@@ -153,6 +156,7 @@ void	Connection::route()
 		}
 		if (location->r_status > 0)
 			_req.set_category(REDIRECTION);
+
 		switch (_req.category())
 		{
 			case NORMAL:
@@ -163,11 +167,14 @@ void	Connection::route()
 				std::cout << "\n" << _req.cgi_env() <<  std::endl;
 				_rep._status = 200;
 				break;
-				
 			case REDIRECTION:
 				redirect_handle(location->r_status, location->r_url, _rep);
 				return ;
-			case UPLOAD: break;
+			case UPLOAD: 
+				// handleFileUpload();
+				_rep._status = 200;
+				std::cout << "File upload come in" << std::endl;
+				break;
 		}
 	}
 	else
