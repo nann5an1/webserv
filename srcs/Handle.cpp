@@ -55,16 +55,56 @@ void	redirect_handle(int status, const std::string &path, Response& rep)
 	}
 }
 
-
-/* ====================== add the data from the upload_files of the server into the server's upload_dir ======================*/
-void	handleFileUpload(const t_location* location, Request &req, Response &rep){
-	std::cout << "Server's location upload dir >> " <<  location->upload_dir << std::endl;
-	
-}
-
-void	cgi_handle()
+int	cgi_handle(std::string &final_path, Request& req, Response& rep)
 {
-	
+	fd	in_pipe[2];
+	fd	out_pipe[2];
+
+	 if (pipe(in_pipe) == -1 || pipe(out_pipe) == -1)
+        return (fail("CGI: Pipe", errno));
+
+    pid_t pid = fork();
+    if (pid == -1)
+		return (fail("CGI: Fork", errno));
+
+    if (pid == 0)
+    {
+        dup2(in_pipe[0], STDIN_FILENO);
+        dup2(out_pipe[1], STDOUT_FILENO);
+
+        close(in_pipe[1]);
+        close(out_pipe[0]);
+
+        char *argv[2];
+        argv[0] = const_cast<char*>(final_path.c_str());
+        argv[1] = NULL;
+
+		execve(final_path.c_str(), argv, const_cast<char* const*>(&req.cgi_env()[0]));
+
+        perror("execve");
+        _exit(1);
+    }
+    else
+    {
+        close(in_pipe[0]);
+        close(out_pipe[1]);
+        if (!req.body().empty())
+            write(in_pipe[1], req.body().c_str(), req.body().size());
+        close(in_pipe[1]); // close writing end to signal EOF
+
+        // Optionally read CGI output
+        char buffer[4096];
+        ssize_t n;
+        while ((n = read(out_pipe[0], buffer, sizeof(buffer))) > 0) {
+            std::cout.write(buffer, n);
+        }
+        close(out_pipe[0]);
+
+        // Wait for child to finish
+        int status;
+        waitpid(pid, &status, 0);
+    }
+	return (0);
 }
 
 // void	error_handle()

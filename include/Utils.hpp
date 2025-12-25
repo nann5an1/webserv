@@ -7,9 +7,13 @@
 
 #include <sstream>
 #include <iostream>
+#include <iterator>
+#include <algorithm>
+
 #include <unistd.h>
 #include <errno.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <fcntl.h>
 #include <iterator>
 
@@ -30,6 +34,8 @@ struct	fd
 	operator int() const;
 };
 
+int	pipe(fd fds[2]);
+
 extern std::map<int, const char*>	gphrase;
 
 extern std::map<std::string, std::string> mime_types;
@@ -44,7 +50,7 @@ bool	is_dir(std::string path);
 int		file_check(std::string path, int mod);
 int		fail(std::string head, int err_no);
 int		read_file(std::string &path, std::string &data);
-int		identify_method(const std::string& method);
+int     identify_method(const std::string& method);
 int		identify_method(const char *method);
 
 std::string	get_ext(const std::string& filename);
