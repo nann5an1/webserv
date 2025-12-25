@@ -30,7 +30,6 @@ enum request_cat
 
 struct binary_file{
 	std::string filename;
-	// std::string binary_data;
 	std::string content_type;
 	std::string data; 
 };
