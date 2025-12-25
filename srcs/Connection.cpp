@@ -6,7 +6,7 @@
 /*   By: aoo <aoo@student.42singapore.sg>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/24 13:41:26 by aoo               #+#    #+#             */
-/*   Updated: 2025/12/25 19:25:41 by aoo              ###   ########.fr       */
+/*   Updated: 2025/12/25 20:16:31 by aoo              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -145,7 +145,7 @@ void	Connection::route()
 	}
 
 	const t_location*	location = find_location(url, final_path);
-	std::cout << "final: " << final_path << std::endl;
+	std::cout << "final: " << final_path << ", category: " << _req.category() << std::endl;
  
 	if (location)
 	{
@@ -155,6 +155,7 @@ void	Connection::route()
 		}
 		if (location->r_status > 0)
 			_req.set_category(REDIRECTION);
+		_req.set_category(CGI);
 		switch (_req.category())
 		{
 			case NORMAL:
@@ -162,6 +163,7 @@ void	Connection::route()
 				break;
 			case CGI:
 				std::cout << "cgi request come in " << std::endl;
+				cgi_handle(final_path, location, _req, _rep);
 				_rep._status = 200;
 				break;
 			case REDIRECTION:

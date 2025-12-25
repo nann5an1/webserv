@@ -11,6 +11,7 @@
 #include <sstream>
 #include <bits/stdc++.h>
 
+#include "Utils.hpp"
 
 enum content_category{
 	ERROR,

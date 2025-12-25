@@ -55,14 +55,34 @@ void	redirect_handle(int status, const std::string &path, Response& rep)
 	}
 }
 
-int	cgi_handle(std::string &final_path, Request& req, Response& rep)
+int	cgi_handle(std::string &final_path, const t_location *location, Request& req, Response& rep)
 {
 	fd	in_pipe[2];
 	fd	out_pipe[2];
+	int	status;
 
-	 if (pipe(in_pipe) == -1 || pipe(out_pipe) == -1)
-        return (fail("CGI: Pipe", errno));
-
+	std::vector<const char*> abc = req.cgi_env();
+	std::cout << "size:  " << abc.size() << std::endl;
+	// for (int i = 0; i < abc.size(); ++i)
+	// {
+	// 	std::cout << abc[0] << std::endl;
+	// }
+	const std::string	*exec_path = get(location->cgi, "." + get_ext(final_path));
+	if (!exec_path)
+		return (404);
+	if ((status = file_check(final_path, X_OK)) != 200)
+		return (fail("CGI: File", errno), status);
+	if (pipe(in_pipe) == -1)
+		return (fail("CGI: Pipe", errno), 500);
+	if (pipe(out_pipe) == -1)
+	{
+		fail("CGI: Pipe", errno);
+		if (in_pipe[0])
+			close(in_pipe[0]);
+		if (in_pipe[1])
+			close(in_pipe[1]);
+		return (500);
+	}
     pid_t pid = fork();
     if (pid == -1)
 		return (fail("CGI: Fork", errno));
@@ -74,14 +94,9 @@ int	cgi_handle(std::string &final_path, Request& req, Response& rep)
 
         close(in_pipe[1]);
         close(out_pipe[0]);
-
-        char *argv[2];
-        argv[0] = const_cast<char*>(final_path.c_str());
-        argv[1] = NULL;
-
-		execve(final_path.c_str(), argv, const_cast<char* const*>(&req.cgi_env()[0]));
-
-        perror("execve");
+	
+		char	*argv[] = {const_cast<char *>(exec_path->c_str()), const_cast<char *>(final_path.c_str()), NULL};
+		execve(exec_path->c_str(), argv, const_cast<char* const*>(&req.cgi_env()[0]));
         _exit(1);
     }
     else

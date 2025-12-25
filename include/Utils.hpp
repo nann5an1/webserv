@@ -99,12 +99,19 @@ typename MapType::mapped_type* get(MapType& m, const KeyType& key)
 }
 
 template <typename T>
-void	print_container(T container)
+void print_container(const T& container)
 {
-	typedef typename T::value_type	value_type;
+    typedef typename T::value_type value_type;
+    typedef typename T::const_iterator const_iterator;
 
-	std::copy(container.begin(), container.end(), std::ostream_iterator<value_type>(std::cout, " "));
-	std::cout << std::endl;
+    for (const_iterator it = container.begin(); it != container.end(); ++it)
+    {
+        if (*it != (value_type)NULL) // skip NULLs
+        {
+            std::cout << *it << " ";
+        }
+    }
+    std::cout << std::endl;
 }
 
 template <typename MapType>

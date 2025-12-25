@@ -415,16 +415,14 @@ std::string Request::body() const
 
 std::vector<const char *> Request::cgi_env() const
 {
-    std::vector<const char*> env(_cgi_env.size() + 1);
+	std::cout << "shdfasdfasdfasdf " << std::endl;
+	print_container(_cgi_env);
+    std::vector<const char*> env;
 
-    std::transform(
-        _cgi_env.begin(),
-        _cgi_env.end(),
-        env.begin(),
-		std::mem_fun_ref(&std::string::c_str)
-    );
-
+	for (int i = 0; i < _cgi_env.size(); ++i)
+		env.push_back(_cgi_env[i].c_str());
     env.push_back(NULL);
+	print_container(env);
     return (env);
 }
 
