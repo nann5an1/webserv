@@ -61,12 +61,15 @@ int	cgi_handle(std::string &final_path, const t_location *location, Request& req
 	fd	out_pipe[2];
 	int	status;
 
-	std::vector<const char*> abc = req.cgi_env();
-	std::cout << "size:  " << abc.size() << std::endl;
-	// for (int i = 0; i < abc.size(); ++i)
-	// {
-	// 	std::cout << abc[0] << std::endl;
-	// }
+	std::vector<std::string>	cgi_env = req.cgi_env();
+	std::vector<const char *>	env;
+	for (int i = 0; i < cgi_env.size(); ++i)
+		env.push_back(cgi_env[i].c_str());
+	env.push_back(NULL);
+	// char *const *omg = const_cast<char* const*>(&env[0]);
+	// for (int i = 0; i < cgi_env.size(); ++i)
+	// 	std::cout << omg[i] << std::endl;
+
 	const std::string	*exec_path = get(location->cgi, "." + get_ext(final_path));
 	if (!exec_path)
 		return (404);
@@ -96,7 +99,7 @@ int	cgi_handle(std::string &final_path, const t_location *location, Request& req
         close(out_pipe[0]);
 	
 		char	*argv[] = {const_cast<char *>(exec_path->c_str()), const_cast<char *>(final_path.c_str()), NULL};
-		execve(exec_path->c_str(), argv, const_cast<char* const*>(&req.cgi_env()[0]));
+		execve(exec_path->c_str(), argv, const_cast<char* const*>(&env[0]));
         _exit(1);
     }
     else
@@ -120,17 +123,19 @@ int	cgi_handle(std::string &final_path, const t_location *location, Request& req
         waitpid(pid, &status, 0);
     }
 	return (0);
+}
 
 /* ====================== add the data from the upload_files of the server into the server's upload_dir ======================*/
-void	handleFileUpload(const t_location* location, Request &req, Response &rep){
+void	handleFileUpload(const t_location* location, Request &req, Response &rep)
+{
 	std::cout << "Server's location upload dir >> " <<  location->upload_dir << std::endl;
 	
-	std::vector<binary_file> upload_files;
+	// std::vector<binary_file> upload_files;
 
-	//iterate the upload_files to get the filename under the req
-	for(size_t it = upload_files.begin(); it = upload_files.size(); upload_files.end()){
+	// //iterate the upload_files to get the filename under the req
+	// for(size_t it = upload_files.begin(); it = upload_files.size(); upload_files.end()){
 		
-	}
+	// }
 
 }
 

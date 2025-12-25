@@ -77,7 +77,7 @@ class Request{
 		std::string	method() const;
 		std::string	body() const;
 		request_cat	category() const;
-		std::vector<const char *>	cgi_env() const;
+		std::vector<std::string>	cgi_env() const;
 		std::vector<binary_file>	upload_files() const;
 
 

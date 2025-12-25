@@ -419,17 +419,9 @@ std::string Request::body() const
 	return (_body);
 }
 
-std::vector<const char *> Request::cgi_env() const
+std::vector<std::string> Request::cgi_env() const
 {
-	std::cout << "shdfasdfasdfasdf " << std::endl;
-	print_container(_cgi_env);
-    std::vector<const char*> env;
-
-	for (int i = 0; i < _cgi_env.size(); ++i)
-		env.push_back(_cgi_env[i].c_str());
-    env.push_back(NULL);
-	print_container(env);
-    return (env);
+	return (_cgi_env);
 }
 
 std::vector<binary_file> Request::upload_files() const
