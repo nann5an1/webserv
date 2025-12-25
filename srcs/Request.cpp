@@ -216,6 +216,7 @@ void Request::parseRequest(const char *raw_request){
 	bool bool_connection = false;
 	bool bool_cont_type = false;
 	bool bool_transfer = false;
+    bool bool_upload = false;
 
 	size_t idx2;
 	int length;
@@ -252,20 +253,23 @@ void Request::parseRequest(const char *raw_request){
 					else length = idx2 - idx - 1;
 					
 					std::string ext = token.substr(idx + 1, length);
- 					if((ext == "php" || ext == "py" || ext == "pl" || ext == "sh" || ext == "rb") && this->_method == "POST") {
+ 					if((ext == "php" || ext == "py" || ext == "pl" || ext == "sh" || ext == "rb")) {
 						this->bool_cgi = true;
 						request_category = CGI;
 					}
 				}
                 else if(this->_method == "POST" && idx == std::string::npos) //no extension and the token is "POST" -> upload directory 
-                    request_category = UPLOAD;
+                    bool_upload = true; //maybe request_category?
 				if(queryIdx != std::string::npos){
                     this->_query = token.substr(queryIdx + 1, token.length() - queryIdx);
                     size_t path_len = token.length() - this->_query.length();
                     this->_path = token.substr(0, path_len - 1);
                 }
-                else
+                else{
+                    // std::cout << "? not found DEBUG >> " << token << std::endl;
                     this->_path = token;
+                }
+                    
 			}
 			else if(token == "HTTP/1.1") this->version = token;
 			else if(toLower(token) == "host:") hostname = true;
@@ -300,6 +304,8 @@ void Request::parseRequest(const char *raw_request){
 				this->conn_status = token;
 				bool_connection = false;
 			}
+            else if(bool_cont_type && bool_upload)
+                request_category = UPLOAD;
 			else if(bool_cont_type){
 				// Check if this token contains content type
 				std::string lower_token = toLower(token);

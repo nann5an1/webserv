@@ -60,6 +60,13 @@ void	redirect_handle(int status, const std::string &path, Response& rep)
 void	handleFileUpload(const t_location* location, Request &req, Response &rep){
 	std::cout << "Server's location upload dir >> " <<  location->upload_dir << std::endl;
 	
+	std::vector<binary_file> upload_files;
+
+	//iterate the upload_files to get the filename under the req
+	for(size_t it = upload_files.begin(); it = upload_files.size(); upload_files.end()){
+		
+	}
+
 }
 
 void	cgi_handle()
