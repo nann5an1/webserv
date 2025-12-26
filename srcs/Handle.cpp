@@ -57,22 +57,54 @@ void	redirect_handle(int status, const std::string &path, Response& rep)
 
 
 /* ====================== add the data from the upload_files of the server into the server's upload_dir ======================*/
-void	handleFileUpload(const t_location* location, Request &req, Response &rep){
+void	handleFile(const t_location* location, Request &req, Response &rep){
 	std::cout << "Server's location upload dir >> " <<  location->upload_dir << std::endl;
 	
-	std::vector<binary_file> upload_files;
+	std::vector<binary_file> files = req.upload_files();
+
+	std::cout << "files size DEBUG >> " << files.size() << std::endl;
 
 	//iterate the upload_files to get the filename under the req
-	for(size_t it = upload_files.begin(); it = upload_files.size(); upload_files.end()){
-		
+	
+	for(size_t it = 0; it < files.size(); it++){
+		const binary_file& file = files[it];
+		std::cout << "binary file content >> " << file.filename << std::endl;
+
+		std::string filepath = location->upload_dir + "/" + file.filename;
+		// std::cout << "filepath: " << filepath << std::endl;
+		std::ofstream ofs(filepath.c_str(), std::ios::out | std::ios::binary);
+
+		if (!ofs) {
+            std::cerr << "Failed to open file: " << filepath << std::endl;
+            continue;
+        }
+		ofs.write(file.data.c_str(), file.data.size());
+		ofs.close();
+
 	}
 
 }
 
-void	cgi_handle()
-{
-	
+bool fileExists(std::string &path){
+	std::cout << "getter path >> " << path << std::endl;
+	std::ifstream file(path.c_str());
+	return file.good();
 }
+
+void	handleFileDelete(const t_location* location, Request &req, Response &rep){
+	std::string path = req.path();
+
+	//check if the file exists in that specific path
+	if(fileExists(path))
+		std::cout << "file exists for deletion" << std::endl;
+	else
+		std::cout << "file does not exist" << std::endl;
+}
+
+// void	cgi_handle()
+// {
+	
+// }
 
 // void	error_handle()
 // {

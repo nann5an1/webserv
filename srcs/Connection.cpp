@@ -85,6 +85,7 @@ bool	Connection::request()
 	}
 	std::cout << "[connection]\tclient request\t\t\t| socket:" << _fd << "\n\n"
 			  << req << std::endl;
+	std::cout << "===================================================\n\n\n\n" << std::endl;
 	_req.parseRequest(req.c_str());	
 	return (true);
 }
@@ -173,8 +174,13 @@ void	Connection::route()
 				return ;
 			case UPLOAD:
 				_rep._status = 200;
-				handleFileUpload(location, _req, _rep);
+				handleFile(location, _req, _rep);
 				std::cout << "File upload come in" << std::endl;
+				break;
+			case DELETE:
+				_rep._status = 200;
+				handleFileDelete(location, _req, _rep);
+				std::cout << "File delete come in" << std::endl;
 				break;
 		}
 	}

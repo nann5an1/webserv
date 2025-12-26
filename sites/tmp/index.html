@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Upload</title>
+</head>
+<body>
+	<div>
+		<h1>Upload File</h1>
+		<form onclick="uploadFile()" method="post" enctype="multipart/form-data">
+			<label for="fileIn">File:</label>
+			<input type="file" name="fileIn" id="fileIn"> <br>
+			<input type="submit" value="Submit">
+		</form>
+		<br>
+		<h1>--- Uploaded Files ---</h1>
+		<!-- <h1>Delete File</h1>
+		<button onclick="delFile()"></button> -->
+	</div>
+</body>
+<script>
+	async function uploadFile(){
+		const upload = await fetch("http://localhost:8081/upload/",{
+			method: 'POST'
+		});
+		if(upload.ok())
+			console.log("file upload ok");
+		else console.log("sth wrong with file upload");
+	}
+	function delFIle(){
+		fetch("http://localhost:8081/upload/")
+	}
+</script>
+</html>	
