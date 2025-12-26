@@ -6,7 +6,7 @@
 /*   By: aoo <aoo@student.42singapore.sg>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/24 13:41:26 by aoo               #+#    #+#             */
-/*   Updated: 2025/12/26 13:41:36 by aoo              ###   ########.fr       */
+/*   Updated: 2025/12/26 13:49:15 by aoo              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -170,9 +170,9 @@ void	Connection::route()
 			case REDIRECTION:
 				redirect_handle(location->r_status, location->r_url, _rep);
 				return ;
-			case FILE:
+			case FILEHANDLE:
 				_rep._status = 200;
-				handleFileUpload(location, _req, _rep);
+				handleFile(location, _req, _rep);
 				std::cout << "File upload come in" << std::endl;
 				break;
 		}

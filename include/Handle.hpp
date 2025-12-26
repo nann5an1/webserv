@@ -13,7 +13,7 @@ int norm_handle(std::string	&path, Request &req, Response &rep, const t_location
 
 void	redirect_handle(int status, const std::string &path, Response& rep);
 void	handleFile(const t_location* location, Request &req, Response &rep);
-void	handleFileDelete(const t_location* location, Request &req, Response &rep);
+// void	handleFileDelete(const t_location* location, Request &req, Response &rep);
 int	cgi_handle(std::string &final_path, const t_location *location, Request& req, Response& rep);
 
 // void	error_handle();

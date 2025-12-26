@@ -299,7 +299,7 @@ void Request::parseRequest(const char *raw_request){
 				bool_connection = false;
 			}
             else if(bool_cont_type && bool_file)
-                request_category = FILE;
+                request_category = FILEHANDLE;
 			else if(bool_cont_type){
 				// Check if this token contains content type
 				std::string lower_token = toLower(token);
