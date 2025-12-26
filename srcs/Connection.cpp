@@ -110,7 +110,7 @@ bool	Connection::response()
 }
 
 /* ====================== return the whole location block from the config ======================*/
-const t_location*	Connection::find_location(std::string &req_url, std::string &final_path)
+const t_location*	Connection::find_location(std::string &req_url, std::string &final_path, std::string &remain)
 {
 	std::string	loc = "";
 	const t_location*	location = NULL;
@@ -124,7 +124,9 @@ const t_location*	Connection::find_location(std::string &req_url, std::string &f
 			if (location)
 			{
 				std::string	root = location->root.empty() ? _server->root() : location->root;
-				final_path = root + (loc == "/" ? "" : loc) + req_url.substr(i);
+				remain = req_url.substr(i);
+				std::cout << "REMAIN PATH in the FIND LOCATION >> " << remain << std::endl;
+				final_path = root + (loc == "/" ? "" : loc) + remain;	
 				return (location);
 			}
 		}
@@ -134,10 +136,10 @@ const t_location*	Connection::find_location(std::string &req_url, std::string &f
 }
 
 
-
+/* =================== HANDLE WHICH ROUTE TO HANDLE ================ */
 void	Connection::route()
 {
-	std::string	url = _req.path(), final_path = "";
+	std::string	url = _req.path(), final_path = "", remain_path = "";
 
 	if (_server->r_status())
 	{
@@ -145,8 +147,11 @@ void	Connection::route()
 		return ;
 	}
 
-	const t_location*	location = find_location(url, final_path);
-	std::cout << "url: " << url << "final: " << final_path << std::endl;
+	
+	const t_location*	location = find_location(url, final_path, remain_path);
+
+
+	std::cout << "url: " << url << "\nfinal: " << final_path << std::endl;
 
 	std::cout << "req_category : " << _req.category() << std::endl;
  
@@ -172,9 +177,14 @@ void	Connection::route()
 			case REDIRECTION:
 				redirect_handle(location->r_status, location->r_url, _rep);
 				return ;
-			case FILE:
+			case FILEHANDLE:
 				_rep._status = 200;
-				handleFile(location, _req, _rep);
+				std::cout << "\n< REMAIN PATH UNDER ROUTE > " << remain_path << std::endl;
+
+				final_path = location->upload_dir +  remain_path;
+				std::cout << " F I N A L   PATH??? " << final_path << std::endl;
+
+				handleFile(location, remain_path, _req, _rep);
 				std::cout << "File upload come in" << std::endl;
 				break;
 		}
@@ -185,9 +195,6 @@ void	Connection::route()
 		_rep._status = 404;
 		_rep._body = status_page(404);
 	}
-
-	// final = root + path;
-	// error shold handle here;
 
 	
 	// if (_rep._status >= 400)

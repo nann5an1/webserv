@@ -133,7 +133,6 @@ int	file_check(std::string path, int mod)
 {
 	struct stat st;
 	const char *loc = path.c_str();
-
 	if (stat(loc, &st) < 0)
 		return (404);
 	if (access(loc, mod) != 0)

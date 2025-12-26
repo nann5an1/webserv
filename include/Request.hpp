@@ -24,7 +24,7 @@ enum request_cat
 	NORMAL,
 	CGI,
 	REDIRECTION,
-	FILE,
+	FILEHANDLE,
 };
 
 struct binary_file{
