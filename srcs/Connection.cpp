@@ -6,7 +6,7 @@
 /*   By: aoo <aoo@student.42singapore.sg>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/24 13:41:26 by aoo               #+#    #+#             */
-/*   Updated: 2025/12/25 20:16:31 by aoo              ###   ########.fr       */
+/*   Updated: 2025/12/26 04:09:11 by aoo              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -155,7 +155,6 @@ void	Connection::route()
 		}
 		if (location->r_status > 0)
 			_req.set_category(REDIRECTION);
-		_req.set_category(CGI);
 		switch (_req.category())
 		{
 			case NORMAL:
