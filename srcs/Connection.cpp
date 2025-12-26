@@ -6,7 +6,7 @@
 /*   By: aoo <aoo@student.42singapore.sg>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/24 13:41:26 by aoo               #+#    #+#             */
-/*   Updated: 2025/12/26 04:09:11 by aoo              ###   ########.fr       */
+/*   Updated: 2025/12/26 13:41:36 by aoo              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -86,6 +86,8 @@ bool	Connection::request()
 	_req.parseRequest(req.c_str());
 	std::cout << "[connection]\tclient request\t\t\t| socket:" << _fd << "\n\n"
 			  << req << std::endl;
+	std::cout << "===================================================\n\n\n\n" << std::endl;
+	_req.parseRequest(req.c_str());	
 	return (true);
 }
 
@@ -168,9 +170,9 @@ void	Connection::route()
 			case REDIRECTION:
 				redirect_handle(location->r_status, location->r_url, _rep);
 				return ;
-			case UPLOAD:
+			case FILE:
 				_rep._status = 200;
-				// handleFileUpload(location, _req, _rep);
+				handleFileUpload(location, _req, _rep);
 				std::cout << "File upload come in" << std::endl;
 				break;
 		}
