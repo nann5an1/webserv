@@ -215,7 +215,7 @@ void Request::parseRequest(const char *raw_request){
 	bool bool_connection = false;
 	bool bool_cont_type = false;
 	bool bool_transfer = false;
-    bool bool_upload = false;
+    bool bool_file = false;
 
 	size_t idx2;
 	int length;
@@ -258,8 +258,8 @@ void Request::parseRequest(const char *raw_request){
 						request_category = CGI;
 					}
 				}
-                else if(this->_method == "POST" && idx == std::string::npos) //no extension and the token is "POST" -> upload directory 
-                    bool_upload = true;
+                else if((this->_method == "POST" || this->_method == "DELETE") && idx == std::string::npos) //no extension and the token is "POST" -> upload directory 
+                    bool_file = true;
 				if(queryIdx != std::string::npos){
                     this->_query = token.substr(queryIdx + 1, token.length() - queryIdx);
                     size_t path_len = token.length() - this->_query.length();
@@ -299,8 +299,8 @@ void Request::parseRequest(const char *raw_request){
 				this->conn_status = token;
 				bool_connection = false;
 			}
-            else if(bool_cont_type && bool_upload)
-                request_category = UPLOAD;
+            else if(bool_cont_type && bool_file)
+                request_category = FILE;
 			else if(bool_cont_type){
 				// Check if this token contains content type
 				std::string lower_token = toLower(token);

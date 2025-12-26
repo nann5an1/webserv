@@ -172,15 +172,10 @@ void	Connection::route()
 			case REDIRECTION:
 				redirect_handle(location->r_status, location->r_url, _rep);
 				return ;
-			case UPLOAD:
+			case FILE:
 				_rep._status = 200;
 				handleFile(location, _req, _rep);
 				std::cout << "File upload come in" << std::endl;
-				break;
-			case DELETE:
-				_rep._status = 200;
-				handleFileDelete(location, _req, _rep);
-				std::cout << "File delete come in" << std::endl;
 				break;
 		}
 	}
