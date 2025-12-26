@@ -1,7 +1,6 @@
 #ifndef UTILS_HPP
 #define UTILS_HPP
 
-#include <cstring>
 #include <map>
 #include <vector>
 
@@ -10,12 +9,15 @@
 #include <iterator>
 #include <algorithm>
 
-#include <unistd.h>
+#include <cstring>
+
 #include <errno.h>
-#include <sys/stat.h>
-#include <sys/wait.h>
 #include <fcntl.h>
 #include <iterator>
+#include <sys/stat.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <stdint.h>
 
 #define	RED	"\033[31m"
 #define YELLOW "\033[33m"
@@ -28,10 +30,10 @@
 
 struct	fd 
 {
-   	int fd_;
+	int	fd_;
 	fd();
 	fd(int FD);
-	operator int() const;
+	operator	int() const;
 };
 
 int	pipe(fd fds[2]);

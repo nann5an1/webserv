@@ -1,106 +1,24 @@
 #include "Server.hpp"
 
-Server::Server() :
-	Pollable(-1), 
-	_name(""), 
-	_ip(""), 
-	_port(""), 
-	_root(""), 
-	_max_size(0),
-	_r_status(-1),
-	_r_url("")
-{}
-
-Server::Server(const Server &other) :
-	Pollable(other._fd),
-	_name(other._name),
-	_ip(other._ip),
-	_port(other._port),
-	_root(other._root),
-	_max_size(other._max_size),
-	_r_status(other._r_status),
-	_r_url(other._r_url),
-	_err_pages(other._err_pages),
-	_locations(other._locations)
+Server::Server() :	_sock_fd(-1), _name(""), _port(""), _ip(""), 
+					_root(""), _max_size(0), location_path ("")
 {
-    (void)other;
-}
-
-Server& Server:: operator=(const Server &other)
-{
-    if (this != &other)
-	{
-		_fd = other._fd;
-		_name = other._name;
-		_ip = other._ip;
-		_port = other._port;
-		_root = other._root;
-		_max_size = other._max_size;
-		_r_status = other._r_status;
-		_r_url = other._r_url;
-		_err_pages = other._err_pages;
-		_locations = other._locations;
-	}
-    return (*this);
 }
 
 Server::~Server() {}
 
-Server::Server(std::ifstream &file) :
-	Pollable(-1), 
-	_name(""), 
-	_ip(""), 
-	_port(""), 
-	_root(""), 
-	_max_size(0),
-	_r_status(-1),
-	_r_url("")
-{
-	std::string line, tok = "", location_path = "";
-	
-	bool location_scope = false;
-	t_location location;
-
-
-	while(getline(file, line))
-	{
-		std::stringstream	ss(line);
-		ss >> tok;
-
-		if (tok == "{" && tok == "\n")
-			continue ;
-		if (tok == "location" && !location_scope)
-		{
-			location_scope = true;
-			location = t_location();
-			location.methods = GET;
-			ss >> location_path;
-			continue;
-		}
-		else if(tok == "}")
-		{
-			if (!location_scope)
-				break ;
-			this->_locations[location_path] = location;
-			location_scope = false;
-			tok = "";
-		}
-		else if (location_scope)
-			inputLocation(line, location);
-		else
-			inputData(line);
-	}
+std::string Server::
+trimSemiColon(std::string val){
+	if(val.find(";") == std::string::npos)	throw ConfigFileError();
+	return (val.substr(0, val.length() - 1));
 }
 
-int	Server::parse_return(std::stringstream& ss, int& r_status, std::string& r_url)
-{
-	std::string	val;
-		
-	if(!(ss >> r_status) || !validateHTTPCode(r_status))
-		return (0);
-	if (ss >> val)
-		r_url = trimSemiColon(val);
-	return (1);
+int Server::validateHTTPCode(int &code){
+	// for(size_t i = 0; i < val.length(); i++){
+	// 	if(!isdigit(val[i]))	return 0; //not digit
+	// }
+	// if(val.length() > 3 || val.length() < 3) return 0;
+	return (code >= 100 && code <= 599);
 }
 
 int	Server::parse_err_pages(std::stringstream &ss, std::map<int,std::string> &err_pg_container)
@@ -122,20 +40,18 @@ int	Server::parse_err_pages(std::stringstream &ss, std::map<int,std::string> &er
 	return (1);
 }
 
-std::string	Server::trimSemiColon(std::string val)
+int	Server::parse_return(std::stringstream& ss, int& r_status, std::string& r_url)
 {
-	if(val.find(";") == std::string::npos)
-		throw ConfigFileError(val);
-	return (val.substr(0, val.length() - 1));
+	std::string	val;
+		
+	if(!(ss >> r_status) || !validateHTTPCode(r_status))
+		return (0);
+	if (ss >> val)
+		r_url = trimSemiColon(val);
+	return (1);
 }
 
-int	Server::validateHTTPCode(int &code)
-{
-	return (code >= 100 && code <= 599);
-}
-
-int Server::inputData(std::string &line)
-{
+int Server::inputData(std::string &line) {
 	std::stringstream	ss(line);
 	std::string			token, value;
 
@@ -178,13 +94,13 @@ int Server::inputData(std::string &line)
 	return 1;	
 }
 
-int Server::inputLocation(std::string line, t_location &location)
-{
-	std::string token, val;
+int Server::inputLocation(std::string line, t_location &location){
+	std::string token;
 	std::stringstream ss(line);
 
 	ss >> token;
 		// std::cout << "token  in inputLocation>> " << token << std::endl;
+	std::string val;
 	if(token == "autoindex")
 	{
 		ss >> val;
@@ -236,8 +152,130 @@ int Server::inputLocation(std::string line, t_location &location)
 	return (1);
 }
 
-void Server::print() const
+Server::Server(std::ifstream &file)
+: _name(""), 
+  _port(""),
+  _ip(""),
+  _root(""),
+  _max_size(0),
+  _r_status(0),
+  _r_url("")
 {
+	std::string line, tok = "", location_path = "";
+	
+	bool location_scope = false;
+	t_location location;
+
+
+	while(getline(file, line))
+	{
+		std::stringstream	ss(line);
+		ss >> tok;
+
+		if (tok == "{" && tok == "\n")
+			continue ;
+		if (tok == "location" && !location_scope)
+		{
+			location_scope = true;
+			location = t_location();
+			location.methods = GET;
+			ss >> location_path;
+			continue;
+		}
+		else if(tok == "}")
+		{
+			if (!location_scope)
+				break ;
+			this->_locations[location_path] = location;
+			location_scope = false;
+			tok = "";
+		}
+		else if (location_scope)
+			inputLocation(line, location);
+		else
+			inputData(line);
+	}
+}
+
+Server::Server(const Server &other):
+	_name(other._name),
+	_port(other._port),
+	_ip(other._ip),
+	_root(other._root),
+	_max_size(other._max_size),
+	_locations(other._locations),
+	_err_pages(other._err_pages),
+	_r_status(other._r_status),
+	_r_url(other._r_url)
+{
+    (void)other;
+}
+
+
+Server& Server:: operator=(const Server &other) {
+    if (this != &other)
+	{
+		_name = other._name;
+		_port = other._port;
+		_ip = other._ip;
+		_root = other._root;
+		_max_size = other._max_size;
+		_locations = other._locations;
+		_err_pages = other._err_pages;
+		_r_status = other._r_status;
+		_r_url = other._r_url;
+	}
+    return *this;
+}
+
+int	Server::start()
+{
+	socklen_t	opt = 1;
+	struct sockaddr_in	sock_addr;
+
+	std::memset(&sock_addr, 0, sizeof(sock_addr));
+	sock_addr.sin_family = AF_INET;	
+	// TEMP~ I set the port to 8080 for test.
+	sock_addr.sin_port = htons(std::atoi(_port.c_str()));
+	sock_addr.sin_addr.s_addr = inet_addr(_ip.c_str());
+	if ((_sock_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0 ||
+		setsockopt(_sock_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0 ||
+		bind(_sock_fd, (sockaddr *)&sock_addr, sizeof(sock_addr)) < 0 ||
+		fcntl(_sock_fd, F_SETFL, fcntl(_sock_fd, F_GETFL, 0) | O_NONBLOCK) < 0 ||
+		listen(_sock_fd, SOMAXCONN) < 0)
+	{
+		int status = fail("Server: " + std::string(*this), errno);
+		if (_sock_fd > 0)
+			close(_sock_fd);
+		_sock_fd = -1;
+		return (status);
+	}
+	std::cout << "[server]\t" << std::string(*this) << "\t| socket:" << _sock_fd << " started - http://" << _ip << ":" << _port << std::endl;
+	return (0);
+}
+
+Server::operator	fd() const
+{
+	return (_sock_fd);
+}
+
+Server::operator	int() const
+{
+	return (std::atoi(_port.c_str()));
+}
+
+Server::operator	std::string() const
+{
+	return (_ip + ":" + _port + ":" + _name);
+}
+
+ConfigFileError::ConfigFileError()
+	: std::runtime_error("Error in config file") {}
+
+
+
+//print out the values inside the server
+void Server::print() const {
     std::cout << "==================== SERVER ====================\n";
     std::cout << "Server Name: " << _name << "\n";
 	std::cout << "Root: " << _root << "\n";
@@ -288,50 +326,9 @@ void Server::print() const
     std::cout << "=================================================\n";
 }
 
-int	Server::start()
+std::string	Server::port() const
 {
-	socklen_t	opt = 1;
-	struct sockaddr_in	sock_addr;
-
-	std::memset(&sock_addr, 0, sizeof(sock_addr));
-	sock_addr.sin_family = AF_INET;	
-	// TEMP~ I set the port to 8080 for test.
-	sock_addr.sin_port = htons(std::atoi(_port.c_str()));
-	sock_addr.sin_addr.s_addr = inet_addr(_ip.c_str());
-	if ((_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0 ||
-		setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0 ||
-		bind(_fd, (sockaddr *)&sock_addr, sizeof(sock_addr)) < 0 ||
-		fcntl(_fd, F_SETFL, fcntl(_fd, F_GETFL, 0) | O_NONBLOCK) < 0 ||
-		listen(_fd, SOMAXCONN) < 0)
-	{
-		int status = fail("Server: " + std::string(*this), errno);
-		if (_fd > 0)
-			close(_fd);
-		_fd = -1;
-		return (status);
-	}
-	std::cout << "[server]\t" << std::string(*this) << "\t| socket:" << _fd << " started - http://" << _ip << ":" << _port << std::endl;
-	return (0);
-}
-
-Server::operator	fd() const
-{
-	return (_fd);
-}
-
-Server::operator	int() const
-{
-	return (std::atoi(_port.c_str()));
-}
-
-Server::operator	std::string() const
-{
-	return (_ip + ":" + _port + ":" + _name);
-}
-
-std::string	Server::name() const
-{
-	return (_name);
+	return (_port);
 }
 
 std::string	Server::ip() const
@@ -339,25 +336,9 @@ std::string	Server::ip() const
 	return (_ip);
 }
 
-std::string	Server::port() const
+std::string	Server::name() const
 {
-	return (_port);
-}
-
-
-std::string	Server::root() const
-{
-	return (_root);
-}
-
-int	Server::r_status() const
-{
-	return (_r_status);
-}
-
-std::string	Server::r_url() const
-{
-	return (_r_url);
+	return (_name);
 }
 
 const std::map<std::string, t_location>&	Server::locations() const
@@ -365,12 +346,17 @@ const std::map<std::string, t_location>&	Server::locations() const
 	return (_locations);
 }
 
-void	Server::handle(uint32_t events)
+std::string	Server::root() const
 {
-	std::cout << "handle" << std::endl;
-	return ;
+	return (_root);
 }
 
-ConfigFileError::ConfigFileError() : std::runtime_error(std::string(RED) + "Error: " + RESET) {}
+std::string	Server::r_url() const
+{
+	return (_r_url);
+}
 
-ConfigFileError::ConfigFileError(const std::string &msg) : std::runtime_error(std::string(RED) + "Error: " + msg + RESET) {}
+int	Server::r_status() const
+{
+	return (_r_status);
+}
