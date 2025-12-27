@@ -1,33 +1,79 @@
 #include "Webserv.hpp"
-#include "Server.hpp"
-#include "Response.hpp"
 
-Webserv::Webserv() {
-	
-}
+Webserv::Webserv() {}
 
-Webserv::~Webserv()
+Webserv::Webserv(const Webserv &other) : _servers(other._servers) {}
+
+Webserv	&Webserv::operator=(const Webserv &other)
 {
-	if (_ep_fd >= 0)
-		close(_ep_fd);
+	if (this != &other)
+		_servers = other._servers;
+	return(*this);
 }
 
-Webserv::Webserv(const Webserv &other) {
-	(void)other;
+Webserv::~Webserv() {}
+
+
+bool	Webserv::servers_start()
+{
+	int status = 0;
+	int	size = _servers.size(), fail_count = 0;
+	std::cerr << "[webserv]\tstarting " << size << " server(s)" << std::endl;
+	for (int i = 0; i < size; ++i)
+	{
+		Server	&server = _servers[i];
+		if (server.start())
+		{
+			fail_count++;
+			continue ;
+		}
+	}
+	return (fail_count == size);
 }
 
-Webserv& Webserv:: operator=(const Webserv &other) {
-	(void)other;
-	return *this;
+bool	Webserv::server_add()
+{
+	int	fail_count = 0;
+	for(std::size_t i = 0; i < _servers.size(); ++i)
+	{
+		Server	&server = _servers[i];
+		fd		s_fd = server;
+		if (s_fd < 0)
+		{
+			fail ("Epoll: Server: " + server.name() + " failed", -1);
+			fail_count++;
+			continue;
+		}
+		if (Epoll::instance().add_ptr(&server, EPOLLIN) < 0)
+			return (fail("Epoll: Server", errno));
+	}
+	return (fail_count == _servers.size());
 }
 
-//check if the {} is even for the server and for the location scopes
-//only the validation of the scopes should happen here no value parsing
-int Webserv::scopeValidation(std::ifstream &file)
+void	Webserv::fileParser(char *av)
+{
+	std::string		config_file, line;
+	
+	config_file = av ? av : "def.conf";
+	
+	std::ifstream	file(config_file.c_str());
+		
+	while(getline(file, line))
+	{
+		std::stringstream	ss(line);
+		std::string			tok = "";
+		while (ss >> tok)
+		{
+			if (tok == "server")
+				_servers.push_back(Server(file));
+		}
+	}
+}
+
+int	Webserv::scopeValidation(std::ifstream &file)
 {
 	std::string line, tok1, tok2;
 	bool location_scope = false;
-	// bool server_scope = false;
 	t_location location;
 
 	int start_location = 0, end_location = 0;
@@ -112,48 +158,6 @@ int Webserv::scopeValidation(std::ifstream &file)
 	return 1;
 }
 
-void Webserv::fileParser(char *av)
-{
-	std::ifstream inputFile;
-	inputFile.open(av);
-	std::string	word;
-	std::string	config_file;
-
-	if(av) config_file = av;
-	else config_file = "def.conf";
-
-	// std::cout << "config file >> "<< config_file << std::endl;
-	std::ifstream	file(config_file.c_str());
-	std::string line;
-
-	// if(scopeValidation(file) == 0) throw ConfigFileError();
-	// 	file.clear();
-	// 	file.seekg(0);
-		
-	while(getline(file, line))
-	{
-		std::stringstream	ss(line);
-		std::string			tok = "";
-		while (ss >> tok)
-		{
-			if (tok == "server")
-				_servers.push_back(Server(file));
-		}
-	}
-}
-
-//print each of the servers frin the webserv
-void Webserv::printServers() const {
-    std::cout << "\n========== PRINTING ALL SERVERS ==========\n" << _servers.size() << std::endl;
-    for (size_t i = 0; i < _servers.size(); i++) {
-        std::cout << "\nSERVER #" << i + 1 << ":\n";
-        _servers[i].print();
-    }
-}
-
-ConfigValidationError::ConfigValidationError()
-	: std::runtime_error("Error in config file") {}
-
 void	Webserv::print_server_head() const
 {
 	std::cout << "server count : " << _servers.size() << std::endl;
@@ -165,185 +169,59 @@ void	Webserv::print_server_head() const
 	}
 }
 
-int	Webserv::servers_start(std::set<fd>& server_fds)
+void	Webserv::printServers() const
 {
-	int status = 0;
-	int	size = _servers.size();
-	std::cerr << "[webserv]\tstarting " << size << " server(s)" << std::endl;
-	for (int i = 0; i < size; ++i)
+	std::cout << "\n========== PRINTING ALL SERVERS ==========\n" << _servers.size() << std::endl;
+	for (size_t i = 0; i < _servers.size(); i++)
 	{
-		Server	&server = _servers[i];
-		if (server.start())
-			continue ;
-		_servers_map[server] = &server;
-		server_fds.insert(server);
+		std::cout << "\nSERVER #" << i + 1 << ":\n";
+		_servers[i].print();
 	}
-	if (!server_fds.size())
-		return (-1);
-	return (0);
-}
-
-int	Webserv::server_add()
-{
-	for(std::size_t i = 0; i < _servers.size(); ++i)
-	{
-		fd	s_fd = _servers[i];
-		if (s_fd < 0)
-			continue;
-		struct epoll_event	s_event;
-		s_event.events = EPOLLIN;
-		s_event.data.fd = s_fd;
-		// register server socket with epoll
-		if (epoll_ctl(_ep_fd, EPOLL_CTL_ADD, s_fd, &s_event) <  0)
-			return (fail("Epoll: Server", errno));
-	}
-	return (0);
-}
-
-int	Webserv::create_con(const Server* server)
-{
-	while (true)
-	{
-		Connection	con(server);
-		fd c_fd = con;
-		if (c_fd < 0)
-			break;
-
-		struct epoll_event	c_event;
-		c_event.events = EPOLLIN | EPOLLET;
-		c_event.data.fd = c_fd;
-
-		// FAIL~
-		if (epoll_ctl(_ep_fd, EPOLL_CTL_ADD, c_fd, &c_event) < 0)
-		{
-			int status = fail("Epoll: Client", errno); 
-			close(c_fd);
-			return (status);
-		}
-		_cons[c_fd] = con;
-	}
-	return (0);
 }
 
 int	Webserv::start()
 {
 	int	status = 0;
 
-	_ep_fd = epoll_create(1);
-	std::set<fd>	server_fds;
-	if (_ep_fd < 0)
-		return (fail("Epoll", errno));
-	if (servers_start(server_fds) < 0)
-		return (fail("Servers: No servers were started successfully!", -1));
-	if ((status = server_add()))
-		return (status);
+	if (Epoll::instance().init() < 0)
+	{
+		fail("Epoll", errno);
+		throw Error("Webserv: Epoll: failed to create");
+	}
+	if (servers_start())
+	{
+		fail("Servers: No servers were started successfully!", -1);
+		throw Error("Webserv: Server: failed");
+	}
+	if (server_add())
+	{
+		fail("Servers: No servers were added to epoll!", -1);
+		throw Error("Webserv: Epoll: server adding failed");
+	}
 	std::cout << "[webserv]\tservers registering succeed" << std::endl;
 
 	epoll_event	events[MAX_EVENTS];
 
  	while (true)
 	{
-		int	hits = epoll_wait(_ep_fd, events, MAX_EVENTS, 1000);
-		if (hits < 0)
-		{
-			if (errno == EINTR)
-				continue ;
-			fail("Epoll", errno);
-			break;
-		}
+		int	hits = Epoll::instance().wait(events, MAX_EVENTS, 1000);
+		// if (hits < 0)
+		// {
+		// 	if (errno == EINTR)
+		// 		continue ;
+		// 	fail("Epoll", errno);
+		// 	break;
+		// }
 		for (int i = 0; i < hits; ++i)
 		{
-			fd	event_fd = events[i].data.fd;
-			if (server_fds.count(event_fd))
+			Pollable	*p = static_cast<Pollable*>(events[i].data.ptr);
+			if (p)
 			{
-				if (create_con(_servers_map[event_fd]))
-				{
-					fail("Connection", errno);
-					continue;
-				}
-			}
-			else
-			{
-				std::map<fd, Connection>::iterator it = _cons.find(event_fd);
-				if (it == _cons.end())
-					continue;
-				Connection	&cur_con = it->second;
-				if (events[i].events & EPOLLIN)
-				{
-					if (cur_con.request())
-					{
-						struct	epoll_event	mod_event;
-						mod_event.events = EPOLLOUT | EPOLLET;
-						mod_event.data.fd = event_fd;
-						epoll_ctl(_ep_fd, EPOLL_CTL_MOD, event_fd, &mod_event);
-					}
-					else
-						con_close(event_fd);
-				}
-				else if (events[i].events & EPOLLOUT)
-				{
-					if (cur_con.response())
-						con_close(event_fd);
-				}
-				else if (events[i].events & (EPOLLHUP | EPOLLERR))
-				{
-					std::cout << "epollhup epollerr" << std::endl;
-					con_close(event_fd);
-				}
+				p->handle(events[i].events);
+				continue;
 			}
 		}
 		// timeout();
 	}
-	for (std::set<fd>::iterator it = server_fds.begin(); it != server_fds.end(); ++it)
-		close(*it);
-	close(_ep_fd);
-	return (0);
 }
 
-void	Webserv::timeout()
-{
-	time_t	now = time(NULL);
-	for (std::map<fd, Connection>::iterator it = _cons.begin(); it != _cons.end();)
-	{
-		int	c_fd = it->first;
-		if (now - it->second > WAIT_TIME)
-		{
-			std::cout << "[webserv]\tclient timeout\t\t\t| socket:" << c_fd << std::endl;
-			std::map<fd, Connection>::iterator	tmp = it++;
-			con_close(c_fd);
-		}
-		else
-			++it;
-	}
-}
-
-void	Webserv::con_close(fd fd_)
-{
-	epoll_ctl(_ep_fd, EPOLL_CTL_DEL, fd_, NULL);
-	std::cout << "[webserv]\tclient disconnected\t\t| socket:" << fd_ << std::endl;
-	_cons.erase(fd_);
-	close(fd_);
-}
-
-//trim spaces/tabs and validate
-// std::string Webserv::trimSpaces(std::string line){
-// 	std::string serverHeadline = "";
-	
-// 	// std::cout << line.length() << std::endl;
-
-// 	for(size_t i = 0; i < line.length(); i++){
-// 		if(serverHeadline != "server" && line[i] == ' ' && serverHeadline.length() != 0) break;
-// 		if(serverHeadline.length() == 0 && (line[i] == ' ' || line[i] == '\t')) continue;
-// 		if(line[i] != ' ')
-// 			serverHeadline += line[i];
-// 	}
-// 	// std::cout << "after spaces trimmed >> " << serverHeadline << std::endl;
-// 	if(serverHeadline.length() == 7 && serverHeadline == "server{") return serverHeadline;
-// 	else if(serverHeadline.length() == 6 && serverHeadline == "server") return serverHeadline;
-// 	else if(serverHeadline.length() == 1 && serverHeadline == "{") return serverHeadline;
-// 	else return "";
-		
-// 	return (serverHeadline);
-// }
-
-// Note: `start()` is complex and uses edge-triggered epoll; review carefully before changing.

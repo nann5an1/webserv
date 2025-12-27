@@ -9,7 +9,7 @@ Server::~Server() {}
 
 std::string Server::
 trimSemiColon(std::string val){
-	if(val.find(";") == std::string::npos)	throw ConfigFileError();
+	if(val.find(";") == std::string::npos)	throw Error();
 	return (val.substr(0, val.length() - 1));
 }
 
@@ -269,7 +269,7 @@ Server::operator	std::string() const
 	return (_ip + ":" + _port + ":" + _name);
 }
 
-ConfigFileError::ConfigFileError()
+Error::Error()
 	: std::runtime_error("Error in config file") {}
 
 

@@ -183,6 +183,9 @@ int	identify_method(const std::string& method)
 	return (UNKNOWN);
 }
 
+Error::Error() : std::runtime_error(std::string(RED) + "Error: " + RESET) {}
+
+Error::Error(const std::string &msg) : std::runtime_error(std::string(RED) + "Error: " + msg + RESET) {}
 
 // bool fileExists(const char* path) {
 //     struct stat st;

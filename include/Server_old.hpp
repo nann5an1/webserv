@@ -78,9 +78,9 @@ class Server : public Pollable
 
 };
 
-class ConfigFileError : public std::runtime_error {
+class Error : public std::runtime_error {
 public:
-	ConfigFileError(); // constructor declaration
+	Error(); // constructor declaration
 };
 
 #endif

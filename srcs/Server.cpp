@@ -56,11 +56,10 @@ Server::Server(std::ifstream &file) :
 	_r_status(-1),
 	_r_url("")
 {
-	std::string line, tok = "", location_path = "";
+	std::string	line, tok = "", location_path = "";
 	
-	bool location_scope = false;
-	t_location location;
-
+	bool		location_scope = false;
+	t_location	location;
 
 	while(getline(file, line))
 	{
@@ -125,7 +124,7 @@ int	Server::parse_err_pages(std::stringstream &ss, std::map<int,std::string> &er
 std::string	Server::trimSemiColon(std::string val)
 {
 	if(val.find(";") == std::string::npos)
-		throw ConfigFileError(val);
+		throw Error(val);
 	return (val.substr(0, val.length() - 1));
 }
 
@@ -236,7 +235,7 @@ int Server::inputLocation(std::string line, t_location &location)
 	return (1);
 }
 
-void Server::print() const
+void	Server::print() const
 {
     std::cout << "==================== SERVER ====================\n";
     std::cout << "Server Name: " << _name << "\n";
@@ -295,7 +294,6 @@ int	Server::start()
 
 	std::memset(&sock_addr, 0, sizeof(sock_addr));
 	sock_addr.sin_family = AF_INET;	
-	// TEMP~ I set the port to 8080 for test.
 	sock_addr.sin_port = htons(std::atoi(_port.c_str()));
 	sock_addr.sin_addr.s_addr = inet_addr(_ip.c_str());
 	if ((_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0 ||
@@ -370,7 +368,3 @@ void	Server::handle(uint32_t events)
 	std::cout << "handle" << std::endl;
 	return ;
 }
-
-ConfigFileError::ConfigFileError() : std::runtime_error(std::string(RED) + "Error: " + RESET) {}
-
-ConfigFileError::ConfigFileError(const std::string &msg) : std::runtime_error(std::string(RED) + "Error: " + msg + RESET) {}

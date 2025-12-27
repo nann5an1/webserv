@@ -66,6 +66,33 @@ Connection::Connection(const Server *server) : _server(server)
 
 }
 
+
+/* ====================== return the whole location block from the config ======================*/
+const t_location*	Connection::find_location(std::string &req_url, std::string &final_path, std::string &remain)
+{
+	std::string	loc = "";
+	const t_location*	location = NULL;
+
+	for (int i = req_url.size(); i >= 0; --i)
+	{
+		if (req_url[i] == '/' || i == req_url.size())
+		{
+			loc = req_url.substr(0, i);
+			location = get(_server->locations(), !i ? "/" : loc);
+			if (location)
+			{
+				std::string	root = location->root.empty() ? _server->root() : location->root;
+				remain = req_url.substr(i);
+				std::cout << "REMAIN PATH in the FIND LOCATION >> " << remain << std::endl;
+				final_path = root + (loc == "/" ? "" : loc) + remain;	
+				return (location);
+			}
+		}
+	}
+	
+	return (NULL);
+}
+
 bool	Connection::request()
 {
 	char		buffer[4096];
@@ -113,33 +140,6 @@ bool	Connection::response()
 	std::cout << "[connection]\tclient received response \t| socket:" << _fd << "\n\n" << str << std::endl;
 	return (true);
 }
-
-/* ====================== return the whole location block from the config ======================*/
-const t_location*	Connection::find_location(std::string &req_url, std::string &final_path, std::string &remain)
-{
-	std::string	loc = "";
-	const t_location*	location = NULL;
-
-	for (int i = req_url.size(); i >= 0; --i)
-	{
-		if (req_url[i] == '/' || i == req_url.size())
-		{
-			loc = req_url.substr(0, i);
-			location = get(_server->locations(), !i ? "/" : loc);
-			if (location)
-			{
-				std::string	root = location->root.empty() ? _server->root() : location->root;
-				remain = req_url.substr(i);
-				std::cout << "REMAIN PATH in the FIND LOCATION >> " << remain << std::endl;
-				final_path = root + (loc == "/" ? "" : loc) + remain;	
-				return (location);
-			}
-		}
-	}
-	
-	return (NULL);
-}
-
 
 /* =================== HANDLE WHICH ROUTE TO HANDLE ================ */
 void	Connection::route()
@@ -189,7 +189,7 @@ void	Connection::route()
 				final_path = location->upload_dir +  remain_path;
 				std::cout << " F I N A L   PATH??? " << final_path << std::endl;
 
-				handleFile(location, remain_path, _req, _rep);
+				handleFile(location, _req, _rep);
 				std::cout << "File upload come in" << std::endl;
 				break;
 		}
@@ -207,7 +207,7 @@ void	Connection::route()
 	// std::cout << "this is the status: " << _rep._status << std::endl;
 }
 
-std::time_t	Connection::contime() const
+std::time_t	Connection::con_time() const
 {
 	std::time_t	now = time(0);
 	return (now - _time);

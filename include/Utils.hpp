@@ -4,16 +4,16 @@
 #include <map>
 #include <vector>
 
-#include <sstream>
+#include <algorithm>
+#include <exception>
 #include <iostream>
 #include <iterator>
-#include <algorithm>
+#include <sstream>
 
 #include <cstring>
 
 #include <errno.h>
 #include <fcntl.h>
-#include <iterator>
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -123,6 +123,12 @@ void	print_map(const MapType& container)
 		std::cout << ci->first << " " << ci->second << ", ";
 	std::cout << std::endl;
 }
-
+class Error : public std::runtime_error 
+{
+	public:
+		Error();
+		Error(const std::string &msg);
+};
 
 #endif
+

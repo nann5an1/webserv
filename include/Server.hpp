@@ -76,11 +76,4 @@ class	Server : public Pollable
 		const std::map<std::string, t_location>&	locations() const;
 };
 
-class ConfigFileError : public std::runtime_error 
-{
-	public:
-		ConfigFileError();
-		ConfigFileError(const std::string &msg);
-};
-
 #endif

@@ -100,16 +100,16 @@ void	testing_request()
 	};
 
 	
-	for (size_t i = 0; raw_reqs[i] != NULL; ++i)
-	{
-		const char* req_str = raw_reqs[i];
-		Request req;
-		req.parseRequest(req_str);
-		// std::cout << "body: " << req.body() << std::endl;
-		req.printUploadedFiles();
-		// std::cout << "\n" << std::endl;
-		/* feed req into your parser */
-	}
+	// for (size_t i = 0; raw_reqs[i] != NULL; ++i)
+	// {
+	// 	const char* req_str = raw_reqs[i];
+	// 	Request req;
+	// 	req.parseRequest(req_str);
+	// 	// std::cout << "body: " << req.body() << std::endl;
+	// 	req.printUploadedFiles();
+	// 	// std::cout << "\n" << std::endl;
+	// 	/* feed req into your parser */
+	// }
 }
 
 int main(int ac, char **av)
@@ -142,39 +142,39 @@ int main(int ac, char **av)
     return (0);
 }
 
-void	testing_path(Webserv &webserv)
-{
-	const char* tempPaths[] = {"/autoindex/", "/autoindex", "/autoindex/smth", "/smth", "/"};
-	std::vector<std::string> paths(tempPaths, tempPaths + 5);
-	std::string loc;
+// void	testing_path(Webserv &webserv)
+// {
+// 	const char* tempPaths[] = {"/autoindex/", "/autoindex", "/autoindex/smth", "/smth", "/"};
+// 	std::vector<std::string> paths(tempPaths, tempPaths + 5);
+// 	std::string loc;
 
-	const t_location	*location = NULL;
-	Server	server = webserv._servers[0];
-	for (int j = 0; j < paths.size(); ++j)
-	{
-		std::string path = paths[j], final = "", remain = "";
-		for (int i = path.size(); i >= 0; --i)
-		{
-			if (path[i] == '/' || i == path.size())
-			{
-				loc = path.substr(0, i);
-				if (i == 0)
-					loc = "/";
-				location = get(webserv._servers[0].locations(), loc);
-				if (location)
-				{
+// 	const t_location	*location = NULL;
+// 	Server	server = webserv._servers[0];
+// 	for (int j = 0; j < paths.size(); ++j)
+// 	{
+// 		std::string path = paths[j], final = "", remain = "";
+// 		for (int i = path.size(); i >= 0; --i)
+// 		{
+// 			if (path[i] == '/' || i == path.size())
+// 			{
+// 				loc = path.substr(0, i);
+// 				if (i == 0)
+// 					loc = "/";
+// 				location = get(webserv._servers[0].locations(), loc);
+// 				if (location)
+// 				{
 
-					std::string	root = location->root.empty() ? server.root() : location->root;
-					remain = path.substr(i);
-					if (loc == "/")
-						loc = "";
-					final = root + loc + remain;
-					std::cout << j << " final: " << final << std::endl;
+// 					std::string	root = location->root.empty() ? server.root() : location->root;
+// 					remain = path.substr(i);
+// 					if (loc == "/")
+// 						loc = "";
+// 					final = root + loc + remain;
+// 					std::cout << j << " final: " << final << std::endl;
 
-					break ;
-				}
+// 					break ;
+// 				}
 
-			}
-		}
-	}
-}
+// 			}
+// 		}
+// 	}
+// }
