@@ -17,6 +17,4 @@ struct	Pollable
 		operator	fd() const;
 };
 
-
-
 #endif

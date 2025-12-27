@@ -205,19 +205,19 @@ int	Webserv::start()
  	while (true)
 	{
 		int	hits = Epoll::instance().wait(events, MAX_EVENTS, 1000);
-		// if (hits < 0)
-		// {
-		// 	if (errno == EINTR)
-		// 		continue ;
-		// 	fail("Epoll", errno);
-		// 	break;
-		// }
+		if (hits < 0)
+		{
+			if (errno == EINTR)
+				continue ;
+			fail("Epoll", errno);
+			break;
+		}
 		for (int i = 0; i < hits; ++i)
 		{
-			Pollable	*p = static_cast<Pollable*>(events[i].data.ptr);
-			if (p)
+			Pollable	*poll_obj = static_cast<Pollable*>(events[i].data.ptr);
+			if (poll_obj)
 			{
-				p->handle(events[i].events);
+				poll_obj->handle(events[i].events);
 				continue;
 			}
 		}

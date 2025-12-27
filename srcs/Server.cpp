@@ -365,6 +365,21 @@ const std::map<std::string, t_location>&	Server::locations() const
 
 void	Server::handle(uint32_t events)
 {
-	std::cout << "handle" << std::endl;
-	return ;
+	while (true)
+	{
+		Connection	*con = new Connection(this);
+		fd	con_fd = *con;
+		if (con_fd < 0)
+		{
+			delete con;
+			fail("Server: Client", errno);
+			break ;
+		}
+		if (Epoll::instance().add_ptr(this, EPOLLIN | EPOLLET) < 0)
+		{
+			fail("Epoll: Client", errno);
+			delete con;
+			continue ;
+		}
+	}
 }
