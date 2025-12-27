@@ -23,7 +23,6 @@ Request::Request():
 	bool_boundary(false),
 	bool_binary(false),
 	bool_chunked(false),
-	_cgi_env(""),
 	boundary(""),
 	referer("")
 {
@@ -282,7 +281,7 @@ void Request::parseRequest(const char *raw_request){
 			} 
 			else if(bool_content_len){
 				if(validate_len(token)) this->content_len = atoi(token.c_str());
-				_cgi_env += "CONTENT_LENGTH=" + token + "\n";
+				_cgi_env.push_back("CONTENT_LENGTH=" + token);
 				bool_content_len = false;
 			}
 			else if(hostname){
@@ -291,7 +290,7 @@ void Request::parseRequest(const char *raw_request){
 				if(idx != (int)std::string::npos) {
 					token = token.substr(idx + 1, (token.length()) - idx - 1).c_str();
 					this->port = atoi(token.c_str());
-					_cgi_env += "SERVER_PORT=" + token + "\n";
+					_cgi_env.push_back("SERVER_PORT=" + token);
 				}
 				hostname = false;
 			}
@@ -312,7 +311,7 @@ void Request::parseRequest(const char *raw_request){
 				
 				if(content_types.find(lower_token) != content_types.end()) {
 					this->content_type = content_types[lower_token];
-					_cgi_env += "CONTENT_TYPE=" + lower_token + "\n";
+					_cgi_env.push_back("CONTENT_TYPE=" + lower_token);
 				} else {
 					std::cout << "Unknown content type: " << token << std::endl;
 				}
@@ -339,14 +338,11 @@ void Request::parseRequest(const char *raw_request){
 	}
 	if(bool_cgi)
 	{
-		std::ostringstream oss;
-
-		oss << "REQUEST_METHOD=" << this->_method << "\n"
-			<< "SERVER_NAME=" << this->hostname << "\n"
-			<< "SERVER_PROTOCOL=" << this->version << "\n"
-			<< "SCRIPT_NAME=" << this->_path.substr(0, _path.find("?")) << "\n"
-			<< "QUERY_STRING=" << this->_query << "\n";
-		_cgi_env += oss.str();
+		_cgi_env.push_back("REQUEST_METHOD=" + this->_method);
+		_cgi_env.push_back("SERVER_NAME=" + this->hostname);
+		_cgi_env.push_back("SERVER_PROTOCOL=" + this->version);
+		_cgi_env.push_back("SCRIPT_NAME=" + this->_path.substr(0, _path.find("?")));
+		_cgi_env.push_back("QUERY_STRING=" + this->_query);
 	}
 	
 	this->_category = request_category;
@@ -414,7 +410,7 @@ std::string Request::body() const
 	return (_body);
 }
 
-std::string Request::cgi_env() const
+std::vector<std::string> Request::cgi_env() const
 {
 	return (_cgi_env);
 }

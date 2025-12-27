@@ -39,7 +39,7 @@ class	Webserv
 		void	con_close(fd _fd);
 
 	public:
-		std::vector<Server> 			_servers;	//take the sever class as type and save a collection of server
+		std::vector<Server>	_servers;	//take the sever class as type and save a collection of server
 		Webserv();
 		~Webserv();
 		Webserv(const Webserv &other);

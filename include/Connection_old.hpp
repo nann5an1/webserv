@@ -6,20 +6,19 @@
 #include "Request.hpp"
 #include "Response.hpp"
 #include "Handle.hpp"
-#include "Pollable.hpp"
 
-
-class	Connection : public Pollable
+class	Connection
 {
 	private:
-		std::string	_ip;
-		int			_port;
-		std::time_t	_time;
-		Request		_req;
-		Response	_rep;
+		fd				_fd;
+		std::string		_ip;
+		int				_port;
+		std::time_t		_time;
+		Request			_req;
+		Response		_rep;
 		const Server	*_server;
 		const t_location*	find_location(std::string &req_url, std::string &final_path);
-		void	handle(uint32_t	events);
+
 	public:
 		Connection();
 		Connection(const Connection &other);
@@ -27,10 +26,10 @@ class	Connection : public Pollable
 		~Connection();
 
 		Connection(const Server *server);
-		
+
 		bool	request();
 		bool	response();
-
+		
 		void	route();
 
 		operator	fd() const;
@@ -38,8 +37,7 @@ class	Connection : public Pollable
 
 		void		set_req(Request &req);
 		void		set_server(Server *server);
-		
-		std::time_t	con_time() const;
+		std::time_t	contime() const;
 };
 
 #endif

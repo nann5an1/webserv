@@ -1,17 +1,23 @@
 #ifndef UTILS_HPP
 #define UTILS_HPP
 
-#include <cstring>
 #include <map>
 #include <vector>
 
 #include <sstream>
 #include <iostream>
-#include <unistd.h>
+#include <iterator>
+#include <algorithm>
+
+#include <cstring>
+
 #include <errno.h>
-#include <sys/stat.h>
 #include <fcntl.h>
 #include <iterator>
+#include <sys/stat.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <stdint.h>
 
 #define	RED	"\033[31m"
 #define YELLOW "\033[33m"
@@ -24,11 +30,13 @@
 
 struct	fd 
 {
-   	int fd_;
+	int	fd_;
 	fd();
 	fd(int FD);
-	operator int() const;
+	operator	int() const;
 };
+
+int	pipe(fd fds[2]);
 
 extern std::map<int, const char*>	gphrase;
 
@@ -44,7 +52,7 @@ bool	is_dir(std::string path);
 int		file_check(std::string path, int mod);
 int		fail(std::string head, int err_no);
 int		read_file(std::string &path, std::string &data);
-int		identify_method(const std::string& method);
+int     identify_method(const std::string& method);
 int		identify_method(const char *method);
 
 std::string	get_ext(const std::string& filename);
@@ -93,12 +101,19 @@ typename MapType::mapped_type* get(MapType& m, const KeyType& key)
 }
 
 template <typename T>
-void	print_container(T container)
+void print_container(const T& container)
 {
-	typedef typename T::value_type	value_type;
+    typedef typename T::value_type value_type;
+    typedef typename T::const_iterator const_iterator;
 
-	std::copy(container.begin(), container.end(), std::ostream_iterator<value_type>(std::cout, " "));
-	std::cout << std::endl;
+    for (const_iterator it = container.begin(); it != container.end(); ++it)
+    {
+        if (*it != (value_type)NULL) // skip NULLs
+        {
+            std::cout << *it << " ";
+        }
+    }
+    std::cout << std::endl;
 }
 
 template <typename MapType>

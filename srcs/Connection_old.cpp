@@ -1,36 +1,19 @@
 #include "Connection.hpp"
 
-Connection::Connection() :
-	Pollable(-1),
-	_ip(""),
-	_port(0),
-	_time(0),
-	_req(),
-	_rep(),
-	_server(NULL)
-{}
+Connection::Connection() : _fd(-1), _time(0), _rep(), _server(NULL), _ip(""), _port(0) {}
 
-Connection::Connection(const Connection &other) :
-	Pollable(other._fd),
-	_ip(other._ip),
-	_port(other._port),
-	_time(other._time),
-	_req(other._req),
-	_rep(other._rep),
-	_server(other._server)
-{}
+Connection::Connection(const Connection &other) : _fd(other._fd), _time(other._time), _rep(other._rep), _server(other._server), _ip(other._ip), _port(other._port) {}
 
 Connection	&Connection::operator=(const Connection &other)
 {
 	if (this != &other)
 	{
 		_fd = other._fd;
-		_ip = other._ip;
-		_port = other._port;
 		_time = other._time;
-		_req = other._req;
 		_rep = other._rep;
 		_server = other._server;
+		_ip = other._ip;
+		_port = other._port;
 	}
 	return (*this);
 }
@@ -88,6 +71,7 @@ bool	Connection::request()
 			return (false);
 		}
 	}
+	_req.parseRequest(req.c_str());
 	std::cout << "[connection]\tclient request\t\t\t| socket:" << _fd << "\n\n"
 			  << req << std::endl;
 	std::cout << "===================================================\n\n\n\n" << std::endl;
@@ -115,7 +99,7 @@ bool	Connection::response()
 }
 
 /* ====================== return the whole location block from the config ======================*/
-const t_location*	Connection::find_location(std::string &req_url, std::string &final_path, std::string &remain)
+const t_location*	Connection::find_location(std::string &req_url, std::string &final_path)
 {
 	std::string	loc = "";
 	const t_location*	location = NULL;
@@ -129,9 +113,7 @@ const t_location*	Connection::find_location(std::string &req_url, std::string &f
 			if (location)
 			{
 				std::string	root = location->root.empty() ? _server->root() : location->root;
-				remain = req_url.substr(i);
-				std::cout << "REMAIN PATH in the FIND LOCATION >> " << remain << std::endl;
-				final_path = root + (loc == "/" ? "" : loc) + remain;	
+				final_path = root + (loc == "/" ? "" : loc) + req_url.substr(i);
 				return (location);
 			}
 		}
@@ -141,10 +123,10 @@ const t_location*	Connection::find_location(std::string &req_url, std::string &f
 }
 
 
-/* =================== HANDLE WHICH ROUTE TO HANDLE ================ */
+
 void	Connection::route()
 {
-	std::string	url = _req.path(), final_path = "", remain_path = "";
+	std::string	url = _req.path(), final_path = "";
 
 	if (_server->r_status())
 	{
@@ -152,13 +134,8 @@ void	Connection::route()
 		return ;
 	}
 
-	
-	const t_location*	location = find_location(url, final_path, remain_path);
-
-
-	std::cout << "url: " << url << "\nfinal: " << final_path << std::endl;
-
-	std::cout << "req_category : " << _req.category() << std::endl;
+	const t_location*	location = find_location(url, final_path);
+	std::cout << "final: " << final_path << ", category: " << _req.category() << std::endl;
  
 	if (location)
 	{
@@ -168,7 +145,6 @@ void	Connection::route()
 		}
 		if (location->r_status > 0)
 			_req.set_category(REDIRECTION);
-
 		switch (_req.category())
 		{
 			case NORMAL:
@@ -176,7 +152,7 @@ void	Connection::route()
 				break;
 			case CGI:
 				std::cout << "cgi request come in " << std::endl;
-				std::cout << "\n" << _req.cgi_env() <<  std::endl;
+				cgi_handle(final_path, location, _req, _rep);
 				_rep._status = 200;
 				break;
 			case REDIRECTION:
@@ -184,12 +160,7 @@ void	Connection::route()
 				return ;
 			case FILEHANDLE:
 				_rep._status = 200;
-				std::cout << "\n< REMAIN PATH UNDER ROUTE > " << remain_path << std::endl;
-
-				final_path = location->upload_dir +  remain_path;
-				std::cout << " F I N A L   PATH??? " << final_path << std::endl;
-
-				handleFile(location, remain_path, _req, _rep);
+				handleFile(location, _req, _rep);
 				std::cout << "File upload come in" << std::endl;
 				break;
 		}
@@ -200,6 +171,9 @@ void	Connection::route()
 		_rep._status = 404;
 		_rep._body = status_page(404);
 	}
+
+	// final = root + path;
+	// error shold handle here;
 
 	
 	// if (_rep._status >= 400)

@@ -8,6 +8,16 @@ fd::fd(int fd_) : fd_(fd_) {}
 
 fd::operator int() const {return (fd_);}
 
+int	pipe(fd fds[2])
+{
+	int	tmp[2];
+	if (::pipe(tmp) == -1)
+		return (-1);
+	fds[0] = fd(tmp[0]);
+	fds[1] = fd(tmp[1]);
+	return (0);
+}
+
 std::map<int, const char*>	gphrase;
 
 std::map<std::string, std::string> mime_types;
