@@ -374,7 +374,7 @@ void	Server::handle(uint32_t events)
 			delete con;
 			fail("Server: Client", errno);
 		}
-		if (Epoll::instance().add_ptr(con, EPOLLIN | EPOLLET) < 0)
+		if (Epoll::instance().add_ptr(con, EPOLLIN) < 0)
 		{
 			std::cout << "why here" << std::endl;
 			fail("Epoll: Client", errno);

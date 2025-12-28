@@ -16,7 +16,6 @@ struct	t_reader
 	std::string	body;
 	bool		is_chunked;
 	size_t		content_len;
-	bool		read_header();
 	bool		read_body();
 };
 
@@ -44,6 +43,7 @@ class	Connection : public Pollable
 		const Server	*_server;
 		const t_location*	find_location(std::string &req_url, std::string &final_path, std::string &remain_path);
 		void	handle(uint32_t	events);
+		bool	read_header();
 
 	public:
 		Connection();
