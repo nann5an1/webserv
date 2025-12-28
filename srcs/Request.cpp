@@ -7,6 +7,7 @@
 
 std::string cgi_env = "";
 
+
 Request::Request():
 	_method(""),
 	_path(""),

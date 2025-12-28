@@ -7,6 +7,10 @@
 #include <fstream>
 #include <iostream>
 #include <algorithm>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <cstring>
+#include <sstream>
 
 std::string	status_page(int status);
 

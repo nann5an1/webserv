@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Connection.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: aoo <aoo@student.42singapore.sg>           +#+  +:+       +#+        */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/24 13:41:26 by aoo               #+#    #+#             */
-/*   Updated: 2025/12/25 03:36:49 by aoo              ###   ########.fr       */
+/*   Updated: 2025/12/28 14:37:37 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -83,8 +83,8 @@ bool	Connection::request()
 			return (false);
 		}
 	}
-	std::cout << "[connection]\tclient request\t\t\t| socket:" << _fd << "\n\n"
-			  << req << std::endl;
+	std::cout << "[connection]\tclient request\t\t\t| socket:" << _fd << "\n\n" << std::endl;
+			//   << req << std::endl;
 	std::cout << "===================================================\n\n\n\n" << std::endl;
 	_req.parseRequest(req.c_str());	
 	return (true);
@@ -161,12 +161,18 @@ void	Connection::route()
 		{
 			std::cout << "method not allowed " << std::endl;
 		}
+		
+		std::cout << "METHOD >> " << _req.method() << std::endl;
+		
+		if(_req.method() == "DELETE")
+			_req.set_category(FILEHANDLE);
 		if (location->r_status > 0)
 			_req.set_category(REDIRECTION);
 
 		switch (_req.category())
 		{
 			case NORMAL:
+				std::cout << "url ?? " << url << std::endl;
 				_rep._status = norm_handle(final_path, _req, _rep, location);
 				break;
 			case CGI:
@@ -183,7 +189,8 @@ void	Connection::route()
 
 				final_path = location->upload_dir +  remain_path;
 				std::cout << " F I N A L   PATH??? " << final_path << std::endl;
-
+				std::cout << "url ??" << url << std::endl;
+				
 				handleFile(location, remain_path, _req, _rep);
 				std::cout << "File upload come in" << std::endl;
 				break;

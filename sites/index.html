@@ -1,28 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Upload</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload & Delete Files</title>
 </head>
 <body>
-	<div>
-		<h1>Upload File</h1>
-		<form action="/upload" method="post" enctype="multipart/form-data">
-			<input type="file" name="fileIn">
-			<input type="submit" value="Upload">
-		</form>
-		<br>
-	</div>
+    <div class="section">
+        <h1>Upload File</h1>
+        <form action="/upload" method="post" enctype="multipart/form-data">
+            <input type="file" name="fileIn" required>
+            <input type="submit" value="Upload">
+        </form>
+    </div>
 </body>
-<!-- <script>
-	async function uploadFile(){
-		const upload = await fetch("http://localhost:8081/upload/",{
-			method: 'POST'
-		});
-		if(upload.ok())
-			console.log("file upload ok");
-		else console.log("sth wrong with file upload");
-	}
-</script> -->
-</html>	
+</html>
