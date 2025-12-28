@@ -368,7 +368,7 @@ void	Server::handle(uint32_t events)
 {
 		Connection	*con = new Connection(this);
 		fd	con_fd = *con;
-		std::cout << "client fd " << con_fd << std::endl;
+		// std::cout << "client fd " << con_fd << std::endl;
 		if (con_fd < 0)
 		{
 			delete con;

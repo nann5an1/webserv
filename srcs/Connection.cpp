@@ -106,7 +106,6 @@ const t_location*	Connection::find_location(std::string &req_url, std::string &f
 
 void	Connection::handle(uint32_t events)
 {
-	std::cout << "shit come in " << std::endl;
 	if (events & (EPOLLHUP | EPOLLERR))
 	{
 		fail ("Epoll: ", errno);
@@ -125,8 +124,14 @@ void	Connection::handle(uint32_t events)
 					cleanup();
 					return ;
 				}
-				_req.parseRequest((_reader.header + _reader.body).c_str());
-				std::cout << "[connection]\tclient request\t\t\t| socket:" << _fd << "\n\n" << _reader.header + _reader.body << std::endl;
+				// _req.parseRequest((_reader.header + _reader.body).c_str());
+				std::cout << "body size : " << _reader.body.size() << std::endl;
+				_reader.body = "";
+				_reader.header = "";
+				_reader.buffer = "";
+				_reader.content_len = 0;
+				_reader.is_chunked = 0;
+				std::cout << "[connection]\tclient request\t\t\t| socket:" << _fd << std::endl;
 			}
 		}
 		else
@@ -143,7 +148,7 @@ void	Connection::handle(uint32_t events)
 }
 bool	Connection::read_header()
 {
-	char	buffer[4096];
+	char	buffer[1];
 	while (true)
 	{
 		ssize_t bytes = read(_fd, buffer, sizeof(buffer));
@@ -173,6 +178,7 @@ bool	Connection::read_header()
 						_reader.content_len = 0;
 					}
 				}
+				std::cout << "content_len : " << _reader.content_len << std::endl;
 				if (!_reader.is_chunked && _reader.content_len == 0)
 					_state = PROCESSING;
 				else if (_reader.content_len > 0 && _reader.body.size() >= _reader.content_len)
@@ -192,8 +198,8 @@ bool	Connection::read_header()
 			return (false);
 		}
 	}
+	std::cout << std::string(40, '=') << "\n" << _reader.header << std::string(40, '=') << std::endl;
 	return (true);
-	}
 }
 
 bool	Connection::request()
@@ -205,10 +211,9 @@ bool	Connection::request()
 		case CREATED: _state = READING_HEADERS;
 			
 		case READING_HEADERS:
-			read_header();
+			return (read_header());
 		case READING_BODY:
 		{
-			std::cout << "body : " << _reader.body << "\n\n" << std::endl;
 			ssize_t bytes = read(_fd, buffer, sizeof(buffer));
 			if (bytes > 0)
 			{
@@ -222,8 +227,6 @@ bool	Connection::request()
 			else if (bytes == 0)
 			{
 				std::cout << "here: " << std::endl;
-				if (!_reader.body.empty())
-					_state = PROCESSING;
 				return (false);
 			}
 			else
@@ -259,8 +262,6 @@ bool	Connection::response()
 			return (false);   // wait for next epoll notification
 		return (fail("Response", errno), true);
 	}
-
-
 	// all bytes sent (or small responses handled in one write)
 	std::cout << "[connection]\tclient received response \t| socket:" << _fd << "\n\n" << std::endl;
 	return (true);
@@ -335,7 +336,7 @@ void	Connection::route()
 void	Connection::cleanup()
 {
 	Epoll::instance().del_ptr(this);
-	std::cout << "[connection]\tclient disconnected\t\t| socket: " << _fd << std::endl;
+	std::cout << "[connection]\tclient disconnected\t\t| socket:" << _fd << std::endl;
 	if (_fd >= 0)
 	{
 		close(_fd);
