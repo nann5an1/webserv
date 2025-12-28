@@ -79,54 +79,6 @@ Connection::Connection(const Server *server) :
 	std::cout << "[connection]\tclient connected\t\t| " << _ip << ":" << _port << " | socket:" << _fd << std::endl;
 }
 
-bool	Connection::request()
-{
-	char		buffer[4096];
-	std::string	req;
-
-	while (true)
-	{
-		ssize_t bytes = read(_fd, buffer, sizeof(buffer));
-		if (bytes > 0)
-		{
-			req += std::string(buffer, bytes);
-			_time = time(NULL);
-		}
-		else if (bytes == 0)
-			return (false);
-		else
-		{
-			if (errno == EAGAIN || errno == EWOULDBLOCK)
-				break;
-			return (false);
-		}
-	}
-	std::cout << "[connection]\tclient request\t\t\t| socket:" << _fd << "\n\n" << std::endl;
-			//   << req << std::endl;
-	std::cout << "===================================================\n\n\n\n" << std::endl;
-	_req.parseRequest(req.c_str());	
-	return (true);
-}
-
-bool	Connection::response()
-{
-	route();
-	const char* str = _rep.build();
-	size_t size = std::strlen(str);
-	ssize_t n = write(_fd, str, size);
-
-	if (n < 0)
-	{
-		if (errno == EAGAIN || errno == EWOULDBLOCK)
-			return (false);   // wait for next epoll notification
-		return (fail("Response", errno), true);
-	}
-
-	// all bytes sent (or small responses handled in one write)
-	std::cout << "[connection]\tclient received response \t| socket:" << _fd << "\n\n" << str << std::endl;
-	return (true);
-}
-
 /* ====================== return the whole location block from the config ======================*/
 const t_location*	Connection::find_location(std::string &req_url, std::string &final_path, std::string &remain)
 {
@@ -149,7 +101,6 @@ const t_location*	Connection::find_location(std::string &req_url, std::string &f
 			}
 		}
 	}
-	
 	return (NULL);
 }
 
@@ -197,7 +148,7 @@ void	Connection::handle(uint32_t events)
 }
 bool	Connection::read_header()
 {
-	char	buffer[1];
+	char	buffer[4096];
 	while (true)
 	{
 		ssize_t bytes = read(_fd, buffer, sizeof(buffer));
@@ -253,7 +204,7 @@ bool	Connection::read_header()
 
 bool	Connection::request()
 {
-	char		buffer[1];
+	char		buffer[4096];
 
 	switch (_state)
 	{

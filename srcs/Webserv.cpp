@@ -13,7 +13,6 @@ Webserv	&Webserv::operator=(const Webserv &other)
 
 Webserv::~Webserv() {}
 
-
 bool	Webserv::servers_start()
 {
 	int status = 0;

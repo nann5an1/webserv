@@ -47,20 +47,60 @@ Server& Server:: operator=(const Server &other)
 
 Server::~Server() {}
 
-// std::string Server::
-// trimSemiColon(std::string val){
-// 	if(val.find(";") == std::string::npos)	throw ConfigFileError();
-// 	return (val.substr(0, val.length() - 1));
-// }
+Server::Server(std::ifstream &file) :
+	Pollable(-1), 
+	_name(""), 
+	_ip(""), 
+	_port(""), 
+	_root(""), 
+	_max_size(0),
+	_r_status(-1),
+	_r_url("")
+{
+	std::string	line, tok = "", location_path = "";
+	
+	bool		location_scope = false;
+	t_location	location;
 
+	while(getline(file, line))
+	{
+		std::stringstream	ss(line);
+		ss >> tok;
 
+		if (tok == "{" && tok == "\n")
+			continue ;
+		if (tok == "location" && !location_scope)
+		{
+			location_scope = true;
+			location = t_location();
+			location.methods = GET;
+			ss >> location_path;
+			continue;
+		}
+		else if(tok == "}")
+		{
+			if (!location_scope)
+				break ;
+			this->_locations[location_path] = location;
+			location_scope = false;
+			tok = "";
+		}
+		else if (location_scope)
+			inputLocation(line, location);
+		else
+			inputData(line);
+	}
+}
 
-int Server::validateHTTPCode(int &code){
-	// for(size_t i = 0; i < val.length(); i++){
-	// 	if(!isdigit(val[i]))	return 0; //not digit
-	// }
-	// if(val.length() > 3 || val.length() < 3) return 0;
-	return (code >= 100 && code <= 599);
+int	Server::parse_return(std::stringstream& ss, int& r_status, std::string& r_url)
+{
+	std::string	val;
+		
+	if(!(ss >> r_status) || !validateHTTPCode(r_status))
+		return (0);
+	if (ss >> val)
+		r_url = trimSemiColon(val);
+	return (1);
 }
 
 int	Server::parse_err_pages(std::stringstream &ss, std::map<int,std::string> &err_pg_container)
@@ -142,7 +182,6 @@ int Server::inputLocation(std::string line, t_location &location)
 {
 	std::string token, val;
 	std::stringstream ss(line);
-	// if(line.find(";") == std::string::npos) throw ConfigFileError();
 
 	ss >> token;
 		// std::cout << "token  in inputLocation>> " << token << std::endl;
