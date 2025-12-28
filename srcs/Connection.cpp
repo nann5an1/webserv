@@ -79,6 +79,55 @@ Connection::Connection(const Server *server) :
 	std::cout << "[connection]\tclient connected\t\t| " << _ip << ":" << _port << " | socket:" << _fd << std::endl;
 }
 
+bool	Connection::request()
+{
+	char		buffer[4096];
+	std::string	req;
+
+	while (true)
+	{
+		ssize_t bytes = read(_fd, buffer, sizeof(buffer));
+		if (bytes > 0)
+		{
+			req += std::string(buffer, bytes);
+			_time = time(NULL);
+		}
+		else if (bytes == 0)
+			return (false);
+		else
+		{
+			if (errno == EAGAIN || errno == EWOULDBLOCK)
+				break;
+			return (false);
+		}
+	}
+	std::cout << "[connection]\tclient request\t\t\t| socket:" << _fd << "\n\n" << std::endl;
+			//   << req << std::endl;
+	std::cout << "===================================================\n\n\n\n" << std::endl;
+	_req.parseRequest(req.c_str());	
+	return (true);
+}
+
+bool	Connection::response()
+{
+	route();
+	const char* str = _rep.build();
+	size_t size = std::strlen(str);
+	ssize_t n = write(_fd, str, size);
+
+	if (n < 0)
+	{
+		if (errno == EAGAIN || errno == EWOULDBLOCK)
+			return (false);   // wait for next epoll notification
+		return (fail("Response", errno), true);
+	}
+
+	// all bytes sent (or small responses handled in one write)
+	std::cout << "[connection]\tclient received response \t| socket:" << _fd << "\n\n" << str << std::endl;
+	return (true);
+}
+
+/* ====================== return the whole location block from the config ======================*/
 const t_location*	Connection::find_location(std::string &req_url, std::string &final_path, std::string &remain)
 {
 	std::string			loc = "";
@@ -292,12 +341,17 @@ void	Connection::route()
 		{
 			std::cout << "method not allowed " << std::endl;
 		}
+		
+		std::cout << "METHOD >> " << _req.method() << std::endl;
+		
 		if (location->r_status > 0)
 			_req.set_category(REDIRECTION);
-
+		if(_req.method() == "DELETE" && _req.category() != CGI)
+			_req.set_category(FILEHANDLE);
 		switch (_req.category())
 		{
 			case NORMAL:
+				std::cout << "url ?? " << url << std::endl;
 				_rep._status = norm_handle(final_path, _req, _rep, location);
 				break;
 			case CGI:
@@ -314,7 +368,8 @@ void	Connection::route()
 
 				final_path = location->upload_dir +  remain_path;
 				std::cout << " F I N A L   PATH??? " << final_path << std::endl;
-
+				std::cout << "url ??" << url << std::endl;
+				
 				handleFile(location, remain_path, _req, _rep);
 				std::cout << "File upload come in" << std::endl;
 				break;

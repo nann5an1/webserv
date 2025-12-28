@@ -4,6 +4,10 @@
 #include <fstream>
 #include <iostream>
 #include <algorithm>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <cstring>
+#include <sstream>
 
 #include "Response.hpp"
 #include "Server.hpp"

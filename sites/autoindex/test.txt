@@ -1,0 +1,1 @@
+Welcome this is the test file for the autoindex "on" and no index.
