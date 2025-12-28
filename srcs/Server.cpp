@@ -9,8 +9,10 @@ Server::~Server() {}
 
 std::string Server::
 trimSemiColon(std::string val){
-	if(val.find(";") == std::string::npos)	throw ConfigFileError();
-	return (val.substr(0, val.length() - 1));
+	// if(val.find(";") == std::string::npos)	throw ConfigFileError();
+	if(val.find(";") != std::string::npos)
+		return (val.substr(0, val.length() - 1));
+	return val;
 }
 
 
@@ -99,6 +101,7 @@ int Server::inputData(std::string &line) {
 int Server::inputLocation(std::string line, t_location &location){
 	std::string token;
 	std::stringstream ss(line);
+	// if(line.find(";") == std::string::npos) throw ConfigFileError();
 
 	ss >> token;
 		// std::cout << "token  in inputLocation>> " << token << std::endl;

@@ -6,13 +6,48 @@ std::string	status_page(int status)
 	std::string	content = "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n\t<meta charset=\"UTF-8\">\n\t<title>Status Page</title>\n</head>\n<body>\n\t<h1>" + status_str + " " + phrase + "</h1>\n</body>\n</html>";
 	return (content);
 }
-// void serveIndex(Request &req, Response &rep, const t_location* location){
-	// std::vector<std::string> indexs = location->index_files;
 
-	// for(size_t i = 0; i < indexs.size(); i++){
-	// 	std::string path = indexs[i];
-	// }
-// }
+/* ================ READ THE ENTIRE DIRECTORY AND LIST DOWN ================*/
+std::string autoIndexOnListing(std::string& path)
+{
+    DIR* dir = opendir(path.c_str());
+    if (!dir)
+        return "";
+
+    std::string html;
+
+    html += "<html><head>Index listing of " + path + "</head>";
+    html += "<body>";
+    html += "<ul>";
+
+    dirent* entry;
+    while ((entry = readdir(dir)) != NULL)
+    {
+        if (std::strcmp(entry->d_name, ".") == 0 || //skil the . and ..
+            std::strcmp(entry->d_name, "..") == 0)
+            continue;
+
+        html += "<li><a href=\"";
+        html += entry->d_name;
+
+        if (entry->d_type == DT_DIR)
+            html += "/";
+
+        html += "\">";
+        html += entry->d_name;
+
+        if (entry->d_type == DT_DIR)
+            html += "/";
+
+        html += "</a></li>";
+    }
+
+    html += "</ul></body></html>";
+
+    closedir(dir);
+    return html;
+}
+
 
 int	norm_handle(std::string	&final_path, Request &req, Response &rep, const t_location* location)
 {
@@ -21,39 +56,33 @@ int	norm_handle(std::string	&final_path, Request &req, Response &rep, const t_lo
 	const std::vector<std::string>	&indexs = location->index_files;
 	std::string	path = final_path;
 	DIR* dir;
+	std::string html, index_path;
 
-	std::cout << "indexes -> " << indexs.size() << std::endl;
-	std::cout << "finalPath - path -> " << path << std::endl;
+	// std::cout << "finalPath - path -> " << path << std::endl;
 	
 	if (is_dir(path))
-	{	
-		if(!indexs.empty()){ 
-			std::cout << "indexs not empty" << std::endl;
-			for (int i = 0; i < indexs.size(); ++i)
+	{
+		for (int i = 0; i < indexs.size(); ++i)
+		{
+			index_path = path + "/" + indexs[i];
+			int status = 0;
+			// std::cout << "path and file combined >> " << index_path << std::endl;
+			if ((status = file_check(index_path, R_OK)) == 200)
 			{
-				std::cout << "each index -> " << indexs[i] << std::endl;
-				if (file_check(path + "/" + indexs[i], R_OK) == 200)
-				{
-					path += "/" + indexs[i];
-					std::cout << "autoindex is off (path)" << path << std::endl;
-					goto response;
-				}
+				path = index_path;
+				goto response;
+			}
+			std::cout << "status: " << status << std::endl;
+		}
+		if(location->autoindex){
+			if(indexs.empty()){ //autoindex is on and index files is empty (list out the files in the directory)
+				rep._body = autoIndexOnListing(path);
+				rep._type = "text/html";
+    			return (200);
 			}
 		}
-		else{ //noindex files in the location
-			dir = opendir(path.c_str());
-			if (location->autoindex)
-			{
-				std::cout << YELLOW << "autoindex is on " << RESET << std::endl;
-				if((entry = readdir(dir)) != NULL){
-					std::cout << "got here" << std::endl;
-					std::cout << "Dir name" << entry->d_name << std::endl;
-
-				}
-				// showDirectoryListing(_req, _rep, url, location);
-				return (200);
-			}
-		}
+		else //if auto index is off
+			if(indexs.empty()) return (403);
 	}
 	response:
 		status = file_check(path, R_OK);
