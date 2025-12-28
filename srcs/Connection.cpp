@@ -6,20 +6,26 @@ Connection::Connection() :
 	_ip(""),
 	_port(0),
 	_time(0),
+	_state(CREATED),
 	_req(),
 	_rep(),
 	_server(NULL)
-{}
+{
+	_reader = t_reader();
+}
 
 Connection::Connection(const Connection &other) :
 	Pollable(other._fd),
 	_ip(other._ip),
 	_port(other._port),
 	_time(other._time),
+	_state(other._state),
 	_req(other._req),
 	_rep(other._rep),
 	_server(other._server)
-{}
+{
+	_reader = other._reader;
+}
 
 Connection	&Connection::operator=(const Connection &other)
 {
@@ -29,9 +35,11 @@ Connection	&Connection::operator=(const Connection &other)
 		_ip = other._ip;
 		_port = other._port;
 		_time = other._time;
+		_state = other._state;
 		_req = other._req;
 		_rep = other._rep;
 		_server = other._server;
+		_reader = other._reader;
 	}
 	return (*this);
 }
@@ -42,7 +50,10 @@ Connection::~Connection()
 		close(_fd);
 }
 
-Connection::Connection(const Server *server) : _server(server), Pollable(-1)
+Connection::Connection(const Server *server) :
+	_server(server),
+	Pollable(-1),
+	_state()
 {
 	fd	server_fd = *_server;
 	sockaddr_in	client_addr;
@@ -66,19 +77,19 @@ Connection::Connection(const Server *server) : _server(server), Pollable(-1)
 	}
 	_time = time(NULL);
 	std::cout << "[connection]\tclient connected\t\t| " << _ip << ":" << _port << " | socket:" << _fd << std::endl;
-
 }
 
 void	Connection::handle(uint32_t events)
 {
 	if (events & (EPOLLHUP | EPOLLERR))
 	{
+		fail ("Epoll: ", errno);
 		cleanup();
 		return;
 	}
 	if (events & EPOLLIN)
 	{
-		if (request())
+		if (request() && _state == PROCESSING)
 		{
 			if (Epoll::instance().mod_ptr(this, EPOLLOUT | EPOLLET) < 0)
 			{
@@ -97,11 +108,6 @@ void	Connection::handle(uint32_t events)
 	{
 		if (response())
 			cleanup();	
-	}
-	if (events & (EPOLLHUP | EPOLLERR))
-	{
-		fail("epollhup epollerr", errno);
-		cleanup();
 	}
 }
 
@@ -134,29 +140,95 @@ const t_location*	Connection::find_location(std::string &req_url, std::string &f
 bool	Connection::request()
 {
 	char		buffer[4096];
-	std::string	req;
 
-	while (true)
+	switch (_state)
 	{
-		ssize_t bytes = read(_fd, buffer, sizeof(buffer));
-		if (bytes > 0)
-		{
-			req += std::string(buffer, bytes);
-			_time = time(NULL);
-		}
-		else if (bytes == 0)
-			return (false);
-		else
-		{
-			if (errno == EAGAIN || errno == EWOULDBLOCK)
-				break;
-			return (false);
-		}
+		case CREATED: _state = READING_HEADERS;
+			
+		case READING_HEADERS:
+			while (true)
+			{
+				ssize_t bytes = read(_fd, buffer, sizeof(buffer));
+				if (bytes > 0)
+				{
+					_reader.buffer.append(buffer, bytes);
+					_time = time(NULL);
+					size_t	pos;
+					if ((pos = _reader.buffer.find(CRLF + CRLF)) != std::string::npos)
+					{
+						pos += 4;
+						_reader.header = _reader.buffer.substr(0, pos);
+						_reader.body = _reader.buffer.substr(pos);
+						_reader.is_chunked = _reader.header.find("Transfer-Encoding: chunked\r\n") != std::string::npos;
+						if ((pos = _reader.header.find("Content-Length: ")) != std::string::npos)
+						{
+							pos += 17;
+							size_t	end = _reader.header.find("\r\n", pos);
+							if (end != std::string::npos && end > pos)
+							{
+								std::string len_str = _reader.header.substr(pos, end - pos);
+								try
+								{
+									std::stringstream ss(len_str);
+       								ss >> _reader.content_len;
+								}
+								catch (...)
+								{
+									_reader.content_len = 0;
+								}
+							}
+						}
+						if (_reader.content_len == 0 && !_reader.is_chunked)
+							_state = PROCESSING;
+						else
+							_state = READING_BODY;
+						std::cout << "header is done \n\n" << _reader.header << std::endl;
+						break ;
+					}
+					continue ;
+				}
+				else if (bytes == 0)
+					return (false);
+				else
+				{
+					if (errno == EAGAIN || errno == EWOULDBLOCK)
+						return (true);
+					fail("Request: Read: Header", errno);
+					return (false);
+				}
+			}
+			return (true);
+		case READING_BODY:
+			std::cout << "body : " << _reader.body << "\n\n" << std::endl;
+			if ((_reader.is_chunked && _reader.body.find(CRLF + "0" + CRLF) != std::string::npos) ||
+				_reader.content_len > 0 && _reader.body.size() >= _reader.content_len)
+				_state = PROCESSING;
+			else
+			{
+				ssize_t bytes = read(_fd, buffer, sizeof(buffer));
+				if (bytes > 0)
+				{
+					_reader.body.append(buffer, bytes);
+					_time = time(NULL);
+					return (true);
+				}
+				else if (bytes == 0)
+					return (false);
+				else
+				{
+					if (errno == EAGAIN || errno == EWOULDBLOCK)
+						break ;
+					fail("Request: Read: Body", errno);
+					return (false);
+				}
+			}
+		case PROCESSING:
+			_req.parseRequest((_reader.header + _reader.body).c_str());
+			std::cout << "[connection]\tclient request\t\t\t| socket:" << _fd << "\n\n" << _reader.header + _reader.body << std::endl;
+			return (true);
+		default:
+			break;
 	}
-	std::cout << "[connection]\tclient request\t\t\t| socket:" << _fd << "\n\n"
-			  << req << std::endl;
-	std::cout << "===================================================\n\n\n\n" << std::endl;
-	_req.parseRequest(req.c_str());	
 	return (true);
 }
 

@@ -8,12 +8,27 @@
 #include "Pollable.hpp"
 
 class Server;
-// enum state
-// {
-// 	req_read;
-// 	req_body;
-// 	req_
-// };
+
+struct	t_reader
+{
+	std::string	buffer;
+	std::string	header;
+	std::string	body;
+	bool		is_chunked;
+	size_t		content_len;
+	bool		read_header();
+	bool		read_body();
+};
+
+enum	con_state
+{
+	CREATED,
+	READING_HEADERS,
+	READING_BODY,
+	PROCESSING,
+	READING_RESPONSE,
+	DONE,
+};
 
 class	Connection : public Pollable
 {
@@ -21,6 +36,9 @@ class	Connection : public Pollable
 		std::string	_ip;
 		int			_port;
 		std::time_t	_time;
+		
+		con_state	_state;
+		t_reader	_reader;
 		Request		_req;
 		Response	_rep;
 		const Server	*_server;
