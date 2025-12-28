@@ -35,9 +35,13 @@ Connection	&Connection::operator=(const Connection &other)
 	return (*this);
 }
 
-Connection::~Connection() {}
+Connection::~Connection()
+{
+	if (_fd >= 0)
+		close(_fd);
+}
 
-Connection::Connection(const Server *server) : _server(server)
+Connection::Connection(const Server *server) : _server(server), Pollable(-1)
 {
 	fd	server_fd = *_server;
 	sockaddr_in	client_addr;
@@ -51,8 +55,6 @@ Connection::Connection(const Server *server) : _server(server)
 	}
 	_ip = inet_ntoa(client_addr.sin_addr);
 	_port = ntohs(client_addr.sin_port);
-
-	// FAIL:
 	if (fcntl(_fd, F_SETFL, fcntl(_fd, F_GETFL, 0) | O_NONBLOCK) < 0)
 	{
 		fail("Connection", errno);
@@ -66,11 +68,46 @@ Connection::Connection(const Server *server) : _server(server)
 
 }
 
+void	Connection::handle(uint32_t events)
+{
+	if (events & (EPOLLHUP | EPOLLERR))
+	{
+		cleanup();
+		return;
+	}
+	if (events & EPOLLIN)
+	{
+		if (request())
+		{
+			if (Epoll::instance().mod_ptr(this, EPOLLOUT | EPOLLET) < 0)
+			{
+				fail("Epoll: Mod", errno);
+				cleanup();
+				return ;
+			}
+		}
+		else
+		{
+			cleanup();
+			return ;
+		}
+	}
+	if (events & EPOLLOUT)
+	{
+		if (response())
+			cleanup();	
+	}
+	if (events & (EPOLLHUP | EPOLLERR))
+	{
+		fail("epollhup epollerr", errno);
+		cleanup();
+	}
+}
 
 /* ====================== return the whole location block from the config ======================*/
 const t_location*	Connection::find_location(std::string &req_url, std::string &final_path, std::string &remain)
 {
-	std::string	loc = "";
+	std::string			loc = "";
 	const t_location*	location = NULL;
 
 	for (int i = req_url.size(); i >= 0; --i)
@@ -100,6 +137,7 @@ bool	Connection::request()
 
 	while (true)
 	{
+		
 		ssize_t bytes = read(_fd, buffer, sizeof(buffer));
 		if (bytes > 0)
 		{
@@ -205,6 +243,18 @@ void	Connection::route()
 	// if (_rep._status >= 400)
 	// 	error_handle();
 	// std::cout << "this is the status: " << _rep._status << std::endl;
+}
+
+void	Connection::cleanup()
+{
+	Epoll::instance().del_ptr(this);
+	std::cout << "[connection]\tclient disconnected\t\t| socket: " << _fd << std::endl;
+	if (_fd >= 0)
+	{
+		close(_fd);
+		_fd = -1;
+	}
+	delete	this;
 }
 
 std::time_t	Connection::con_time() const

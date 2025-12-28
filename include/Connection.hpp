@@ -8,6 +8,12 @@
 #include "Handle.hpp"
 #include "Pollable.hpp"
 
+enum state
+{
+	req_read;
+	req_body;
+	req_
+};
 
 class	Connection : public Pollable
 {
@@ -20,6 +26,7 @@ class	Connection : public Pollable
 		const Server	*_server;
 		const t_location*	find_location(std::string &req_url, std::string &final_path, std::string &remain_path);
 		void	handle(uint32_t	events);
+
 	public:
 		Connection();
 		Connection(const Connection &other);
@@ -27,13 +34,12 @@ class	Connection : public Pollable
 		~Connection();
 
 		Connection(const Server *server);
-		
+
 		bool	request();
 		bool	response();
-
 		void	route();
+		void	cleanup();
 
-		operator	fd() const;
 		operator	std::time_t() const;
 
 		void		set_req(Request &req);
