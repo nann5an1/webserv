@@ -1,5 +1,5 @@
-#ifndef CONNECTION_HPP
-#define CONNECTION_HPP
+#ifndef CONNECTION_OLD_HPP
+#define CONNECTION_OLD_HPP
 
 #include <ctime>
 #include "Server.hpp"

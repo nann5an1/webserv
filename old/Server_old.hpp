@@ -1,5 +1,5 @@
-#ifndef SERVER_HPP
-#define SERVER_HPP
+#ifndef SERVER_OLD_HPP
+#define SERVER_OLD_HPP
 
 #include <cstdlib>
 

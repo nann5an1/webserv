@@ -1,4 +1,5 @@
 #include "Server.hpp"
+#include "Connection.hpp"
 
 Server::Server() :
 	Pollable(-1), 
@@ -375,8 +376,9 @@ void	Server::handle(uint32_t events)
 			fail("Server: Client", errno);
 			break ;
 		}
-		if (Epoll::instance().add_ptr(this, EPOLLIN | EPOLLET) < 0)
+		if (Epoll::instance().add_ptr(con, EPOLLIN | EPOLLET) < 0)
 		{
+			std::cout << "why here" << std::endl;
 			fail("Epoll: Client", errno);
 			delete con;
 			continue ;

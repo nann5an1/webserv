@@ -1,4 +1,5 @@
 #include "Connection.hpp"
+#include "Server.hpp"
 
 Connection::Connection() :
 	Pollable(-1),
@@ -137,7 +138,6 @@ bool	Connection::request()
 
 	while (true)
 	{
-		
 		ssize_t bytes = read(_fd, buffer, sizeof(buffer));
 		if (bytes > 0)
 		{
@@ -162,7 +162,8 @@ bool	Connection::request()
 
 bool	Connection::response()
 {
-	route();
+	// route();
+	_rep._body = status_page(200);
 	const char* str = _rep.build();
 	size_t size = std::strlen(str);
 	ssize_t n = write(_fd, str, size);
@@ -173,6 +174,7 @@ bool	Connection::response()
 			return (false);   // wait for next epoll notification
 		return (fail("Response", errno), true);
 	}
+
 
 	// all bytes sent (or small responses handled in one write)
 	std::cout << "[connection]\tclient received response \t| socket:" << _fd << "\n\n" << str << std::endl;
@@ -214,7 +216,7 @@ void	Connection::route()
 				break;
 			case CGI:
 				std::cout << "cgi request come in " << std::endl;
-				std::cout << "\n" << _req.cgi_env() <<  std::endl;
+				// std::cout << "\n" << _req.cgi_env() <<  std::endl;
 				_rep._status = 200;
 				break;
 			case REDIRECTION:
@@ -227,7 +229,7 @@ void	Connection::route()
 				final_path = location->upload_dir +  remain_path;
 				std::cout << " F I N A L   PATH??? " << final_path << std::endl;
 
-				handleFile(location, _req, _rep);
+				handleFile(location, remain_path, _req, _rep);
 				std::cout << "File upload come in" << std::endl;
 				break;
 		}
@@ -261,11 +263,6 @@ std::time_t	Connection::con_time() const
 {
 	std::time_t	now = time(0);
 	return (now - _time);
-}
-
-Connection::operator	fd() const
-{
-	return (_fd);
 }
 
 Connection::operator std::time_t() const

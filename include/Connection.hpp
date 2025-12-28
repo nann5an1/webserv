@@ -2,18 +2,18 @@
 #define CONNECTION_HPP
 
 #include <ctime>
-#include "Server.hpp"
 #include "Request.hpp"
 #include "Response.hpp"
 #include "Handle.hpp"
 #include "Pollable.hpp"
 
-enum state
-{
-	req_read;
-	req_body;
-	req_
-};
+class Server;
+// enum state
+// {
+// 	req_read;
+// 	req_body;
+// 	req_
+// };
 
 class	Connection : public Pollable
 {

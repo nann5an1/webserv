@@ -11,10 +11,12 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#include "Connection.hpp"
 #include "Pollable.hpp"
 #include "Epoll.hpp"
 #include "Utils.hpp"
+
+
+class	Connection;
 
 typedef struct	s_location
 {
