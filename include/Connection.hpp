@@ -44,6 +44,7 @@ class	Connection : public Pollable
 		const t_location*	find_location(std::string &req_url, std::string &final_path, std::string &remain_path);
 		void	handle(uint32_t	events);
 		bool	read_header();
+		bool	read_body();
 
 	public:
 		Connection();

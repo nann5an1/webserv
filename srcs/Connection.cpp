@@ -53,7 +53,11 @@ Connection::~Connection()
 Connection::Connection(const Server *server) :
 	_server(server),
 	Pollable(-1),
-	_state()
+	_state(),
+	_reader(t_reader()),
+	_ip(""),
+	_port(0),
+	_time(0)
 {
 	fd	server_fd = *_server;
 	sockaddr_in	client_addr;
@@ -95,7 +99,6 @@ const t_location*	Connection::find_location(std::string &req_url, std::string &f
 			{
 				std::string	root = location->root.empty() ? _server->root() : location->root;
 				remain = req_url.substr(i);
-				std::cout << "REMAIN PATH in the FIND LOCATION >> " << remain << std::endl;
 				final_path = root + (loc == "/" ? "" : loc) + remain;	
 				return (location);
 			}
@@ -124,14 +127,14 @@ void	Connection::handle(uint32_t events)
 					cleanup();
 					return ;
 				}
-				// _req.parseRequest((_reader.header + _reader.body).c_str());
-				std::cout << "body size : " << _reader.body.size() << std::endl;
+				_req.parseRequest((_reader.header + _reader.body).c_str());
 				_reader.body = "";
 				_reader.header = "";
 				_reader.buffer = "";
 				_reader.content_len = 0;
 				_reader.is_chunked = 0;
-				std::cout << "[connection]\tclient request\t\t\t| socket:" << _fd << std::endl;
+				std::cout << "[connection]\tclient request\t\t\t| " << _ip << ":" << _port << " | socket:" << _fd<< " | " 
+						  << "method: " << _req.method() << " " << _req.path()<< std::endl;
 			}
 		}
 		else
@@ -142,6 +145,7 @@ void	Connection::handle(uint32_t events)
 	}
 	if (events & EPOLLOUT)
 	{
+		route();
 		if (response())
 			cleanup();	
 	}
@@ -178,7 +182,6 @@ bool	Connection::read_header()
 						_reader.content_len = 0;
 					}
 				}
-				std::cout << "content_len : " << _reader.content_len << std::endl;
 				if (!_reader.is_chunked && _reader.content_len == 0)
 					_state = PROCESSING;
 				else if (_reader.content_len > 0 && _reader.body.size() >= _reader.content_len)
@@ -198,7 +201,7 @@ bool	Connection::read_header()
 			return (false);
 		}
 	}
-	std::cout << std::string(40, '=') << "\n" << _reader.header << std::string(40, '=') << std::endl;
+	// std::cout << std::string(40, '=') << "\n" << _reader.header << std::string(40, '=') << std::endl;
 	return (true);
 }
 
@@ -225,10 +228,7 @@ bool	Connection::request()
 				return (true);
 			}
 			else if (bytes == 0)
-			{
-				std::cout << "here: " << std::endl;
 				return (false);
-			}
 			else
 			{
 				if (errno == EAGAIN || errno == EWOULDBLOCK)
@@ -249,9 +249,9 @@ bool	Connection::request()
 
 bool	Connection::response()
 {
-	// route();
-	_rep._body = status_page(200);
-	_rep._status = 200;
+	// _rep._body = status_page(200);
+	// _rep._status = 200;
+	// _rep._type = "text/html";
 	const char* str = _rep.build();
 	size_t size = std::strlen(str);
 	ssize_t n = write(_fd, str, size);
@@ -263,7 +263,8 @@ bool	Connection::response()
 		return (fail("Response", errno), true);
 	}
 	// all bytes sent (or small responses handled in one write)
-	std::cout << "[connection]\tclient received response \t| socket:" << _fd << "\n\n" << std::endl;
+	std::cout << "[connection]\tclient received response \t| " << _ip << ":" << _port << " | socket:" << _fd << " | "
+			  << "method: " << _rep._status << std::endl;
 	return (true);
 }
 
@@ -271,20 +272,13 @@ bool	Connection::response()
 void	Connection::route()
 {
 	std::string	url = _req.path(), final_path = "", remain_path = "";
-
 	if (_server->r_status())
 	{
 		redirect_handle(_server->r_status(), _server->r_url(), _rep);
 		return ;
 	}
-
 	
 	const t_location*	location = find_location(url, final_path, remain_path);
-
-
-	std::cout << "url: " << url << "\nfinal: " << final_path << std::endl;
-
-	std::cout << "req_category : " << _req.category() << std::endl;
  
 	if (location)
 	{
@@ -292,9 +286,7 @@ void	Connection::route()
 		{
 			std::cout << "method not allowed " << std::endl;
 		}
-		
-		std::cout << "METHOD >> " << _req.method() << std::endl;
-		
+			
 		if (location->r_status > 0)
 			_req.set_category(REDIRECTION);
 		if(_req.method() == "DELETE" && _req.category() != CGI)
@@ -302,10 +294,11 @@ void	Connection::route()
 		switch (_req.category())
 		{
 			case NORMAL:
-				std::cout << "url ?? " << url << std::endl;
 				_rep._status = norm_handle(final_path, _req, _rep, location);
 				break;
 			case CGI:
+				_rep._status = cgi_handle(final_path, location, _req, _rep);
+
 				std::cout << "cgi request come in " << std::endl;
 				// std::cout << "\n" << _req.cgi_env() <<  std::endl;
 				_rep._status = 200;
@@ -315,14 +308,7 @@ void	Connection::route()
 				return ;
 			case FILEHANDLE:
 				_rep._status = 200;
-				std::cout << "\n< REMAIN PATH UNDER ROUTE > " << remain_path << std::endl;
-
-				final_path = location->upload_dir +  remain_path;
-				std::cout << " F I N A L   PATH??? " << final_path << std::endl;
-				std::cout << "url ??" << url << std::endl;
-				
 				handleFile(location, remain_path, _req, _rep);
-				std::cout << "File upload come in" << std::endl;
 				break;
 		}
 	}
