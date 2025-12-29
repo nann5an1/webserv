@@ -1,54 +1,51 @@
 #ifndef WEBSERV_HPP
 #define WEBSERV_HPP
 
-#include <vector>
-#include <iostream>
-#include <iomanip>
-#include <sstream>
+#include <set>
+
+#include <exception>
 #include <fstream>
-#include <sys/epoll.h>
-#include <sys/socket.h>
+#include <iomanip>
+#include <string>
+
+#include <ctime>
+
 #include <netinet/in.h>
-#include <unistd.h>
 #include <stdlib.h>
-#include <map>
+#include <sys/socket.h>
 
-// enum allow_methods{
-//    GET,
-//    POST,
-//    DELETE
-// };
+#include "Utils.hpp"
+#include "Server.hpp"
+#include "Pollable.hpp"
+#include "Epoll.hpp"
 
-typedef struct	s_location
+#define	MAX_EVENTS	1024
+#define WAIT_TIME	5 // wait time in sec
+
+class	Webserv
 {
-	std::string	path;
-	bool	autoindex;
-	bool	get;
-	bool	post;
-	bool	del;
-	std::string	root;
-	std::string	upload_dir;
-	std::vector<std::string>	page_seq;
-	std::vector<std::string>	cgi;
-}	t_location;
-
-class Webserv{
 	private:
-		std::string server_name;
-		std::string listen_port;
-		long long max_body_size;
-		// std::map<std::string, location_attr> location;
-		std::map<std::string, std::string> err_pages;
+		bool		servers_start();
+		bool		server_add();
+		// int		create_con(const Server*);
+		// void	timeout();
+		// void	close_con(fd _fd);
+
 	public:
+		std::vector<Server>	_servers;
+
 		Webserv();
-		Webserv(char *av); //take the av(filename) like this
-		~Webserv();
 		Webserv(const Webserv &other);
 		Webserv& operator=(const Webserv &other);
-		void watchServer();
-		void fileParser(char *av);
-		void print_map();
-};
+		~Webserv();
 
+		void	fileParser(char *av);
+
+		int		scopeValidation(std::ifstream &file);
+		void	print_server_head() const;
+		void	printServers() const;
+
+		int		start();
+};
 
 #endif

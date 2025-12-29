@@ -1,0 +1,53 @@
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor folders
+.vscode/
+.idea/
+*.swp
+
+# Logs
+logs/
+*.log
+
+# Dependency directories
+node_modules/
+vendor/
+
+# Build output
+dist/
+build/
+out/
+target/
+bin/
+obj/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+
+# Cache
+.cache/
+*.cache
+__pycache__/
+
+# C / C++ compiled objects
+*.o
+*.obj
+
+# C / C++ executables
+a.out
+webserv
+*.exe
+
+# Other binary outputs
+*.so
+*.dll
+*.dylib
