@@ -2,18 +2,14 @@
 #define WEBSERV_HPP
 
 #include <set>
-
 #include <exception>
 #include <fstream>
 #include <iomanip>
 #include <string>
-
 #include <ctime>
-
 #include <netinet/in.h>
 #include <stdlib.h>
 #include <sys/socket.h>
-
 #include "Utils.hpp"
 #include "Server.hpp"
 #include "Pollable.hpp"

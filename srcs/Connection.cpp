@@ -294,8 +294,8 @@ void	Connection::route()
 			_req.set_category(REDIRECTION);
 		if(_req.method() == "DELETE" && _req.category() != CGI)
 			_req.set_category(FILEHANDLE);
-		if (!location->upload_dir.empty()) //if the upload_dir exists to handle the POST
-        	_req.set_category(FILEHANDLE);
+		// if (!location->upload_dir.empty()) //if the upload_dir exists to handle the POST
+        // 	_req.set_category(FILEHANDLE);
 		switch (_req.category())
 		{
 			case NORMAL:
