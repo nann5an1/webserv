@@ -90,10 +90,6 @@ int	Webserv::scopeValidation(std::ifstream &file)
 			std::stringstream ss(line);
 
 			ss >> tok1 >> tok2;
-			// std::cout << "line " << line << std::endl;
-			// std::cout << "token " << token << std::endl;
-			// std::cout << "tok2 " << tok2 << std::endl;
-
 			//handle the { variations
 			if(tok2 == " "){
 				std::string tok;
@@ -109,10 +105,6 @@ int	Webserv::scopeValidation(std::ifstream &file)
 			std::stringstream ss(line);
 			std::string tok1, tok2, tok3;
 			ss >> tok1 >> tok2 >> tok3;
-
-			// std::cout << "token1 location >> " << tok1 << std::endl;
-			// std::cout << "token2 location >> " << tok2 << std::endl;
-			// std::cout << "token3 location >> " << tok3 << std::endl;
 			
 			if(tok1 != "location") return 0;
 			if(tok3 != "{"){ //if the opening isn't on the same line	
@@ -145,13 +137,7 @@ int	Webserv::scopeValidation(std::ifstream &file)
 			if(tok1 == "}") end_server++;
 		}
 	}
-	// std::cout << "start server_count " << start_server << std::endl;
-	// std::cout << "end server_count " << end_server << std::endl;
 
-	// std::cout << "start location_count " << start_location << std::endl;
-	// std::cout << "end location_count " << end_location << std::endl;
-
-	
 	//return 0 if the number of server and location scopes are not even
 	if(start_server != end_server || start_location != end_location) return 0;
 	return 1;

@@ -123,6 +123,7 @@ int	Server::parse_err_pages(std::stringstream &ss, std::map<int,std::string> &er
 	return (1);
 }
 
+//need to add validation check for the ';'
 std::string	Server::trimSemiColon(std::string val)
 {
 	if(val.find(";") == std::string::npos)
@@ -161,6 +162,15 @@ int Server::inputData(std::string &line)
 		else
 			this->_root = trimSemiColon(value);
 	}
+	else if(token == "index"){
+		if(line.find(";") != std::string::npos){
+			while(ss >> value){
+			if(value.find(";") != std::string::npos) _server_idx.push_back(trimSemiColon(value));
+			else _server_idx.push_back(value);
+			}
+		}
+		else throw Error("Config failed at " +line);
+	}
 	else if(token == "max_body_size"){
 		if(!(ss >> value)) return 0;
 		else{
@@ -195,13 +205,14 @@ int Server::inputLocation(std::string line, t_location &location)
 	}
 	else if(token == "methods")
 	{
-		while(ss >> val)
-		{
-			if (val.find(";") != std::string::npos)
-				val = trimSemiColon(val);
-			location.methods |= identify_method(val);
+		if(line.find(";") != std::string::npos){
+			while(ss >> val)
+			{
+				if (val.find(";") != std::string::npos) val = trimSemiColon(val);
+				location.methods |= identify_method(val);
+			}
 		}
-		// std::cout << "methods >> " << method1 << " " << method2 << " " << method3 << std::endl;	
+		else throw Error("Server: Config failed at " + line);
 	}
 	else if(token == "root"){
 		ss >> val;
@@ -213,9 +224,14 @@ int Server::inputLocation(std::string line, t_location &location)
 		location.upload_dir = trimSemiColon(val);
 	}
 	else if(token == "index"){
-		while(ss >> val)
-			location.index_files.push_back(trimSemiColon(val));
-		// std::cout << location.index_files[0] << " " << location.index_files[1] << std::endl;
+		if(line.find(";") != std::string::npos){
+			while(ss >> val){
+				if(val.find(";") != std::string::npos) location.index_files.push_back(trimSemiColon(val));
+				else location.index_files.push_back(val);
+			}
+		}
+		else throw Error("Server: Config failed at " + line);
+		
 	}
 	else if(token == "cgi"){
 		std::string key;

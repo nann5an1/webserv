@@ -41,6 +41,7 @@ class	Server : public Pollable
 		long long	_max_size;
 		int			_r_status;
 		std::string	_r_url;
+		std::vector<std::string> _server_idx;
 		std::map<int, std::string>			_err_pages;
 		std::map<std::string, t_location>	_locations;
 
