@@ -125,7 +125,7 @@ int	Server::parse_err_pages(std::stringstream &ss, std::map<int,std::string> &er
 std::string	Server::trimSemiColon(std::string val)
 {
 	if(val.find(";") == std::string::npos)
-		throw Error(val);
+		throw Error("Config failed at " +val);
 	return (val.substr(0, val.length() - 1));
 }
 
