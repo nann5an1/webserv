@@ -63,13 +63,11 @@ int	norm_handle(std::string	&final_path, Request &req, Response &rep, const t_lo
 		{
 			index_path = path + "/" + indexs[i];
 			int status = 0;
-			// std::cout << "path and file combined >> " << index_path << std::endl;
 			if ((status = file_check(index_path, R_OK)) == 200)
 			{
 				path = index_path;
 				goto response;
 			}
-			std::cout << "status: " << status << std::endl;
 		}
 		if(location->autoindex){
 			if(indexs.empty())
@@ -181,12 +179,12 @@ int	cgi_handle(std::string &final_path, const t_location *location, Request& req
 	return (0);
 }
 
-bool fileExists(std::string &path){
+bool fileExists(std::string &path)
+{
 	std::cout << "getter path >> " << path << std::endl;
 	std::ifstream file(path.c_str());
 	return file.good();
 }
-
 
 // Add this helper function first
 std::string size_to_string(off_t size)
@@ -259,7 +257,6 @@ std::string generate_file_list(const std::string& upload_dir)
     return html;
 }
 
-
 /* ====================== add the data from the upload_files of the server into the server's upload_dir ======================*/
 void	handleFile(const t_location* location, std::string &remain_path, Request &req, Response &rep){
 	std::cout << "Server's location upload dir >> " <<  location->upload_dir << std::endl;
@@ -267,12 +264,14 @@ void	handleFile(const t_location* location, std::string &remain_path, Request &r
 	std::string method = req.method();
 
 	std::cout << "method in handleFile" << method << std::endl;
-	if(method == "POST"){ //METHOD = POST
+	if(method == "POST")
+	{ //METHOD = POST
 		std::vector<binary_file> files = req.upload_files();
 		std::cout << "files size DEBUG >> " << files.size() << std::endl;
 		
 		//iterate the upload_files to get the filename under the req
-		for(size_t it = 0; it < files.size(); it++){
+		for(size_t it = 0; it < files.size(); it++)
+		{
 			const binary_file& file = files[it];
 			std::cout << "binary file content >> " << file.filename << std::endl;
 
@@ -289,7 +288,6 @@ void	handleFile(const t_location* location, std::string &remain_path, Request &r
 			// req.upload_files().erase(req.upload_files().begin() + it);
 			req.upload_files().clear();
 			ofs.close();
-
 		}
 		rep._status = 200;
 		rep._type = "text/html";

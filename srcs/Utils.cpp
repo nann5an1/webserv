@@ -113,7 +113,6 @@ int read_file(std::string &path, std::string &data)
 		return (fail("File: " + path, errno), 206);
 	}
 	close(fd);
-	std::cout << "read file\n";
 	return (200);
 }
 

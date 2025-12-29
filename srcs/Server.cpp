@@ -8,7 +8,7 @@ Server::Server() :
 	_port(""), 
 	_root(""), 
 	_max_size(0),
-	_r_status(-1),
+	_r_status(0),
 	_r_url("")
 {}
 
@@ -54,7 +54,7 @@ Server::Server(std::ifstream &file) :
 	_port(""), 
 	_root(""), 
 	_max_size(0),
-	_r_status(-1),
+	_r_status(0),
 	_r_url("")
 {
 	std::string	line, tok = "", location_path = "";
