@@ -24,9 +24,13 @@ struct Epoll
 
 		operator	fd() const;
 
-		int add_ptr(Pollable* p, uint32_t events);
-		int mod_ptr(Pollable* p, uint32_t events);
-		int del_ptr(Pollable* p);
+		int add_ptr(Pollable* poll_obj, uint32_t events);
+		int mod_ptr(Pollable* poll_obj, uint32_t events);
+		int del_ptr(Pollable* poll_obj);
+
+		int add_fd(Pollable* poll_obj, fd fd_, uint32_t events);
+		int mod_fd(Pollable* poll_obj, fd fd_, uint32_t events);
+		int del_fd(Pollable* poll_obj, fd fd_);
 
 		int wait(struct epoll_event *events, int maxevents, int timeout);
 };

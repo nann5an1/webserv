@@ -2,6 +2,7 @@
 #define CONNECTION_HPP
 
 #include <ctime>
+#include "CGI.hpp"
 #include "Request.hpp"
 #include "Response.hpp"
 #include "Handle.hpp"
@@ -35,6 +36,8 @@ class	Connection : public Pollable
 		std::string	_ip;
 		int			_port;
 		std::time_t	_time;
+
+		CGI			*cgi;
 		
 		con_state	_state;
 		t_reader	_reader;

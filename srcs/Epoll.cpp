@@ -26,31 +26,47 @@ int	Epoll::init()
 
 int	Epoll::add_ptr(Pollable* poll_obj, uint32_t events)
 {
-	if (_fd < 0)
-		return (-1);
-	struct epoll_event	ev;
-	std::memset(&ev, 0, sizeof(ev));
-	ev.events = events;
-	ev.data.ptr = poll_obj;
-	return (epoll_ctl(_fd, EPOLL_CTL_ADD, static_cast<int>(*poll_obj), &ev));
+	return (add_fd(poll_obj, static_cast<int>(*poll_obj), events));
 }
 
 int	Epoll::mod_ptr(Pollable* poll_obj, uint32_t events)
 {
-	if (_fd < 0)
+	return (mod_fd(poll_obj, static_cast<int>(*poll_obj), events));
+}
+
+int	Epoll::del_ptr(Pollable* poll_obj)
+{
+	return (del_fd(poll_obj, static_cast<int>(*poll_obj)));
+}
+
+int	Epoll::add_fd(Pollable* poll_obj, fd fd_, uint32_t events)
+{
+	if (_fd < 0 || fd_ < 0)
 		return (-1);
 	struct epoll_event	ev;
 	std::memset(&ev, 0, sizeof(ev));
 	ev.events = events;
 	ev.data.ptr = poll_obj;
-	return (epoll_ctl(_fd, EPOLL_CTL_MOD, static_cast<int>(*poll_obj), &ev));
+	return (epoll_ctl(_fd, EPOLL_CTL_MOD, fd_, &ev));
 }
 
-int	Epoll::del_ptr(Pollable* poll_obj)
+int Epoll::mod_fd(Pollable* poll_obj, fd fd_, uint32_t events)
 {
-	if (_fd < 0)
-		return	(-1);
-	return (epoll_ctl(_fd, EPOLL_CTL_DEL, static_cast<int>(*poll_obj), NULL));
+	if (_fd < 0 || fd_ < 0)
+		return (-1);
+	struct epoll_event	ev;
+	std::memset(&ev, 0, sizeof(ev));
+	ev.events = events;
+	ev.data.ptr = poll_obj;
+	return (epoll_ctl(_fd, EPOLL_CTL_MOD, fd_, &ev));
+
+}
+
+int Epoll::del_fd(Pollable* poll_obj, fd fd_)
+{
+	if (_fd < 0 || fd_ < 0)
+		return (-1);
+	return (epoll_ctl(_fd, EPOLL_CTL_DEL, fd_, NULL));
 }
 
 int Epoll::wait(struct epoll_event *events, int maxevents, int timeout)

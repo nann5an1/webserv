@@ -10,42 +10,42 @@ std::string	status_page(int status)
 /* ================ READ THE ENTIRE DIRECTORY AND LIST DOWN ================*/
 std::string autoIndexOnListing(std::string& path)
 {
-    DIR* dir = opendir(path.c_str());
-    if (!dir)
-        return "";
+	DIR* dir = opendir(path.c_str());
+	if (!dir)
+		return "";
 
-    std::string html;
+	std::string html;
 
-    html += "<html><head>Index listing of " + path + "</head>";
-    html += "<body>";
-    html += "<ul>";
+	html += "<html><head>Index listing of " + path + "</head>";
+	html += "<body>";
+	html += "<ul>";
 
-    dirent* entry;
-    while ((entry = readdir(dir)) != NULL)
-    {
-        if (std::strcmp(entry->d_name, ".") == 0 || //skil the . and ..
-            std::strcmp(entry->d_name, "..") == 0)
-            continue;
+	dirent* entry;
+	while ((entry = readdir(dir)) != NULL)
+	{
+		if (std::strcmp(entry->d_name, ".") == 0 || //skil the . and ..
+			std::strcmp(entry->d_name, "..") == 0)
+			continue;
 
-        html += "<li><a href=\"";
-        html += entry->d_name;
+		html += "<li><a href=\"";
+		html += entry->d_name;
 
-        if (entry->d_type == DT_DIR)
-            html += "/";
+		if (entry->d_type == DT_DIR)
+			html += "/";
 
-        html += "\">";
-        html += entry->d_name;
+		html += "\">";
+		html += entry->d_name;
 
-        if (entry->d_type == DT_DIR)
-            html += "/";
+		if (entry->d_type == DT_DIR)
+			html += "/";
 
-        html += "</a></li>";
-    }
+		html += "</a></li>";
+	}
 
-    html += "</ul></body></html>";
+	html += "</ul></body></html>";
 
-    closedir(dir);
-    return html;
+	closedir(dir);
+	return html;
 }
 
 
@@ -73,7 +73,7 @@ int	norm_handle(std::string	&final_path, Request &req, Response &rep, const t_lo
 			{ 
 				rep._body = autoIndexOnListing(path);
 				rep._type = "text/html";
-    			return (200);
+				return (200);
 			}
 		}
 		else //if auto index is off
@@ -139,42 +139,42 @@ int	cgi_handle(std::string &final_path, const t_location *location, Request& req
 			close(in_pipe[1]);
 		return (500);
 	}
-    pid_t pid = fork();
-    if (pid == -1)
+	pid_t pid = fork();
+	if (pid == -1)
 		return (fail("CGI: Fork", errno));
 
-    if (pid == 0)
-    {
-        dup2(in_pipe[0], STDIN_FILENO);
-        dup2(out_pipe[1], STDOUT_FILENO);
+	if (pid == 0)
+	{
+		dup2(in_pipe[0], STDIN_FILENO);
+		dup2(out_pipe[1], STDOUT_FILENO);
 
-        close(in_pipe[1]);
-        close(out_pipe[0]);
+		close(in_pipe[1]);
+		close(out_pipe[0]);
 	
 		char	*argv[] = {const_cast<char *>(exec_path->c_str()), const_cast<char *>(final_path.c_str()), NULL};
 		execve(exec_path->c_str(), argv, const_cast<char* const*>(&env[0]));
-        _exit(1);
-    }
-    else
-    {
-        close(in_pipe[0]);
-        close(out_pipe[1]);
-        if (!req.body().empty())
-            write(in_pipe[1], req.body().c_str(), req.body().size());
-        close(in_pipe[1]); // close writing end to signal EOF
+		_exit(1);
+	}
+	else
+	{
+		close(in_pipe[0]);
+		close(out_pipe[1]);
+		if (!req.body().empty())
+			write(in_pipe[1], req.body().c_str(), req.body().size());
+		close(in_pipe[1]); // close writing end to signal EOF
 
-        // Optionally read CGI output
-        char buffer[4096];
-        ssize_t n;
-        while ((n = read(out_pipe[0], buffer, sizeof(buffer))) > 0) {
-            std::cout.write(buffer, n);
-        }
-        close(out_pipe[0]);
+		// Optionally read CGI output
+		char buffer[4096];
+		ssize_t n;
+		while ((n = read(out_pipe[0], buffer, sizeof(buffer))) > 0) {
+			std::cout.write(buffer, n);
+		}
+		close(out_pipe[0]);
 
-        // Wait for child to finish
-        int status;
-        waitpid(pid, &status, 0);
-    }
+		// Wait for child to finish
+		int status;
+		waitpid(pid, &status, 0);
+	}
 	return (0);
 }
 
@@ -188,72 +188,72 @@ bool fileExists(std::string &path)
 // Add this helper function first
 std::string size_to_string(off_t size)
 {
-    std::ostringstream oss;
-    oss << size;
-    return oss.str();
+	std::ostringstream oss;
+	oss << size;
+	return oss.str();
 }
 
 // Add this new function to generate file listing HTML
 // Improved generate_file_list function with better error handling
 std::string generate_file_list(const std::string& upload_dir)
 {
-    std::string html =
-        "<h2>Uploaded Files:</h2>"
-        "<script>"
-        "function deleteFile(filename) {"
-        "  fetch('/upload/' + filename, { method: 'DELETE' })"
-        "    .then(res => {"
-        "      if (res.ok) location.reload();"
-        "      else alert('Delete failed');"
-        "    });"
-        "}"
-        "</script>"
-        "<ul>";
+	std::string html =
+		"<h2>Uploaded Files:</h2>"
+		"<script>"
+		"function deleteFile(filename) {"
+		"  fetch('/upload/' + filename, { method: 'DELETE' })"
+		"    .then(res => {"
+		"      if (res.ok) location.reload();"
+		"      else alert('Delete failed');"
+		"    });"
+		"}"
+		"</script>"
+		"<ul>";
 
-    DIR* dir = opendir(upload_dir.c_str());
-    if (!dir)
-    {
-        std::cerr << "Failed to open directory: " << upload_dir << std::endl;
-        return html + "<li>Cannot open directory</li></ul>";
-    }
+	DIR* dir = opendir(upload_dir.c_str());
+	if (!dir)
+	{
+		std::cerr << "Failed to open directory: " << upload_dir << std::endl;
+		return html + "<li>Cannot open directory</li></ul>";
+	}
 
-    struct dirent* entry;
-    int file_count = 0;
+	struct dirent* entry;
+	int file_count = 0;
 
-    while ((entry = readdir(dir)) != NULL)
-    {
-        // Skip . and ..
-        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
-            continue;
+	while ((entry = readdir(dir)) != NULL)
+	{
+		// Skip . and ..
+		if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+			continue;
 
-        // Skip directories if you only want files
-        std::string full_path = upload_dir + "/" + entry->d_name;
-        struct stat st;
-        if (stat(full_path.c_str(), &st) == 0 && S_ISDIR(st.st_mode))
-            continue;
+		// Skip directories if you only want files
+		std::string full_path = upload_dir + "/" + entry->d_name;
+		struct stat st;
+		if (stat(full_path.c_str(), &st) == 0 && S_ISDIR(st.st_mode))
+			continue;
 
-        std::string filename(entry->d_name);
-        
-        std::cout << "Adding file to list: " << filename << std::endl;
-        
-        html += "<li>";
-        html += filename;
-        html += " <button onclick=\"deleteFile('" + filename + "')\">Delete</button>";
-        html += "</li>";
-        
-        file_count++;
-    }
+		std::string filename(entry->d_name);
+		
+		std::cout << "Adding file to list: " << filename << std::endl;
+		
+		html += "<li>";
+		html += filename;
+		html += " <button onclick=\"deleteFile('" + filename + "')\">Delete</button>";
+		html += "</li>";
+		
+		file_count++;
+	}
 
-    closedir(dir);
-    
-    if (file_count == 0)
-        html += "<li>No files uploaded yet</li>";
-    
-    html += "</ul>";
-    
-    std::cout << "Total files in listing: " << file_count << std::endl;
-    
-    return html;
+	closedir(dir);
+	
+	if (file_count == 0)
+		html += "<li>No files uploaded yet</li>";
+	
+	html += "</ul>";
+	
+	std::cout << "Total files in listing: " << file_count << std::endl;
+	
+	return html;
 }
 
 /* ====================== add the data from the upload_files of the server into the server's upload_dir ======================*/

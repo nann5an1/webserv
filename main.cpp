@@ -2,7 +2,6 @@
 #include "Server.hpp"
 #include "Request.hpp"
 #include "Utils.hpp"
-#include "Cgi.hpp"
 
 #include <pwd.h>
 
