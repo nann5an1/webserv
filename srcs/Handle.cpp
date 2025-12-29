@@ -12,7 +12,7 @@ std::string autoIndexOnListing(std::string& path)
 {
     DIR* dir = opendir(path.c_str());
     if (!dir)
-        return "";
+        return ("");
 
     std::string html;
 
@@ -72,8 +72,10 @@ int	norm_handle(std::string	&final_path, Request &req, Response &rep, const t_lo
 		if(location->autoindex){
 			if(indexs.empty())
 			{ //autoindex is on and index files is empty (list out the files in the directory)
+				location->root
 				rep._body = autoIndexOnListing(path);
 				rep._type = "text/html";
+				if(rep._body.empty())	return (403);
     			return (200);
 			}
 		}
