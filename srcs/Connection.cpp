@@ -289,6 +289,7 @@ void	Connection::route()
 			
 		if (location->r_status > 0)
 			_req.set_category(REDIRECTION);
+		std::cout << "category : " << _req.category() << std::endl;
 		if(_req.method() == "DELETE" && _req.category() != CGI)
 			_req.set_category(FILEHANDLE);
 		switch (_req.category())
@@ -297,6 +298,7 @@ void	Connection::route()
 				_rep._status = norm_handle(final_path, _req, _rep, location);
 				break;
 			case CGI:
+				std::cout << "cgi " << std::endl;
 				_rep._status = cgi_handle(final_path, location, _req, _rep);
 
 				std::cout << "cgi request come in " << std::endl;
