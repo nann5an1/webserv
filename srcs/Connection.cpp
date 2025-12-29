@@ -307,8 +307,7 @@ void	Connection::route()
 				redirect_handle(location->r_status, location->r_url, _rep);
 				return ;
 			case FILEHANDLE:
-				_rep._status = 200;
-				handleFile(location, remain_path, _req, _rep);
+				_rep._status = handleFile(location, remain_path, _req, _rep);
 				break;
 		}
 	}

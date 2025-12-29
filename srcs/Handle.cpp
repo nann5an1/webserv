@@ -72,7 +72,7 @@ int	norm_handle(std::string	&final_path, Request &req, Response &rep, const t_lo
 		if(location->autoindex){
 			if(indexs.empty())
 			{ //autoindex is on and index files is empty (list out the files in the directory)
-				location->root
+				// location->root
 				rep._body = autoIndexOnListing(path);
 				rep._type = "text/html";
 				if(rep._body.empty())	return (403);
@@ -100,12 +100,10 @@ void	redirect_handle(int status, const std::string &path, Response& rep)
 	rep._type = "text/html";
 	rep._status = status;
 	
-	std::cout << "got in redirect" << std::endl;
 	if (status > 300 && status < 400)
 		rep._location = path;
 	else if (!path.empty())
 	{
-		std::cout << "got in here " << std::endl;
 		rep._body = path;
 		rep._type = "text/plain";
 	}
@@ -260,12 +258,11 @@ std::string generate_file_list(const std::string& upload_dir)
 }
 
 /* ====================== add the data from the upload_files of the server into the server's upload_dir ======================*/
-void	handleFile(const t_location* location, std::string &remain_path, Request &req, Response &rep){
-	std::cout << "Server's location upload dir >> " <<  location->upload_dir << std::endl;
+int	handleFile(const t_location* location, std::string &remain_path, Request &req, Response &rep){
 	std::string filepath;
 	std::string method = req.method();
 
-	std::cout << "method in handleFile" << method << std::endl;
+	// std::cout << "method in handleFile" << method << std::endl;
 	if(method == "POST")
 	{ //METHOD = POST
 		std::vector<binary_file> files = req.upload_files();
@@ -280,18 +277,20 @@ void	handleFile(const t_location* location, std::string &remain_path, Request &r
 			//filepath: /home/nsan/Exercises/webserv/sites/tmp/text
 			filepath = location->upload_dir + "/" + file.filename;
 			std::cout << "filepath: " << filepath << std::endl;
+
 			std::ofstream ofs(filepath.c_str(), std::ios::out | std::ios::binary);
 
 			if (!ofs) {
 				std::cerr << "Failed to open file: " << filepath << std::endl;
+				req.upload_files().clear();
+				ofs.close();
+				rep._status = 404;
 				continue;
 			}
 			ofs.write(file.data.c_str(), file.data.size());
-			// req.upload_files().erase(req.upload_files().begin() + it);
 			req.upload_files().clear();
 			ofs.close();
 		}
-		rep._status = 200;
 		rep._type = "text/html";
 		rep._body = "<!DOCTYPE html>\n"
 					"<html>\n"
@@ -307,13 +306,15 @@ void	handleFile(const t_location* location, std::string &remain_path, Request &r
 	else if(method == "DELETE"){
 		std::cout << "remain path <><> " << remain_path << std::endl;
 		filepath = location->upload_dir + remain_path;
-		std::cout << "DELETE FILEPATH >> " << filepath << std::endl;
+
 		if(fileExists(filepath)){ //if file exists in the directory, remove the file
+			std::cout << "remain path under file exists again " << remain_path << std::endl;
 			std::remove(filepath.c_str());
+			// location->upload_dir.erase(location->upload_dir.find(remain_path), remain_path.length());
 			std::cout << "filepath removed aldy" << std::endl;
 		}
-		else{
+		else
 			std::cout << "file does not existed or has been deleted." << std::endl;
-		}
 	}
+	return (200);
 }
