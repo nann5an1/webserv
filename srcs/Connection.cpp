@@ -284,13 +284,18 @@ void	Connection::route()
 	{
 		if (!(location->methods & identify_method(_req.method())))
 		{
+			_rep._status = 405;
+			_rep._body = status_page(405);	
 			std::cout << "method not allowed " << std::endl;
+			return;
 		}
-			
+		 
 		if (location->r_status > 0)
 			_req.set_category(REDIRECTION);
 		if(_req.method() == "DELETE" && _req.category() != CGI)
 			_req.set_category(FILEHANDLE);
+		if (!location->upload_dir.empty()) //if the upload_dir exists to handle the POST
+        	_req.set_category(FILEHANDLE);
 		switch (_req.category())
 		{
 			case NORMAL:

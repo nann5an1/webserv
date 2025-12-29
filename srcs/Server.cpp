@@ -55,7 +55,8 @@ Server::Server(std::ifstream &file) :
 	_root(""), 
 	_max_size(0),
 	_r_status(0),
-	_r_url("")
+	_r_url(""),
+	_locations()
 {
 	std::string	line, tok = "", location_path = "";
 	
