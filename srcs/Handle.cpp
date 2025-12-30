@@ -322,11 +322,11 @@ int	handleFile(const t_location* location, std::string &remain_path, Request &re
 	else if(method == "DELETE"){
 		// std::cout << "remain path <><> " << remain_path << std::endl;
 		filepath = location->upload_dir + remain_path;
-
-		if(fileExists(filepath)){ //if file exists in the directory, remove the file
+		int	status = file_check(filepath, R_OK | X_OK);
+		if(status == 200){ //if file exists in the directory, remove the file
 			std::remove(filepath.c_str());
 			rep._type = "text/html";
-		rep._body = "<!DOCTYPE html>\n"
+			rep._body = "<!DOCTYPE html>\n"
 					"<html>\n"
 					"<head>\n"
 					"<meta charset=\"UTF-8\">\n"
@@ -335,10 +335,15 @@ int	handleFile(const t_location* location, std::string &remain_path, Request &re
 					"<p>File delete successfully</p>\n"
 					"</body>\n"
 					"</html>";
+			
 			std::cout << "filepath removed aldy" << std::endl;
 		}
 		else
+		{
 			std::cout << "file does not existed or has been deleted." << std::endl;
+			return (status);
+		}
+			
 	}
 	return (200);
 }

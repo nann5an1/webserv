@@ -359,6 +359,7 @@ void	Connection::route()
 				return ;
 			case FILEHANDLE:
 				_rep._status = handleFile(location, remain_path, _req, _rep);
+				std::cout << "filehandle: " << _rep._status << std::endl;
 				break;
 		}
 	}
