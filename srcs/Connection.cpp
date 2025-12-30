@@ -280,9 +280,9 @@ void	Connection::route()
 	}
 	
 	const t_location*	location = find_location(url, final_path, remain_path);
- 
+	
 	if (location)
-	{
+	{	
 		if (!(location->methods & identify_method(_req.method())))
 		{
 			_rep._status = 405;
@@ -298,7 +298,7 @@ void	Connection::route()
 		switch (_req.category())
 		{
 			case NORMAL:
-				_rep._status = norm_handle(final_path, _req, _rep, location, _server);
+				_rep._status = norm_handle(final_path, _req, _rep, location);
 				break;
 			case CGI:
 				_rep._status = cgi_handle(final_path, location, _req, _rep);
@@ -315,15 +315,16 @@ void	Connection::route()
 				break;
 		}
 	}
+	else if(location == NULL){
+		_rep._type = "text/html";
+		_rep._status = handleServerIndex(_rep, _server);
+	}
 	else
 	{
 		_rep._type = "text/html";
 		_rep._status = 404;
 		_rep._body = status_page(404);
 	}
-	// if (_rep._status >= 400)
-	// 	error_handle();
-	// std::cout << "this is the status: " << _rep._status << std::endl;
 }
 
 void	Connection::cleanup()
@@ -359,9 +360,4 @@ void	Connection::set_server(Server *server)
 	_server = server;
 }
 
-
-// std::vector<std::string> Connection::get_server_idx() const
-// {
-// 	return (_server->_server_idx);
-// }
 

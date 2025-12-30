@@ -22,7 +22,8 @@ Server::Server(const Server &other) :
 	_r_status(other._r_status),
 	_r_url(other._r_url),
 	_err_pages(other._err_pages),
-	_locations(other._locations)
+	_locations(other._locations),
+	_server_idx(other._server_idx)
 {
     (void)other;
 }
@@ -41,6 +42,7 @@ Server& Server:: operator=(const Server &other)
 		_r_url = other._r_url;
 		_err_pages = other._err_pages;
 		_locations = other._locations;
+		_server_idx = other._server_idx;
 	}
     return (*this);
 }
@@ -91,7 +93,8 @@ Server::Server(std::ifstream &file) :
 		else
 			inputData(line);
 	}
-	// if(this->_root.empty()) throw Error("No root directory found in the server block");
+	std::cout << "server root dir >> " << this->_root << std::endl;
+	if(this->_root.empty()) throw Error("No root directory found in the server block");
 }
 
 int	Server::parse_return(std::stringstream& ss, int& r_status, std::string& r_url)
@@ -164,10 +167,11 @@ int Server::inputData(std::string &line)
 			this->_root = trimSemiColon(value);
 	}
 	else if(token == "index"){
+		std::cout << "Server idx's print >> " << line << std::endl;
 		if(line.find(";") != std::string::npos){
 			while(ss >> value){
-			if(value.find(";") != std::string::npos) _server_idx.push_back(trimSemiColon(value));
-			else _server_idx.push_back(value);
+				if(value.find(";") != std::string::npos) _server_idx.push_back(trimSemiColon(value));
+				else _server_idx.push_back(value);
 			}
 		}
 		else throw Error("Config failed at" +line);

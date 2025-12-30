@@ -41,7 +41,6 @@ class	Connection : public Pollable
 		Request		_req;
 		Response	_rep;
 		const Server	*_server;
-		// std::vector<std::string> _server_idx;
 		const t_location*	find_location(std::string &req_url, std::string &final_path, std::string &remain_path);
 		void	handle(uint32_t	events);
 		bool	read_header();

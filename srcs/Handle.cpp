@@ -99,15 +99,42 @@ std::string autoIndexOnListing(std::string& path)
 // }
 
 
-//
-int	norm_handle(std::string	&final_path, Request &req, Response &rep, const t_location* location, const Server *server)
+int handleServerIndex(Response &rep, const Server *server){
+	std::vector<std::string> server_idx = server->server_idx();
+	std::string server_path = server->root(), index_path;
+	int status;
+
+	// std::cout << "Server indexes size -> " << server_idx.size() << std::endl; 
+	// std::cout << "Server path -> " << server_path << std::endl;
+	DIR* dir = opendir(server->root().c_str());
+
+	if(!dir)	throw Error("root directory error >> "+ server->root());
+
+	for (int i = 0; i < server_idx.size(); ++i)
+	{
+		index_path = server_path + "/" + server_idx[i];
+		if ((status = file_check(index_path, R_OK)) == 200)
+			goto response;
+	}
+
+	response:
+		std::cout << "hihhihii > " << index_path << std::endl;
+		if (file_check(index_path, R_OK) == 200)
+		{
+			status = read_file(index_path, rep._body);
+			rep._type = mime_types[get_ext(index_path)];
+			return (status);
+		}
+	return (403);
+}
+
+int	norm_handle(std::string	&final_path, Request &req, Response &rep, const t_location* location)
 {
 	int	status;
 	const std::vector<std::string>	&indexs = location->index_files;
 	std::string	path = final_path, index_path;
-
-	(void)server;
-	// std::cout << "finalPath - path -> " << path << std::endl;
+	
+	std::cout << "finalPath - path -> " << path << std::endl;
 	if (is_dir(path))
 	{
 		for (int i = 0; i < indexs.size(); ++i)
