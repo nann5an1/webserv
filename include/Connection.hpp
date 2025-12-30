@@ -5,7 +5,7 @@
 #include "Request.hpp"
 #include "Response.hpp"
 #include "Handle.hpp"
-#include "Pollable.hpp"
+#include "IPollable.hpp"
 
 class Server;
 class Cgi;
@@ -30,9 +30,10 @@ enum	con_state
 	DONE,
 };
 
-class	Connection : public Pollable
+class	Connection : public IPollable
 {
 	private:
+		fd			_fd;
 		std::string	_ip;
 		int			_port;
 		std::time_t	_time;
@@ -45,7 +46,7 @@ class	Connection : public Pollable
 		Response	_rep;
 		const Server	*_server;
 		const t_location*	find_location(std::string &req_url, std::string &final_path, std::string &remain_path);
-		void	handle(uint32_t	events);
+		void	handle(uint32_t	events, fd fd_);
 		bool	read_header();
 		bool	read_body();
 
@@ -63,6 +64,7 @@ class	Connection : public Pollable
 		void	cleanup();
 
 		operator	std::time_t() const;
+		operator	fd() const;
 
 		void		set_req(Request &req);
 		void		set_server(Server *server);

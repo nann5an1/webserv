@@ -9,7 +9,7 @@
 
 #include "Utils.hpp"
 
-struct Pollable; // forward
+struct IPollable; // forward
 
 struct Epoll
 {
@@ -24,12 +24,8 @@ struct Epoll
 
 		operator	fd() const;
 
-		int add_ptr(Pollable* poll_obj, uint32_t events);
-		int mod_ptr(Pollable* poll_obj, uint32_t events);
-		int del_ptr(Pollable* poll_obj);
-
-		int add_fd(Pollable* poll_obj, int fd_, uint32_t events);
-		int mod_fd(Pollable* poll_obj, int fd_, uint32_t events);
+		int add_fd(IPollable* poll_obj, int fd_, uint32_t events);
+		int mod_fd(IPollable* poll_obj, int fd_, uint32_t events);
 		int del_fd(int fd_);
 
 		int wait(struct epoll_event *events, int maxevents, int timeout);

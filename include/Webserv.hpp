@@ -16,7 +16,7 @@
 
 #include "Utils.hpp"
 #include "Server.hpp"
-#include "Pollable.hpp"
+#include "IPollable.hpp"
 #include "Epoll.hpp"
 
 #define	MAX_EVENTS	1024

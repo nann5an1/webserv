@@ -2,7 +2,7 @@
 #include "Connection.hpp"
 
 Server::Server() :
-	Pollable(-1), 
+	_fd(-1), 
 	_name(""), 
 	_ip(""), 
 	_port(""), 
@@ -13,7 +13,7 @@ Server::Server() :
 {}
 
 Server::Server(const Server &other) :
-	Pollable(other._fd),
+	_fd(other._fd),
 	_name(other._name),
 	_ip(other._ip),
 	_port(other._port),
@@ -48,7 +48,7 @@ Server& Server:: operator=(const Server &other)
 Server::~Server() {}
 
 Server::Server(std::ifstream &file) :
-	Pollable(-1), 
+	_fd(-1),
 	_name(""), 
 	_ip(""), 
 	_port(""), 
@@ -364,19 +364,17 @@ const std::map<std::string, t_location>&	Server::locations() const
 	return (_locations);
 }
 
-void	Server::handle(uint32_t events)
+void	Server::handle(uint32_t events, fd fd_)
 {
 		Connection	*con = new Connection(this);
 		fd	con_fd = *con;
-		// std::cout << "client fd " << con_fd << std::endl;
 		if (con_fd < 0)
 		{
 			delete con;
 			fail("Server: Client", errno);
 		}
-		if (Epoll::instance().add_ptr(con, EPOLLIN) < 0)
+		if (Epoll::instance().add_fd(con, con_fd, EPOLLIN) < 0)
 		{
-			std::cout << "why here" << std::endl;
 			fail("Epoll: Client", errno);
 			delete con;
 		}

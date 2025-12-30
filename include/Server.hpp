@@ -11,7 +11,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#include "Pollable.hpp"
+#include "IPollable.hpp"
 #include "Epoll.hpp"
 #include "Utils.hpp"
 
@@ -33,9 +33,10 @@ typedef struct	s_location
 	std::string	rproxy;
 }	t_location;
 
-class	Server : public Pollable
+class	Server : public IPollable
 {
 	private:
+		fd			_fd;
 		std::string _name;
 		std::string _ip;
 		std::string _port;
@@ -48,7 +49,7 @@ class	Server : public Pollable
 
 		int	parse_return(std::stringstream&, int&, std::string&);
 		int	parse_err_pages(std::stringstream&, std::map<int,std::string>&);
-		void	handle(uint32_t events);
+		void	handle(uint32_t events, fd fd_);
 
 	public:
 		Server();

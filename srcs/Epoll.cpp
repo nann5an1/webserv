@@ -1,5 +1,5 @@
 #include "Epoll.hpp"
-#include "Pollable.hpp"
+#include "IPollable.hpp"
 #include "Utils.hpp"
 
 Epoll::Epoll() : _fd(-1) {}
@@ -24,36 +24,7 @@ int	Epoll::init()
 	return (_fd < 0 ? -1 : 0);
 }
 
-int	Epoll::add_ptr(Pollable* poll_obj, uint32_t events)
-{
-	if (_fd < 0)
-		return (-1);
-	struct epoll_event	ev;
-	std::memset(&ev, 0, sizeof(ev));
-	ev.events = events;
-	ev.data.ptr = poll_obj;
-	return (epoll_ctl(_fd, EPOLL_CTL_ADD, static_cast<int>(*poll_obj), &ev));
-}
-
-int	Epoll::mod_ptr(Pollable* poll_obj, uint32_t events)
-{
-	if (_fd < 0)
-		return (-1);
-	struct epoll_event	ev;
-	std::memset(&ev, 0, sizeof(ev));
-	ev.events = events;
-	ev.data.ptr = poll_obj;
-	return (epoll_ctl(_fd, EPOLL_CTL_MOD, static_cast<int>(*poll_obj), &ev));
-}
-
-int	Epoll::del_ptr(Pollable* poll_obj)
-{
-	if (_fd < 0)
-		return	(-1);
-	return (epoll_ctl(_fd, EPOLL_CTL_DEL, static_cast<int>(*poll_obj), NULL));
-}
-
-int	Epoll::add_fd(Pollable* poll_obj, int fd_, uint32_t events)
+int	Epoll::add_fd(IPollable* poll_obj, int fd_, uint32_t events)
 {
 	if (_fd < 0 || fd_ < 0)
 		return (-1);
@@ -64,7 +35,7 @@ int	Epoll::add_fd(Pollable* poll_obj, int fd_, uint32_t events)
 	return (epoll_ctl(_fd, EPOLL_CTL_ADD, fd_, &ev));
 }
 
-int Epoll::mod_fd(Pollable* poll_obj, int fd_, uint32_t events)
+int Epoll::mod_fd(IPollable* poll_obj, int fd_, uint32_t events)
 {
 	if (_fd < 0 || fd_ < 0)
 		return (-1);

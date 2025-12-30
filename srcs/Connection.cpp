@@ -3,7 +3,7 @@
 #include "Cgi.hpp"
 
 Connection::Connection() :
-	Pollable(-1),
+	_fd(-1),
 	_ip(""),
 	_port(0),
 	_time(0),
@@ -16,7 +16,7 @@ Connection::Connection() :
 }
 
 Connection::Connection(const Connection &other) :
-	Pollable(other._fd),
+	_fd(-1),
 	_ip(other._ip),
 	_port(other._port),
 	_time(other._time),
@@ -52,8 +52,8 @@ Connection::~Connection()
 }
 
 Connection::Connection(const Server *server) :
+	_fd(-1),
 	_server(server),
-	Pollable(-1),
 	_state(),
 	_reader(t_reader()),
 	_ip(""),
@@ -108,7 +108,7 @@ const t_location*	Connection::find_location(std::string &req_url, std::string &f
 	return (NULL);
 }
 
-void	Connection::handle(uint32_t events)
+void	Connection::handle(uint32_t events, fd fd_)
 {
 	if (events & (EPOLLHUP | EPOLLERR))
 	{
@@ -122,7 +122,7 @@ void	Connection::handle(uint32_t events)
 		{
 			if (_state == PROCESSING)
 			{
-				if (Epoll::instance().mod_ptr(this, EPOLLOUT |EPOLLET ) < 0)
+				if (Epoll::instance().mod_fd(this, _fd, EPOLLOUT |EPOLLET ) < 0)
 				{
 					fail("Epoll: Mod", errno);
 					cleanup();
@@ -344,7 +344,7 @@ void	Connection::route()
 
 void	Connection::cleanup()
 {
-	Epoll::instance().del_ptr(this);
+	Epoll::instance().del_fd(_fd);
 	std::cout << "[connection]\tclient disconnected\t\t| socket:" << _fd << std::endl;
 	if (_fd >= 0)
 	{
@@ -363,6 +363,11 @@ std::time_t	Connection::con_time() const
 Connection::operator std::time_t() const
 {
 	return (_time);
+}
+
+Connection::operator	fd() const
+{
+	return (_fd);
 }
 
 void	Connection::set_req(Request &req)

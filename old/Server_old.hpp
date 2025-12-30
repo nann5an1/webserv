@@ -14,7 +14,7 @@
 
 #include <fstream>
 
-#include "Pollable.hpp"
+#include "IPollable.hpp"
 #include "Utils.hpp"
 
 typedef struct	s_location
