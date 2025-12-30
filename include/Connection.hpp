@@ -63,6 +63,7 @@ class	Connection : public IPollable
 		bool	response();
 		void	route();
 		void	cleanup();
+		// std::vector<std::string> get_server_idx() const;
 
 		operator	std::time_t() const;
 		operator	fd() const;

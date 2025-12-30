@@ -2,9 +2,7 @@
 #define SERVER_HPP
 
 #include <fstream>
-
 #include <cstdlib>
-
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/epoll.h>
@@ -44,6 +42,7 @@ class	Server : public IPollable
 		long long	_max_size;
 		int			_r_status;
 		std::string	_r_url;
+		std::vector<std::string> _server_idx;
 		std::map<int, std::string>			_err_pages;
 		std::map<std::string, t_location>	_locations;
 
@@ -78,6 +77,9 @@ class	Server : public IPollable
 		std::string	root() const;
 		int			r_status() const;
 		std::string	r_url() const;
+		std::vector<std::string> server_idx() const;
+
+		// std::vector<std::string> server_idx() const;
 		const std::map<std::string, t_location>&	locations() const;
 };
 

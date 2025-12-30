@@ -19,25 +19,18 @@ Request::Request():
 	_query(""),
 	_body(""),
 	_category(NORMAL),
-	bool_cgi(false),
-	bool_boundary(false),
-	bool_binary(false),
-	bool_chunked(false),
-	boundary(""),
-	referer("")
+	boundary("")
 {
 	content_types["application/json"] = JSON;
 	content_types["application/x-www-form-urlencoded"] = URLENCODED;
 	content_types["multipart/form-data"] = FORM;
-	// content_types["text/plain"] = NORMAL;
 }
 
 Request::~Request() {}
 
 bool validate_len(std::string token){
-	for(size_t i = 0; i < token.length(); i++){
+	for(size_t i = 0; i < token.length(); i++)
 		if(!isdigit(token[i]))  return false;
-	}
 	return true;
 }
 
@@ -158,7 +151,6 @@ void Request::extractMultipartFiles(const std::string &body)
 void Request::parseSinglePart(const std::string &headers,
 							  const std::string &binary)
 {
-	std::cout << "FUCKIG PARSE SINGLE IS CALLED" << std::endl;
 	binary_file file;
 
 	std::istringstream iss(headers);
@@ -178,7 +170,7 @@ void Request::parseSinglePart(const std::string &headers,
 				fn += 10;
 				size_t end = line.find("\"", fn);
 				file.filename = line.substr(fn, end - fn);
-				std::cout << "<< DEBUG >> FILENAME -> " << file.filename << std::endl;
+				// std::cout << "<< DEBUG >> FILENAME -> " << file.filename << std::endl;
 			}
 		}
 		else if (line.find("Content-Type") != std::string::npos)
@@ -197,24 +189,23 @@ void Request::parseSinglePart(const std::string &headers,
 		}
 	}
 	file.data = binary;
-	std::cout << "<< DEBUG >> FILE SIZE -> " << file.data.size() << std::endl;
 	_upload_files.push_back(file);
-	
-	std::cout << "Added file: " << file.filename << " (" << file.data.size() << " bytes)" << std::endl;
+	// std::cout << "Added file: " << file.filename << " (" << file.data.size() << " bytes)" << std::endl;
 }
 
 /* ========================= Main request Parsing =========================*/
 void Request::parseRequest(const char *raw_request){
 	request_cat request_category = NORMAL;
 	
-	bool_cgi = false;
-	bool_chunked = false;
-	bool hostname = false;
-	bool bool_content_len = false;
-	bool bool_connection = false;
-	bool bool_cont_type = false;
-	bool bool_transfer = false;
-    bool bool_file = false;
+	bool bool_cgi = false,
+     bool_chunked = false,
+     hostname = false,
+     bool_content_len = false,
+     bool_connection = false,
+     bool_cont_type = false,
+     bool_transfer = false,
+     bool_file = false,
+	 bool_boundary = false;
 
 	size_t idx2;
 	int length;
@@ -252,8 +243,8 @@ void Request::parseRequest(const char *raw_request){
 					else length = idx2 - idx - 1;
 					
 					std::string ext = token.substr(idx + 1, length);
- 					if((ext == "php" || ext == "py" || ext == "pl" || ext == "sh" || ext == "rb")) {
-						this->bool_cgi = true;
+ 					if(ext == "py") {
+						bool_cgi = true;
 						request_category = CGI;
 					}
 				}
@@ -264,10 +255,8 @@ void Request::parseRequest(const char *raw_request){
                     size_t path_len = token.length() - this->_query.length();
                     this->_path = token.substr(0, path_len - 1);
                 }
-                else{
-                    // std::cout << "? not found DEBUG >> " << token << std::endl;
-                    this->_path = token; 
-                }  
+                else
+                    this->_path = token;
 			}
 			else if(token == "HTTP/1.1") this->version = token;
 			else if(toLower(token) == "host:") hostname = true;
@@ -276,7 +265,7 @@ void Request::parseRequest(const char *raw_request){
 			else if(!bool_boundary && toLower(token) == "content-type:") bool_cont_type = true;
 			else if(toLower(token) == "transfer-encoding:") bool_transfer = true;
 			else if(bool_transfer){
-				if(token == "chunked") this->bool_chunked = true;
+				if(token == "chunked") bool_chunked = true;
 				bool_transfer = false;
 			} 
 			else if(bool_content_len){
@@ -305,9 +294,8 @@ void Request::parseRequest(const char *raw_request){
 				std::string lower_token = toLower(token);
 				
 				// Handle "multipart/form-data;" case
-				if(lower_token.find(";") != std::string::npos) {
+				if(lower_token.find(";") != std::string::npos) 
 					lower_token = lower_token.substr(0, lower_token.find(";"));
-				}
 				
 				if(content_types.find(lower_token) != content_types.end()) {
 					this->content_type = content_types[lower_token];
@@ -320,7 +308,7 @@ void Request::parseRequest(const char *raw_request){
 			if(token.find("boundary=") != std::string::npos){ //boundary does not help identify the file upload
 				std::cout << "token" << token << std::endl;
 				int idx = token.find("=");
-				this->boundary = token.substr(idx + 1, token.length() - idx - 1);
+				boundary = token.substr(idx + 1, token.length() - idx - 1);
 				bool_boundary = true;
 			}
 		}
@@ -333,9 +321,8 @@ void Request::parseRequest(const char *raw_request){
 	else _body.assign(body_start, this->content_len);
 
 	//Parse multipart files if boundary is present
-	if(bool_boundary && !_body.empty()) {
+	if(bool_boundary && !_body.empty())
 		extractMultipartFiles(_body);
-	}
 	if(bool_cgi)
 	{
 		_cgi_env.push_back("REQUEST_METHOD=" + this->_method);
@@ -344,7 +331,6 @@ void Request::parseRequest(const char *raw_request){
 		_cgi_env.push_back("SCRIPT_NAME=" + this->_path.substr(0, _path.find("?")));
 		_cgi_env.push_back("QUERY_STRING=" + this->_query);
 	}
-	
 	this->_category = request_category;
 }
 
@@ -366,7 +352,6 @@ void Request::printUploadedFiles() const
 		std::cout << "Binary Size : " << f.data.size() << " bytes\n";
 
 		// Show first 64 bytes of content (or full content if shorter)
-		std::cout << "Content Preview: ";
 		size_t preview_len = (f.data.size() < 64) ? f.data.size() : 64;
 		for (size_t j = 0; j < preview_len; ++j) {
 			char c = f.data[j];
