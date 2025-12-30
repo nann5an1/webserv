@@ -61,7 +61,7 @@ int	Epoll::add_fd(Pollable* poll_obj, int fd_, uint32_t events)
 	std::memset(&ev, 0, sizeof(ev));
 	ev.events = events;
 	ev.data.ptr = poll_obj;
-	return (epoll_ctl(_fd, EPOLL_CTL_MOD, fd_, &ev));
+	return (epoll_ctl(_fd, EPOLL_CTL_ADD, fd_, &ev));
 }
 
 int Epoll::mod_fd(Pollable* poll_obj, int fd_, uint32_t events)

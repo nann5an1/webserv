@@ -118,18 +118,6 @@ void	Connection::handle(uint32_t events)
 	}
 	if (events & EPOLLIN)
 	{
-		if (_cgi)
-		{
-			_cgi->handle(events);
-			if (_cgi->done())
-			{
-				Epoll::instance().del_fd(_cgi->out_fd());
-				_rep.cgi_handle(_cgi->output());
-				Epoll::instance().mod_ptr(this, EPOLLOUT);
-			}
-    return;
-			// Cgi->handle(events);
-		}
 		if (request())
 		{
 			if (_state == PROCESSING)
@@ -158,6 +146,17 @@ void	Connection::handle(uint32_t events)
 	}
 	if (events & EPOLLOUT)
 	{
+		// if (_cgi)
+        // {
+        //     if (_cgi->done())
+        //     {
+		// 		_rep.cgi_handle(_cgi->output());
+		// 		if (response())
+		// 			cleanup();
+		// 		return ;
+        //     }
+    	// 	return;
+		// }
 		route();
 		if (response())
 			cleanup();	
@@ -295,6 +294,7 @@ void	Connection::route()
  
 	if (location)
 	{
+		const std::string *exec_path = NULL;
 		if (!(location->methods & identify_method(_req.method())))
 		{
 			std::cout << "method not allowed " << std::endl;
@@ -303,6 +303,12 @@ void	Connection::route()
 		if (location->r_status > 0)
 			_req.set_category(REDIRECTION);
 		std::cout << "category : " << _req.category() << std::endl;
+		if (_req.category() == CGI)
+		{
+			exec_path = get(location->cgi, "." + get_ext(final_path));
+			if (!exec_path)
+				_req.set_category(NORMAL);
+		}
 		if(_req.method() == "DELETE" && _req.category() != CGI)
 			_req.set_category(FILEHANDLE);
 		switch (_req.category())
@@ -311,12 +317,9 @@ void	Connection::route()
 				_rep._status = norm_handle(final_path, _req, _rep, location);
 				break;
 			case CGI:
-				_cgi = new Cgi();
-				_cgi->execute(final_path, location, _req, _rep);
-				Epoll::instance().add_fd(this, _cgi->out_fd(), EPOLLIN);
-				if (_cgi->in_fd() >= 0)
-					Epoll::instance().add_fd(this, _cgi->in_fd(), EPOLLOUT);
-			break;
+				// _cgi = new Cgi();
+				// _cgi->execute(final_path, exec_path, _req, this);
+				break;
 			case REDIRECTION:
 				redirect_handle(location->r_status, location->r_url, _rep);
 				return ;
