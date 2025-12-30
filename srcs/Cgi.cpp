@@ -106,7 +106,7 @@ void	Cgi::handle(uint32_t events)
 		size_t	remian = (_written < _body.size()) ? (_body.size() - _written) : 0;
 		if (remian == 0)
 		{
-			std::cout << "cgi input " << std::endl;
+			std::cout << "cinput 1 " << std::endl;
 			Epoll::instance().del_fd(_in_fd);
 			close(_in_fd);
 			_in_fd = -1;
@@ -116,9 +116,11 @@ void	Cgi::handle(uint32_t events)
 		size_t	n = ::write(_in_fd, _body.data() + _written, remian);
 		if (n > 0)
 		{
+			std::cout << "cinput 5" << std::endl;
 			_written += static_cast<size_t>(n);
 			if (_written >= _body.size())
 			{
+				std::cout << "cinput 1 " << std::endl;
 				Epoll::instance().del_fd(_in_fd);
 				close(_in_fd);
 				_in_fd = -1;
@@ -126,46 +128,64 @@ void	Cgi::handle(uint32_t events)
 			}
 		}
 		if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
+		{
+			std::cout << "cinput 2 " << std::endl;
+			Epoll::instance().del_fd(_in_fd);
+			close(_in_fd);
+			_in_fd = 1;
+			_state = CGI_READING;
 			return ;
-		Epoll::instance().del_fd(_in_fd);
-		close(_in_fd);
-		_in_fd = 1;
-		_state = CGI_DONE;
-		std::cout << "cgi input done" << std::endl;
-		return ;
+		}
+		if (_written >= _body.size())
+		{
+			std::cout << "cinput 3 " << std::endl;
+			std::cout << "cgi writing"  << std::endl;
+			Epoll::instance().del_fd(_in_fd);
+			close(_in_fd);
+			_in_fd = 1;
+			_state = CGI_READING;
+			std::cout << "cgi input done" << std::endl;
+			return ;
+		}
+		std::cout << "cinput 4 " << std::endl;
+
 	}
 	if ((events & EPOLLIN) && _out_fd != -1)
 	{
-		std::cout << "cgi output" << std::endl;
 		char 	buffer[4096];
 		size_t	total = 0;
 		while (total < CGI_CAP)
 		{
-			
 			ssize_t n = ::read(_out_fd, buffer, sizeof(buffer));
 			if (n > 0)
 			{
 				std::cout << "cgi reading" << std::endl;
 				_output.append(buffer, static_cast<size_t>(n));
-				std::cout << " cgi output " << _output << std::endl;
 				total += n;
 			}
 			else if (n == 0)
 			{
-				std::cout << "output " << _output << std::endl;
+				std::cout << std::string(40, '=') << "\n" << _output << std::string(40, '=') << "\n" << std::endl;
 				Epoll::instance().del_fd(_out_fd);
 				close(_out_fd);
 				_out_fd = -1;
-				_state = CGI_DONE;
 
 				// Optional: reap child without blocking.
 				// If child not exited yet, this returns 0 and we ignore.
 				int st;
 				waitpid(_pid, &st, WNOHANG);
+				_state = CGI_DONE;
 			}
 			else if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
 			{
-				fail("CGI: output", errno);
+				std::cout << "writing" << std::endl;
+				Epoll::instance().del_fd(_out_fd);
+				close(_out_fd);
+				_out_fd = -1;
+				// fail("CGI: output", errno);
+				_state = CGI_DONE;
+				int st;
+				waitpid(_pid, &st, WNOHANG);
 				_state = CGI_DONE;
             	return;
 			}

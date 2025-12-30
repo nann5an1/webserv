@@ -137,6 +137,7 @@ void	Connection::handle(uint32_t events)
 					cleanup();
 					return ;
 				}
+				std::cerr << std::string(40, '=') << "\n" << _reader.header << _reader.body << std::string(40, '=') << std::endl;
 				_req.parseRequest((_reader.header + _reader.body).c_str());
 				_reader.body = "";
 				_reader.header = "";
@@ -170,8 +171,11 @@ void	Connection::handle(uint32_t events)
 					_rep._type = "text/html";
 					_rep._body = _cgi->output();
 
-					// delete _cgi;
-					_cgi = NULL;
+					if (_cgi)
+					{
+						delete _cgi;
+						_cgi = NULL;
+					}
 					std::cout << "cgi done" << std::endl;
 					_state = DONE;
 				}
