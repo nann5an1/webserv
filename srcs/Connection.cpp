@@ -161,6 +161,7 @@ void	Connection::handle(uint32_t events)
 		{
 			route();
 			std::cout << "conneciton processing done" << std::endl;
+			_state = READING_RESPONSE;
 		}
 		if (_state == READING_RESPONSE)
 		{
