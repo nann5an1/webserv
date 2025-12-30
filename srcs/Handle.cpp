@@ -99,12 +99,14 @@ std::string autoIndexOnListing(std::string& path)
 // }
 
 
-int	norm_handle(std::string	&final_path, Request &req, Response &rep, const t_location* location)
+//
+int	norm_handle(std::string	&final_path, Request &req, Response &rep, const t_location* location, const Server *server)
 {
 	int	status;
 	const std::vector<std::string>	&indexs = location->index_files;
 	std::string	path = final_path, index_path;
 
+	(void)server;
 	// std::cout << "finalPath - path -> " << path << std::endl;
 	if (is_dir(path))
 	{
@@ -121,7 +123,6 @@ int	norm_handle(std::string	&final_path, Request &req, Response &rep, const t_lo
 		if(location->autoindex){
 			if(indexs.empty())
 			{ //autoindex is on and index files is empty (list out the files in the directory)
-				// location->root
 				rep._body = autoIndexOnListing(path);
 				rep._type = "text/html";
 				if(rep._body.empty())	return (403);

@@ -91,6 +91,7 @@ Server::Server(std::ifstream &file) :
 		else
 			inputData(line);
 	}
+	// if(this->_root.empty()) throw Error("No root directory found in the server block");
 }
 
 int	Server::parse_return(std::stringstream& ss, int& r_status, std::string& r_url)
@@ -169,7 +170,7 @@ int Server::inputData(std::string &line)
 			else _server_idx.push_back(value);
 			}
 		}
-		else throw Error("Config failed at " +line);
+		else throw Error("Config failed at" +line);
 	}
 	else if(token == "max_body_size"){
 		if(!(ss >> value)) return 0;
@@ -212,7 +213,8 @@ int Server::inputLocation(std::string line, t_location &location)
 				location.methods |= identify_method(val);
 			}
 		}
-		else throw Error("Server: Config failed at " + line);
+		else {
+			throw Error("Server: Config failed at " + line);}
 	}
 	else if(token == "root"){
 		ss >> val;
@@ -381,6 +383,12 @@ const std::map<std::string, t_location>&	Server::locations() const
 	return (_locations);
 }
 
+std::vector<std::string> Server::server_idx() const
+{
+	return (_server_idx);
+}
+
+//accepting clients
 void	Server::handle(uint32_t events)
 {
 		Connection	*con = new Connection(this);

@@ -95,6 +95,7 @@ const t_location*	Connection::find_location(std::string &req_url, std::string &f
 		{
 			loc = req_url.substr(0, i);
 			location = get(_server->locations(), !i ? "/" : loc);
+			
 			if (location)
 			{
 				std::string	root = location->root.empty() ? _server->root() : location->root;
@@ -294,12 +295,10 @@ void	Connection::route()
 			_req.set_category(REDIRECTION);
 		if(_req.method() == "DELETE" && _req.category() != CGI)
 			_req.set_category(FILEHANDLE);
-		// if (!location->upload_dir.empty()) //if the upload_dir exists to handle the POST
-        // 	_req.set_category(FILEHANDLE);
 		switch (_req.category())
 		{
 			case NORMAL:
-				_rep._status = norm_handle(final_path, _req, _rep, location);
+				_rep._status = norm_handle(final_path, _req, _rep, location, _server);
 				break;
 			case CGI:
 				_rep._status = cgi_handle(final_path, location, _req, _rep);
@@ -322,8 +321,6 @@ void	Connection::route()
 		_rep._status = 404;
 		_rep._body = status_page(404);
 	}
-
-	
 	// if (_rep._status >= 400)
 	// 	error_handle();
 	// std::cout << "this is the status: " << _rep._status << std::endl;
@@ -361,3 +358,10 @@ void	Connection::set_server(Server *server)
 {
 	_server = server;
 }
+
+
+// std::vector<std::string> Connection::get_server_idx() const
+// {
+// 	return (_server->_server_idx);
+// }
+

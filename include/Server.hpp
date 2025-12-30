@@ -76,6 +76,9 @@ class	Server : public Pollable
 		std::string	root() const;
 		int			r_status() const;
 		std::string	r_url() const;
+		std::vector<std::string> server_idx() const;
+
+		// std::vector<std::string> server_idx() const;
 		const std::map<std::string, t_location>&	locations() const;
 };
 
