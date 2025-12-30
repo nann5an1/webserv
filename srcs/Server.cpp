@@ -55,7 +55,8 @@ Server::Server(std::ifstream &file) :
 	_root(""), 
 	_max_size(0),
 	_r_status(0),
-	_r_url("")
+	_r_url(""),
+	_locations()
 {
 	std::string	line, tok = "", location_path = "";
 	
@@ -90,6 +91,7 @@ Server::Server(std::ifstream &file) :
 		else
 			inputData(line);
 	}
+	// if(this->_root.empty()) throw Error("No root directory found in the server block");
 }
 
 int	Server::parse_return(std::stringstream& ss, int& r_status, std::string& r_url)
@@ -122,10 +124,11 @@ int	Server::parse_err_pages(std::stringstream &ss, std::map<int,std::string> &er
 	return (1);
 }
 
+//need to add validation check for the ';'
 std::string	Server::trimSemiColon(std::string val)
 {
 	if(val.find(";") == std::string::npos)
-		throw Error(val);
+		throw Error("Config failed at " +val);
 	return (val.substr(0, val.length() - 1));
 }
 
@@ -159,6 +162,15 @@ int Server::inputData(std::string &line)
 			return 0;
 		else
 			this->_root = trimSemiColon(value);
+	}
+	else if(token == "index"){
+		if(line.find(";") != std::string::npos){
+			while(ss >> value){
+			if(value.find(";") != std::string::npos) _server_idx.push_back(trimSemiColon(value));
+			else _server_idx.push_back(value);
+			}
+		}
+		else throw Error("Config failed at" +line);
 	}
 	else if(token == "max_body_size"){
 		if(!(ss >> value)) return 0;
@@ -194,13 +206,15 @@ int Server::inputLocation(std::string line, t_location &location)
 	}
 	else if(token == "methods")
 	{
-		while(ss >> val)
-		{
-			if (val.find(";") != std::string::npos)
-				val = trimSemiColon(val);
-			location.methods |= identify_method(val);
+		if(line.find(";") != std::string::npos){
+			while(ss >> val)
+			{
+				if (val.find(";") != std::string::npos) val = trimSemiColon(val);
+				location.methods |= identify_method(val);
+			}
 		}
-		// std::cout << "methods >> " << method1 << " " << method2 << " " << method3 << std::endl;	
+		else {
+			throw Error("Server: Config failed at " + line);}
 	}
 	else if(token == "root"){
 		ss >> val;
@@ -212,9 +226,14 @@ int Server::inputLocation(std::string line, t_location &location)
 		location.upload_dir = trimSemiColon(val);
 	}
 	else if(token == "index"){
-		while(ss >> val)
-			location.index_files.push_back(trimSemiColon(val));
-		// std::cout << location.index_files[0] << " " << location.index_files[1] << std::endl;
+		if(line.find(";") != std::string::npos){
+			while(ss >> val){
+				if(val.find(";") != std::string::npos) location.index_files.push_back(trimSemiColon(val));
+				else location.index_files.push_back(val);
+			}
+		}
+		else throw Error("Server: Config failed at " + line);
+		
 	}
 	else if(token == "cgi"){
 		std::string key;
@@ -364,6 +383,12 @@ const std::map<std::string, t_location>&	Server::locations() const
 	return (_locations);
 }
 
+std::vector<std::string> Server::server_idx() const
+{
+	return (_server_idx);
+}
+
+//accepting clients
 void	Server::handle(uint32_t events)
 {
 		Connection	*con = new Connection(this);

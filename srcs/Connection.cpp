@@ -105,6 +105,7 @@ const t_location*	Connection::find_location(std::string &req_url, std::string &f
 		{
 			loc = req_url.substr(0, i);
 			location = get(_server->locations(), !i ? "/" : loc);
+			
 			if (location)
 			{
 				std::string	root = location->root.empty() ? _server->root() : location->root;
@@ -326,9 +327,12 @@ void	Connection::route()
 		const std::string *exec_path = NULL;
 		if (!(location->methods & identify_method(_req.method())))
 		{
+			_rep._status = 405;
+			_rep._body = status_page(405);	
 			std::cout << "method not allowed " << std::endl;
+			return;
 		}
-			
+		 
 		if (location->r_status > 0)
 			_req.set_category(REDIRECTION);
 		std::cout << "category : " << _req.category() << std::endl;
@@ -343,7 +347,7 @@ void	Connection::route()
 		switch (_req.category())
 		{
 			case NORMAL:
-				_rep._status = norm_handle(final_path, _req, _rep, location);
+				_rep._status = norm_handle(final_path, _req, _rep, location, _server);
 				break;
 			case CGI:
 				std::cout << "cgi" << std::endl;
@@ -354,8 +358,7 @@ void	Connection::route()
 				redirect_handle(location->r_status, location->r_url, _rep);
 				return ;
 			case FILEHANDLE:
-				_rep._status = 200;
-				handleFile(location, remain_path, _req, _rep);
+				_rep._status = handleFile(location, remain_path, _req, _rep);
 				break;
 		}
 	}
@@ -365,11 +368,6 @@ void	Connection::route()
 		_rep._status = 404;
 		_rep._body = status_page(404);
 	}
-	if (_rep._status > 400)
-	{
-		std::cout << "error_page";
-	}
-	_state = READING_RESPONSE;
 	// if (_rep._status >= 400)
 	// 	error_handle();
 	// std::cout << "this is the status: " << _rep._status << std::endl;
@@ -412,3 +410,10 @@ void	Connection::set_server(Server *server)
 {
 	_server = server;
 }
+
+
+// std::vector<std::string> Connection::get_server_idx() const
+// {
+// 	return (_server->_server_idx);
+// }
+
