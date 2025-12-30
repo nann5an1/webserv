@@ -10,7 +10,8 @@ Connection::Connection() :
 	_state(CREATED),
 	_req(),
 	_rep(),
-	_server(NULL)
+	_server(NULL),
+	_cgi(NULL)
 {
 	_reader = t_reader();
 }
@@ -23,7 +24,8 @@ Connection::Connection(const Connection &other) :
 	_state(other._state),
 	_req(other._req),
 	_rep(other._rep),
-	_server(other._server)
+	_server(other._server),
+	_cgi(other._cgi)
 {
 	_reader = other._reader;
 }
@@ -41,6 +43,7 @@ Connection	&Connection::operator=(const Connection &other)
 		_rep = other._rep;
 		_server = other._server;
 		_reader = other._reader;
+		_cgi = other._cgi;
 	}
 	return (*this);
 }
@@ -49,16 +52,22 @@ Connection::~Connection()
 {
 	if (_fd >= 0)
 		close(_fd);
+	if (_cgi)
+	{
+		delete _cgi;
+		_cgi = NULL;
+	}
 }
 
 Connection::Connection(const Server *server) :
 	_fd(-1),
 	_server(server),
-	_state(),
+	_state(CREATED),
 	_reader(t_reader()),
 	_ip(""),
 	_port(0),
-	_time(0)
+	_time(0),
+	_cgi(NULL)
 {
 	fd	server_fd = *_server;
 	sockaddr_in	client_addr;
@@ -108,7 +117,7 @@ const t_location*	Connection::find_location(std::string &req_url, std::string &f
 	return (NULL);
 }
 
-void	Connection::handle(uint32_t events, fd fd_)
+void	Connection::handle(uint32_t events)
 {
 	if (events & (EPOLLHUP | EPOLLERR))
 	{
@@ -122,7 +131,7 @@ void	Connection::handle(uint32_t events, fd fd_)
 		{
 			if (_state == PROCESSING)
 			{
-				if (Epoll::instance().mod_fd(this, _fd, EPOLLOUT |EPOLLET ) < 0)
+				if (Epoll::instance().mod_fd(this, _fd, EPOLLOUT) < 0)
 				{
 					fail("Epoll: Mod", errno);
 					cleanup();
@@ -146,20 +155,36 @@ void	Connection::handle(uint32_t events, fd fd_)
 	}
 	if (events & EPOLLOUT)
 	{
-		// if (_cgi)
-        // {
-        //     if (_cgi->done())
-        //     {
-		// 		_rep.cgi_handle(_cgi->output());
-		// 		if (response())
-		// 			cleanup();
-		// 		return ;
-        //     }
-    	// 	return;
-		// }
-		route();
-		if (response())
-			cleanup();	
+		if (_state == PROCESSING)
+		{
+			route();
+			std::cout << "conneciton processing done" << std::endl;
+		}
+		if (_state == READING_RESPONSE)
+		{
+			if (_cgi)
+			{
+				if (_cgi->done())
+				{
+					_rep._status = 200;
+					_rep._type = "text/html";
+					_rep._body = _cgi->output();
+
+					// delete _cgi;
+					_cgi = NULL;
+					std::cout << "cgi done" << std::endl;
+					_state = DONE;
+				}
+				return ;
+			}
+			std::cout << "connection read response" << std::endl;
+			_state = DONE;
+		}
+		if (_state == DONE)
+		{
+			response();
+			cleanup();
+		}
 	}
 }
 bool	Connection::read_header()
@@ -317,8 +342,9 @@ void	Connection::route()
 				_rep._status = norm_handle(final_path, _req, _rep, location);
 				break;
 			case CGI:
-				// _cgi = new Cgi();
-				// _cgi->execute(final_path, exec_path, _req, this);
+				std::cout << "cgi" << std::endl;
+				_cgi = new Cgi();
+				_cgi->execute(final_path, exec_path, _req);
 				break;
 			case REDIRECTION:
 				redirect_handle(location->r_status, location->r_url, _rep);
@@ -335,8 +361,11 @@ void	Connection::route()
 		_rep._status = 404;
 		_rep._body = status_page(404);
 	}
-
-	
+	if (_rep._status > 400)
+	{
+		std::cout << "error_page";
+	}
+	_state = READING_RESPONSE;
 	// if (_rep._status >= 400)
 	// 	error_handle();
 	// std::cout << "this is the status: " << _rep._status << std::endl;

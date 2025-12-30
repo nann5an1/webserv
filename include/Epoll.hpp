@@ -24,9 +24,9 @@ struct Epoll
 
 		operator	fd() const;
 
-		int add_fd(IPollable* poll_obj, int fd_, uint32_t events);
-		int mod_fd(IPollable* poll_obj, int fd_, uint32_t events);
-		int del_fd(int fd_);
+		int add_fd(IPollable* poll_obj, fd fd_, uint32_t events);
+		int mod_fd(IPollable* poll_obj, fd fd_, uint32_t events);
+		int del_fd(fd fd_);
 
 		int wait(struct epoll_event *events, int maxevents, int timeout);
 };

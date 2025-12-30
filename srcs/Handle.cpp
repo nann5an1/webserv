@@ -49,7 +49,7 @@ std::string autoIndexOnListing(std::string& path)
 }
 
 
-int	norm_handle(std::string	&final_path, Request &req, Response &rep, const t_location* location)
+int	norm_handle(std::string	&final_path, Request &req, Response &rep, const t_location* location) //, std::vector<std::string> &server_index)
 {
 	int	status;
 	const std::vector<std::string>	&indexs = location->index_files;

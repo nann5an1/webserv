@@ -24,7 +24,7 @@ int	Epoll::init()
 	return (_fd < 0 ? -1 : 0);
 }
 
-int	Epoll::add_fd(IPollable* poll_obj, int fd_, uint32_t events)
+int	Epoll::add_fd(IPollable* poll_obj, fd fd_, uint32_t events)
 {
 	if (_fd < 0 || fd_ < 0)
 		return (-1);
@@ -32,10 +32,11 @@ int	Epoll::add_fd(IPollable* poll_obj, int fd_, uint32_t events)
 	std::memset(&ev, 0, sizeof(ev));
 	ev.events = events;
 	ev.data.ptr = poll_obj;
+	
 	return (epoll_ctl(_fd, EPOLL_CTL_ADD, fd_, &ev));
 }
 
-int Epoll::mod_fd(IPollable* poll_obj, int fd_, uint32_t events)
+int Epoll::mod_fd(IPollable* poll_obj, fd fd_, uint32_t events)
 {
 	if (_fd < 0 || fd_ < 0)
 		return (-1);
@@ -47,7 +48,7 @@ int Epoll::mod_fd(IPollable* poll_obj, int fd_, uint32_t events)
 
 }
 
-int Epoll::del_fd(int fd_)
+int Epoll::del_fd(fd fd_)
 {
 	if (_fd < 0 || fd_ < 0)
 		return (-1);

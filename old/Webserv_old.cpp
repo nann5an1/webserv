@@ -209,7 +209,7 @@ int	Webserv::create_con(const Server* server)
 			break;
 
 		struct epoll_event	c_event;
-		c_event.events = EPOLLIN | EPOLLET;
+		c_event.events = EPOLLIN;
 		c_event.data.fd = c_fd;
 
 		// FAIL~

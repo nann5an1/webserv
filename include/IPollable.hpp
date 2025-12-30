@@ -6,8 +6,7 @@
 struct	IPollable
 {
 	virtual	~IPollable() {};
-	virtual void	handle(uint32_t, fd) = 0;
-
+	virtual void	handle(uint32_t) = 0;
 };
 
 #endif

@@ -49,7 +49,7 @@ class	Server : public IPollable
 
 		int	parse_return(std::stringstream&, int&, std::string&);
 		int	parse_err_pages(std::stringstream&, std::map<int,std::string>&);
-		void	handle(uint32_t events, fd fd_);
+		void	handle(uint32_t events);
 
 	public:
 		Server();

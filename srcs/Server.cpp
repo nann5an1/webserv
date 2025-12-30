@@ -364,7 +364,7 @@ const std::map<std::string, t_location>&	Server::locations() const
 	return (_locations);
 }
 
-void	Server::handle(uint32_t events, fd fd_)
+void	Server::handle(uint32_t events)
 {
 		Connection	*con = new Connection(this);
 		fd	con_fd = *con;

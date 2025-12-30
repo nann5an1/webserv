@@ -43,7 +43,7 @@ bool	Webserv::server_add()
 			fail_count++;
 			continue;
 		}
-		if (Epoll::instance().add_fd(&server, s_fd, EPOLLIN) < 0)
+		if (Epoll::instance().add_fd(&server, s_fd, EPOLLIN | EPOLLET) < 0)
 			return (fail("Epoll: Server", errno));
 	}
 	return (fail_count == _servers.size());
@@ -216,7 +216,7 @@ int	Webserv::start()
 			IPollable	*poll_obj = static_cast<IPollable*>(events[i].data.ptr);
 			if (poll_obj)
 			{
-				poll_obj->handle(events[i].events, events[i].data.fd);
+				poll_obj->handle(events[i].events);
 				continue;
 			}
 		}

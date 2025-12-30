@@ -6,6 +6,7 @@
 #include "Response.hpp"
 #include "Handle.hpp"
 #include "IPollable.hpp"
+#include "Cgi.hpp"
 
 class Server;
 class Cgi;
@@ -46,7 +47,7 @@ class	Connection : public IPollable
 		Response	_rep;
 		const Server	*_server;
 		const t_location*	find_location(std::string &req_url, std::string &final_path, std::string &remain_path);
-		void	handle(uint32_t	events, fd fd_);
+		void	handle(uint32_t	events);
 		bool	read_header();
 		bool	read_body();
 
