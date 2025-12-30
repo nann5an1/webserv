@@ -1,5 +1,6 @@
 #include "Connection.hpp"
 #include "Server.hpp"
+#include "Cgi.hpp"
 
 Connection::Connection() :
 	Pollable(-1),
@@ -117,6 +118,18 @@ void	Connection::handle(uint32_t events)
 	}
 	if (events & EPOLLIN)
 	{
+		if (_cgi)
+		{
+			_cgi->handle(events);
+			if (_cgi->done())
+			{
+				Epoll::instance().del_fd(_cgi->out_fd());
+				_rep.cgi_handle(_cgi->output());
+				Epoll::instance().mod_ptr(this, EPOLLOUT);
+			}
+    return;
+			// Cgi->handle(events);
+		}
 		if (request())
 		{
 			if (_state == PROCESSING)
@@ -298,13 +311,12 @@ void	Connection::route()
 				_rep._status = norm_handle(final_path, _req, _rep, location);
 				break;
 			case CGI:
-				std::cout << "cgi " << std::endl;
-				_rep._status = cgi_handle(final_path, location, _req, _rep);
-
-				std::cout << "cgi request come in " << std::endl;
-				// std::cout << "\n" << _req.cgi_env() <<  std::endl;
-				_rep._status = 200;
-				break;
+				_cgi = new Cgi();
+				_cgi->execute(final_path, location, _req, _rep);
+				Epoll::instance().add_fd(this, _cgi->out_fd(), EPOLLIN);
+				if (_cgi->in_fd() >= 0)
+					Epoll::instance().add_fd(this, _cgi->in_fd(), EPOLLOUT);
+			break;
 			case REDIRECTION:
 				redirect_handle(location->r_status, location->r_url, _rep);
 				return ;

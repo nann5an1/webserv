@@ -2,13 +2,13 @@
 #define CONNECTION_HPP
 
 #include <ctime>
-#include "CGI.hpp"
 #include "Request.hpp"
 #include "Response.hpp"
 #include "Handle.hpp"
 #include "Pollable.hpp"
 
 class Server;
+class Cgi;
 
 struct	t_reader
 {
@@ -37,7 +37,7 @@ class	Connection : public Pollable
 		int			_port;
 		std::time_t	_time;
 
-		CGI			*cgi;
+		Cgi			*_cgi;
 		
 		con_state	_state;
 		t_reader	_reader;

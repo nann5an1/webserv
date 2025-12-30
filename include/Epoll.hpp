@@ -14,7 +14,7 @@ struct Pollable; // forward
 struct Epoll
 {
 	private:
-		fd	_fd;
+		int	_fd;
 		Epoll();
 		~Epoll();
 	public:
@@ -28,9 +28,9 @@ struct Epoll
 		int mod_ptr(Pollable* poll_obj, uint32_t events);
 		int del_ptr(Pollable* poll_obj);
 
-		int add_fd(Pollable* poll_obj, fd fd_, uint32_t events);
-		int mod_fd(Pollable* poll_obj, fd fd_, uint32_t events);
-		int del_fd(Pollable* poll_obj, fd fd_);
+		int add_fd(Pollable* poll_obj, int fd_, uint32_t events);
+		int mod_fd(Pollable* poll_obj, int fd_, uint32_t events);
+		int del_fd(int fd_);
 
 		int wait(struct epoll_event *events, int maxevents, int timeout);
 };

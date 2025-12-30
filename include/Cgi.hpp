@@ -18,7 +18,7 @@ enum cgi_state
 	CGI_ERROR
 };
 
-class CGI
+class	Cgi	: public Pollable
 {
 	private:
 		pid_t		_pid;
@@ -31,10 +31,10 @@ class CGI
 		std::string	_body;
 
 	public:
-		CGI();
-		CGI(const CGI &other);
-		CGI &operator=(const CGI &other);
-		~CGI();
+		Cgi();
+		Cgi(const Cgi &other);
+		Cgi &operator=(const Cgi &other);
+		~Cgi();
 
 		int execute(std::string &final_path, const t_location *location, Request& req, Response& rep);
 

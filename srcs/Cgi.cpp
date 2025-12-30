@@ -1,4 +1,4 @@
-#include "CGI.hpp"
+#include "Cgi.hpp"
 #include "Epoll.hpp"
 
 #include <unistd.h>
@@ -14,22 +14,24 @@ static void set_nonblock(int fd)
         fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 }
 
-CGI::CGI()
-    : _pid(-1),
-      _in_fd(-1),
-      _out_fd(-1),
-      _state(CGI_CREATED),
-      _written(0)
+Cgi::Cgi() :
+	Pollable(-1),
+	_pid(-1),
+	_in_fd(-1),
+	_out_fd(-1),
+	_state(CGI_CREATED),
+	_written(0)
+{}
+
+Cgi::~Cgi()
 {
+    if (_in_fd >= 0) 
+		close(_in_fd);
+    if (_out_fd >= 0)
+		close(_out_fd);
 }
 
-CGI::~CGI()
-{
-    if (_in_fd >= 0)  close(_in_fd);
-    if (_out_fd >= 0) close(_out_fd);
-}
-
-int	CGI::execute(std::string &final_path, const t_location *location, Request& req, Response& rep)
+int	Cgi::execute(std::string &final_path, const t_location *location, Request& req, Response& rep)
 {
     fd	in_pipe[2];
     fd	out_pipe[2];
@@ -75,7 +77,6 @@ int	CGI::execute(std::string &final_path, const t_location *location, Request& r
             const_cast<char*>(final_path.c_str()),
             NULL
         };
-
         execve(exec_path->c_str(), argv, const_cast<char* const*>(&env[0]));
         _exit(1);
     }
@@ -93,10 +94,18 @@ int	CGI::execute(std::string &final_path, const t_location *location, Request& r
     _written = 0;
     _state   = CGI_WRITING;
 
+	// _fd = _in_fd;
+	// set_nonblock(_fd);
+
+	{
+				Epoll::instance().del_fd(_cgi->out_fd());
+				_rep.cgi_handle(_cgi->output());
+				Epoll::instance().mod_ptr(this, EPOLLOUT);
+	Epoll::instance().add_fd(this, out_fd, EPOLL)
     return (true);
 }
 
-void CGI::handle(uint32_t events)
+void Cgi::handle(uint32_t events)
 {
     if (_state == CGI_WRITING && (events & EPOLLOUT))
     {
@@ -143,27 +152,27 @@ void CGI::handle(uint32_t events)
     }
 }
 
-bool CGI::done() const
+bool Cgi::done() const
 {
     return _state == CGI_DONE;
 }
 
-bool CGI::error() const
+bool Cgi::error() const
 {
     return _state == CGI_ERROR;
 }
 
-int CGI::in_fd() const
+int Cgi::in_fd() const
 {
     return _in_fd;
 }
 
-int CGI::out_fd() const
+int Cgi::out_fd() const
 {
     return _out_fd;
 }
 
-const std::string &CGI::output() const
+const std::string &Cgi::output() const
 {
     return _output;
 }

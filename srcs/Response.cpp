@@ -20,6 +20,15 @@ Response	&Response::operator=(const Response &other)
 
 Response::~Response() {}
 
+
+int	Response::cgi_handle(const std::string &str)
+{
+	size_t	pos = str.find("Status: ");
+	std::cout << "cgi handle() " << std::endl;
+	return (200);
+}
+
+
 const char*	Response::build()
 {
 	_reply = "HTTP/1.1 " + to_string(_status) + " " + gphrase[_status] + CRLF;
