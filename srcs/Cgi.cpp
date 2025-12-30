@@ -165,7 +165,7 @@ void	Cgi::handle(uint32_t events)
 			}
 			else if (n == 0)
 			{
-				std::cout << std::string(40, '=') << "\n" << _output << std::string(40, '=') << "\n" << std::endl;
+				// std::cout << std::string(40, '=') << "\n" << _output << std::string(40, '=') << "\n" << std::endl;
 				Epoll::instance().del_fd(_out_fd);
 				close(_out_fd);
 				_out_fd = -1;

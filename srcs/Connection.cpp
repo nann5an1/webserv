@@ -137,7 +137,7 @@ void	Connection::handle(uint32_t events)
 					cleanup();
 					return ;
 				}
-				std::cerr << std::string(40, '=') << "\n" << _reader.header << _reader.body << std::string(40, '=') << std::endl;
+				// std::cerr << std::string(40, '=') << "\n" << _reader.header << _reader.body << std::string(40, '=') << std::endl;
 				_req.parseRequest((_reader.header + _reader.body).c_str());
 				_reader.body = "";
 				_reader.header = "";
