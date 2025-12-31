@@ -23,7 +23,7 @@ Cgi::~Cgi() {}
 
 int	Cgi::execute(std::string& final_path, const std::string* exec_path, Request &req)
 {
-	fd	in_pipe[2], out_pipe[2];
+	int	in_pipe[2], out_pipe[2];
 
 	std::vector<std::string> envs = req.cgi_env();
 	std::vector<char*>	envp;
@@ -32,13 +32,13 @@ int	Cgi::execute(std::string& final_path, const std::string* exec_path, Request 
 		envp.push_back(const_cast<char*>(envs[i].c_str()));
 	envp.push_back(NULL);
 
-	if (pipe(in_pipe) < 0)
-		return (fail("CGI: File", errno), 500);
+	// if (pipe(in_pipe) < 0)
+	// 	return (fail("CGI: File", errno), 500);
 	if (pipe(out_pipe) < 0)
 	{
 		fail("CGI: Pipe", errno);	
-		close(in_pipe[0]);
-		close(in_pipe[1]);
+		// close(in_pipe[0]);
+		// close(in_pipe[1]);
 		return (500);
 	}
 	_pid = fork();
@@ -46,26 +46,32 @@ int	Cgi::execute(std::string& final_path, const std::string* exec_path, Request 
 		return (fail("CGI: Fork", errno));
 	if (_pid == 0)
 	{
-		dup2(in_pipe[0], STDIN_FILENO);
+		// dup2(in_pipe[0], STDIN_FILENO);
 		dup2(out_pipe[1], STDOUT_FILENO);
 
-		close(in_pipe[1]);
+		// close(in_pipe[1]);
 		close(out_pipe[0]);
+		// close(in_pipe[0]);
+		close(out_pipe[1]);
 
 		char	*argv[] = {const_cast<char*>(exec_path->c_str()),
 						   const_cast<char*>(final_path.c_str()), NULL};
-		execve(exec_path->c_str(), argv, const_cast<char* const*>(&envp[0]));
-	}
+		if (execve(exec_path->c_str(), argv, const_cast<char* const*>(&envp[0])) == -1)
+		{
+			exit(1);
+			perror("execl failed");
+		}
+ 	}
 	else
 	{
-		close(in_pipe[0]);
+		// close(in_pipe[0]);
 		close(out_pipe[1]);
 
-		_in_fd = in_pipe[1];
+		// _in_fd = in_pipe[1];
 		_out_fd = out_pipe[0];
 		_body = req.body();
 
-		set_nblocking(_in_fd);
+		// set_nblocking(_in_fd);
 		set_nblocking(_out_fd);
 		if (Epoll::instance().add_fd(this, _out_fd, EPOLLIN) < 0)
 		{
@@ -75,7 +81,7 @@ int	Cgi::execute(std::string& final_path, const std::string* exec_path, Request 
 			_in_fd = _out_fd = -1;
 			return (500);
 		}
-		if (!_body.empty())
+		if ((identify_method(req.method()) & POST) && !_body.empty())
 		{
 			if (Epoll::instance().add_fd(this, _in_fd, EPOLLOUT) < 0)
 			{
@@ -89,9 +95,9 @@ int	Cgi::execute(std::string& final_path, const std::string* exec_path, Request 
 		}
 		else
 		{
-			close(_in_fd);
-			_in_fd = -1;
-			_state = CGI_READING;
+			// close(_in_fd);
+			// _in_fd = -1;
+			// _state = CGI_READING;
 		}
 	}
 	return (200);
@@ -100,71 +106,77 @@ int	Cgi::execute(std::string& final_path, const std::string* exec_path, Request 
 void	Cgi::handle(uint32_t events)
 {
 	// std::cout << "Cgi handle" << std::endl;
-	if ((events & EPOLLOUT) && _state == CGI_WRITING)
-	{
-		std::cout << "cgi input" << std::endl;
-		size_t	remian = (_written < _body.size()) ? (_body.size() - _written) : 0;
-		if (remian == 0)
-		{
-			std::cout << "cinput 1 " << std::endl;
-			Epoll::instance().del_fd(_in_fd);
-			close(_in_fd);
-			_in_fd = -1;
-			_state  = CGI_READING;
-			return ;
-		}
-		size_t	n = ::write(_in_fd, _body.data() + _written, remian);
-		if (n > 0)
-		{
-			std::cout << "cinput 5" << std::endl;
-			_written += static_cast<size_t>(n);
-			if (_written >= _body.size())
-			{
-				std::cout << "cinput 1 " << std::endl;
-				Epoll::instance().del_fd(_in_fd);
-				close(_in_fd);
-				_in_fd = -1;
-				_state = CGI_READING;
-			}
-		}
-		if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
-		{
-			std::cout << "cinput 2 " << std::endl;
-			Epoll::instance().del_fd(_in_fd);
-			close(_in_fd);
-			_in_fd = 1;
-			_state = CGI_READING;
-			return ;
-		}
-		if (_written >= _body.size())
-		{
-			std::cout << "cinput 3 " << std::endl;
-			std::cout << "cgi writing"  << std::endl;
-			Epoll::instance().del_fd(_in_fd);
-			close(_in_fd);
-			_in_fd = 1;
-			_state = CGI_READING;
-			std::cout << "cgi input done" << std::endl;
-			return ;
-		}
-		std::cout << "cinput 4 " << std::endl;
-
-	}
+	// if ((events & EPOLLOUT) && _state == CGI_WRITING)
+	// {
+	// 	std::cout << "cgi input : body_size : " << _body.size() << " state : " << _state << std::endl;
+	// 	size_t	remian = _body.size() - _written;
+	// 	if (remian == 0)
+	// 	{
+	// 		std::cout << "cgi input is done" << std::endl;
+	// 		Epoll::instance().del_fd(_in_fd);
+	// 		close(_in_fd);
+	// 		_in_fd = -1;
+	// 		_state  = CGI_READING;
+	// 		return ;
+	// 	}
+	// 	size_t	n = ::write(_in_fd, _body.data() + _written, remian);
+	// 	if (n > 0)
+	// 	{
+	// 		_written += static_cast<size_t>(n);
+	// 		std::cout << "cgi input, n : " << n << " written: " << _written << std::endl;
+	// 		// if (_written >= _body.size())
+	// 		// {
+	// 		// 	std::cout << "cinput 1 " << std::endl;
+	// 			Epoll::instance().del_fd(_in_fd);
+	// 			close(_in_fd);
+	// 			_in_fd = -1;
+	// 			_state = CGI_READING;
+	// 		// }
+	// 	}
+	// 	if (n < 0)
+	// 	{
+	// 		if (errno == EAGAIN || errno == EWOULDBLOCK)
+	// 			return ;
+	// 		fail("Cgi: Input", errno);
+	// 		Epoll::instance().del_fd(_in_fd);
+	// 		close(_in_fd);
+	// 		_in_fd = -1;
+	// 		_state = CGI_ERROR;
+	// 	}
+	// 	// if (_written >= _body.size())
+	// 	// {
+	// 	// 	std::cout << "cinput 3 " << std::endl;
+	// 	// 	std::cout << "cgi writing"  << std::endl;
+	// 	// 	Epoll::instance().del_fd(_in_fd);
+	// 	// 	close(_in_fd);
+	// 	// 	_in_fd = -1;
+	// 	// 	_state = CGI_READING;
+	// 	// 	std::cout << "cgi input done" << std::endl;
+	// 	// 	return ;
+	// 	// }
+	// 	// std::cout << "cinput 4 " << remian << std::endl;
+	// 	// _state = CGI_READING;
+	// }
 	if ((events & EPOLLIN) && _out_fd != -1)
 	{
-		char 	buffer[4096];
+		std::cout << "cgi epollin : state " << _state << std::endl;
+
+		char 	buffer[2];
 		size_t	total = 0;
-		while (total < CGI_CAP)
+		while (total < 1)
 		{
 			ssize_t n = ::read(_out_fd, buffer, sizeof(buffer));
+			// std::cout << "n: " << n << " errno: " << errno << std::endl;
 			if (n > 0)
 			{
-				std::cout << "cgi reading" << std::endl;
 				_output.append(buffer, static_cast<size_t>(n));
 				total += n;
+				std::cout << "cgi output, total: " << total << std::endl;
+
 			}
 			else if (n == 0)
 			{
+				std::cout << "omg it's here " << std::endl;
 				// std::cout << std::string(40, '=') << "\n" << _output << std::string(40, '=') << "\n" << std::endl;
 				Epoll::instance().del_fd(_out_fd);
 				close(_out_fd);
@@ -172,32 +184,42 @@ void	Cgi::handle(uint32_t events)
 
 				// Optional: reap child without blocking.
 				// If child not exited yet, this returns 0 and we ignore.
-				int st;
-				waitpid(_pid, &st, WNOHANG);
-				_state = CGI_DONE;
 			}
-			else if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
+			else if (n < 0 && !(errno == EAGAIN || errno == EWOULDBLOCK))
 			{
-				std::cout << "writing" << std::endl;
-				Epoll::instance().del_fd(_out_fd);
-				close(_out_fd);
-				_out_fd = -1;
-				// fail("CGI: output", errno);
-				_state = CGI_DONE;
-				int st;
-				waitpid(_pid, &st, WNOHANG);
-				_state = CGI_DONE;
-            	return;
-			}
-			else
-			{
+				fail("Cgi: output", errno);
+				std::cout << "i dk " << std::endl;
 				Epoll::instance().del_fd(_out_fd);
 				close(_out_fd);
 				_out_fd = -1;
 				_state = CGI_DONE;
 				return ;
 			}
+			std::cout << "looping" << std::endl;
 		}
+	}
+	if (_pid > 0)
+	{
+		int status;
+		pid_t ret = waitpid(_pid, &status, WNOHANG);
+		if (ret == _pid)
+		{
+			// Child exited
+			_state = CGI_DONE;
+			_pid = -1;
+			if (_out_fd != -1)
+			{
+				Epoll::instance().del_fd(_out_fd);
+				close(_out_fd);
+				_out_fd = -1;
+			}
+		}
+		else if (ret == -1)
+		{
+			perror("waitpid");
+			_state = CGI_DONE;
+		}
+		// ret == 0 → child still running, do nothing
 	}
 }
 

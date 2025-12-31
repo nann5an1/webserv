@@ -7,6 +7,7 @@
 
 enum	cgi_state
 {
+	CGI_ERROR,
 	CGI_WRITING,
 	CGI_READING,
 	CGI_DONE
@@ -18,8 +19,8 @@ class	Cgi : public IPollable
 {
 	private:
 		pid_t		_pid;
-		fd			_in_fd;
-		fd			_out_fd;
+		int			_in_fd;
+		int			_out_fd;
 		std::string	_body;
 		size_t		_written;
 		std::string	_output;
