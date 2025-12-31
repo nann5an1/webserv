@@ -46,7 +46,7 @@ class	Server : public Pollable
 		std::map<std::string, t_location>	_locations;
 
 		int	parse_return(std::stringstream&, int&, std::string&);
-		int	parse_err_pages(std::stringstream&, std::map<int,std::string>&);
+		int	parse_err_pages(std::stringstream&, std::map<int,std::string>& err_pg_container);
 		void	handle(uint32_t events);
 
 	public:
@@ -76,6 +76,8 @@ class	Server : public Pollable
 		std::string	root() const;
 		int			r_status() const;
 		std::string	r_url() const;
+		const std::map<int, std::string>& err_pages() const;
+		
 		std::vector<std::string> server_idx() const;
 
 		// std::vector<std::string> server_idx() const;

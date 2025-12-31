@@ -93,7 +93,6 @@ Server::Server(std::ifstream &file) :
 		else
 			inputData(line);
 	}
-	std::cout << "server root dir >> " << this->_root << std::endl;
 	if(this->_root.empty()) throw Error("No root directory found in the server block");
 }
 
@@ -117,12 +116,14 @@ int	Server::parse_err_pages(std::stringstream &ss, std::map<int,std::string> &er
 	if (temp.size() <= 1)
 		return (0);
 	std::string	err_path = trimSemiColon(temp[temp.size() - 1]);
+	std::cout << "err path -> " << err_path << std::endl;
 	for (int i = 0; i < temp.size() - 1; ++i)
 	{
 		int	key = std::atoi(temp[i].c_str());
 		if (!validateHTTPCode(key))
 			return (0);
 		err_pg_container[key] = err_path;
+		std::cout << "key >> " << key << std::endl;
 	}
 	return (1);
 }
@@ -167,7 +168,6 @@ int Server::inputData(std::string &line)
 			this->_root = trimSemiColon(value);
 	}
 	else if(token == "index"){
-		std::cout << "Server idx's print >> " << line << std::endl;
 		if(line.find(";") != std::string::npos){
 			while(ss >> value){
 				if(value.find(";") != std::string::npos) _server_idx.push_back(trimSemiColon(value));
@@ -382,9 +382,14 @@ std::string	Server::r_url() const
 	return (_r_url);
 }
 
-const std::map<std::string, t_location>&	Server::locations() const
+const std::map<std::string, t_location>	&Server::locations() const
 {
 	return (_locations);
+}
+
+const std::map<int, std::string>  &Server::err_pages() const
+{
+	return (_err_pages);
 }
 
 std::vector<std::string> Server::server_idx() const

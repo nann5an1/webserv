@@ -25,8 +25,9 @@ const char*	Response::build()
 	_reply = "HTTP/1.1 " + to_string(_status) + " " + gphrase[_status] + CRLF;
 	if (!_location.empty())
 		_reply += "Location: " + _location + CRLF;
-	if (!_type.empty())
-		_reply += "Content-Type: " + _type + CRLF;
+	// if (!_type.empty())
+	_reply += "Content-Type: " + _type + CRLF;
+
 	if (!_body.empty())
 		_reply += "Content-Length: " + to_string(std::strlen(_body.c_str())) + CRLF +
 				  CRLF + _body + CRLF;

@@ -48,56 +48,6 @@ std::string autoIndexOnListing(std::string& path)
     return html;
 }
 
-// std::string generate_file_list(const std::string& upload_dir)
-// {
-//     std::string html =
-//         "<h2>Uploaded Files:</h2>";
-
-//     DIR* dir = opendir(upload_dir.c_str());
-//     if (!dir)
-//     {
-//         std::cerr << "Failed to open directory: " << upload_dir << std::endl;
-//         return html + "<li>Cannot open directory</li></ul>";
-//     }
-
-//     struct dirent* entry;
-//     int file_count = 0;
-
-//     while ((entry = readdir(dir)) != NULL)
-//     {
-//         // Skip . and ..
-//         if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
-//             continue;
-
-//         // Skip directories if you only want files
-//         std::string full_path = upload_dir + "/" + entry->d_name;
-//         struct stat st;
-//         if (stat(full_path.c_str(), &st) == 0 && S_ISDIR(st.st_mode))
-//             continue;
-
-//         std::string filename(entry->d_name);
-        
-//         std::cout << "Adding file to list: " << filename << std::endl;
-        
-//         html += "<li>";
-//         html += filename;
-//         html += "</li>";
-        
-//         file_count++;
-//     }
-
-//     closedir(dir);
-    
-//     if (file_count == 0)
-//         html += "<li>No files uploaded yet</li>";
-    
-//     html += "</ul>";
-    
-//     std::cout << "Total files in listing: " << file_count << std::endl;
-    
-//     return html;
-// }
-
 
 int handleServerIndex(Response &rep, const Server *server){
 	std::vector<std::string> server_idx = server->server_idx();
@@ -118,7 +68,6 @@ int handleServerIndex(Response &rep, const Server *server){
 	}
 
 	response:
-		std::cout << "hihhihii > " << index_path << std::endl;
 		if (file_check(index_path, R_OK) == 200)
 		{
 			status = read_file(index_path, rep._body);
@@ -128,14 +77,15 @@ int handleServerIndex(Response &rep, const Server *server){
 	return (403);
 }
 
-int	norm_handle(std::string	&final_path, Request &req, Response &rep, const t_location* location)
+int	norm_handle(std::string	&final_path, Request &req, Response &rep,
+	 const t_location* location, std::string loc, const Server *server)
 {
 	int	status;
 	const std::vector<std::string>	&indexs = location->index_files;
 	std::string	path = final_path, index_path;
-	
-	std::cout << "finalPath - path -> " << path << std::endl;
-	if (is_dir(path))
+
+
+	if (is_dir(path)) //directory look out for the indexfiles
 	{
 		for (int i = 0; i < indexs.size(); ++i)
 		{
@@ -147,17 +97,27 @@ int	norm_handle(std::string	&final_path, Request &req, Response &rep, const t_lo
 				goto response;
 			}
 		}
-		if(location->autoindex){
+		if(location->autoindex){ //autoindex is on
+			std::cout << "location's idnex is off and server's root should be applied " << std::endl;
 			if(indexs.empty())
 			{ //autoindex is on and index files is empty (list out the files in the directory)
 				rep._body = autoIndexOnListing(path);
 				rep._type = "text/html";
-				if(rep._body.empty())	return (403);
     			return (200);
 			}
 		}
-		else //if auto index is off
-			if(indexs.empty()) return (403);
+		else{ //autoindex is off
+			if(!server->server_idx().empty()){ //fallback to the main server's
+				if(handleServerIndex(rep, server) == 200){
+					rep._type = "text/html";
+					rep._status = 200;
+					return (200);
+				}
+				else return (403);
+			}
+			else return (403);
+		}
+
 	}
 	response:
 		status = file_check(path, R_OK);
@@ -276,6 +236,7 @@ std::string size_to_string(off_t size)
 int	handleFile(const t_location* location, std::string &remain_path, Request &req, Response &rep){
 	std::string filepath;
 	std::string method = req.method();
+	int status;
 
 	// std::cout << "method in handleFile" << method << std::endl;
 	if(method == "POST" && req.upload_files().size() > 0)
@@ -297,26 +258,28 @@ int	handleFile(const t_location* location, std::string &remain_path, Request &re
 
 			if (!ofs) {
 				std::cerr << "Failed to open file: " << filepath << std::endl;
-				req.upload_files().clear();
-				ofs.close();
-				rep._status = 404;
-				continue;
+				if((status = file_check(location->upload_dir, W_OK)) != 200){
+					return (status);
+				}
 			}
-			ofs.write(file.data.c_str(), file.data.size());
+			else{
+				ofs.write(file.data.c_str(), file.data.size());
+				rep._type = "text/html";
+				rep._body = "<!DOCTYPE html>\n"
+							"<html>\n"
+							"<head>\n"
+							"<meta charset=\"UTF-8\">\n"
+							"<title>Uploaded Files</title>\n"
+							"</head>\n"
+							"<body>\n"
+							"<p>File uploaded successfully</p>\n"
+							"</body>\n"
+							"</html>";
+				}
 			req.upload_files().clear();
 			ofs.close();
 		}
-		rep._type = "text/html";
-		rep._body = "<!DOCTYPE html>\n"
-					"<html>\n"
-					"<head>\n"
-					"<meta charset=\"UTF-8\">\n"
-					"<title>Uploaded Files</title>\n"
-					"</head>\n"
-					"<body>\n"
-					"<p>File uploaded successfully</p>\n"
-					"</body>\n"
-					"</html>";
+		
 	}
 	else if(method == "DELETE"){
 		// std::cout << "remain path <><> " << remain_path << std::endl;

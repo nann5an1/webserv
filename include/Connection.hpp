@@ -32,15 +32,18 @@ enum	con_state
 class	Connection : public Pollable
 {
 	private:
+		const Server	*_server;
+
 		std::string	_ip;
 		int			_port;
 		std::time_t	_time;
+		std::string _loc;
 		
 		con_state	_state;
 		t_reader	_reader;
 		Request		_req;
 		Response	_rep;
-		const Server	*_server;
+		
 		const t_location*	find_location(std::string &req_url, std::string &final_path, std::string &remain_path);
 		void	handle(uint32_t	events);
 		bool	read_header();
