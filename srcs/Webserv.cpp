@@ -54,11 +54,9 @@ void	Webserv::fileParser(char *av)
 {
 	std::string		config_file, line;
 	
-	config_file = av ? av : "def.conf";
-	if(config_file == "def.conf")
-		std::cout << "<< USING DEFAULT CONFIG >> " << config_file << std::endl;
-	else
-		std::cout << "<< USING CONFIG >> " << config_file << std::endl;
+	config_file = av ? av : "eval.conf";
+
+	std::cout << "========== " << config_file << " ==========" << std::endl;
 
 	std::ifstream	file(config_file.c_str());
 		
