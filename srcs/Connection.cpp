@@ -365,7 +365,6 @@ void	Connection::route()
 				_rep._status = norm_handle(final_path, _req, _rep, location, _loc, _server);
 				break;
 			case CGI:
-				std::cout << "cgi" << std::endl;
 				_cgi = new Cgi();
 				_rep._status = _cgi->execute(final_path, exec_path, _req);
 				break;
@@ -379,13 +378,14 @@ void	Connection::route()
 		}
 
 	}
-	else if(_server->locations().empty() && _req.path() == "/")
+	if(_server->locations().empty() && _req.path() == "/")
 	{
 		
 		_rep._type = "text/html";
 		_rep._status = handleServerIndex(_rep, _server);
 		if(_rep._status != 200) _rep._body = status_page(404);
 	}
+	std::cout << "Connectin rep check >> " << _rep._status << std::endl;
 	if (_rep._status >= 400)
 	{
 		const std::string* err_page;
@@ -398,12 +398,20 @@ void	Connection::route()
 			err_page = get(_server->err_pages(), _rep._status);
 			if (err_page)
 				err_path = _server->root() + *err_page;
+			std::cout << "error path 1" << err_path << std::endl;
 		}
-		if (!location->err_pages.empty())
+		else if (!location->err_pages.empty())
 		{
 			err_page = get(location->err_pages, _rep._status);
-			if (err_page)
-				err_path = location->root + *err_page;
+			if (err_page){
+				if(!location->root.empty())
+					err_path = location->root + *err_page;
+				else{
+					if(!_server->root().empty())
+						err_path = _server->root() + *err_page; //don't need "else" bcuz config will not work if no root in parsing
+				}
+			}
+			std::cout << "error path 2" << err_path << std::endl;
 		}
 		if (!err_path.empty())
 		{
@@ -413,8 +421,8 @@ void	Connection::route()
 			else
 				return ;
 		}
+		else	_rep._status = 403;
 		_rep._body = status_page(_rep._status);
-		// std::cout << _server->err_pages().count() << std::endl;
 	}
 
 }

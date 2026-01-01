@@ -101,16 +101,31 @@ int read_file(std::string &path, std::string &data)
 {
 	int	fd = open(path.c_str(), O_RDONLY);
 	if (fd < 0)
-		return (fail("File: " + path, errno), 206);
-
+	{
+		
+		fail("File: " + path, errno);
+		if (errno == ENOENT)
+			return (404);
+		if (errno == EACCES)
+			return (403);
+			
+		return (500); //internal server error
+	}
+	
 	char	buffer[4096];
-	ssize_t n;
+	size_t n;
 	while ((n = read(fd, buffer, sizeof(buffer))) > 0)
 		data.append(buffer, n);
 	if (n < 0)
 	{
 		data.clear();
-		return (fail("File: " + path, errno), 206);
+		fail("File: " + path, errno);
+
+		if(errno == EACCES){
+			std::cout << "ERROR 403 RETURNED" << std::endl;
+			return (403);
+		}
+		return (500);
 	}
 	close(fd);
 	return (200);
@@ -143,9 +158,15 @@ int	file_check(std::string path, int mod)
 	struct stat st;
 	const char *loc = path.c_str();
 	if (stat(loc, &st) < 0)
+	{
+		std::cout << "hi hi 404" << std::endl;
 		return (404);
+	}
 	if (access(loc, mod) != 0)
+	{
+		std::cout << "hi hi 403" << std::endl;
 		return (403);
+	}
 	return (200);
 }
 

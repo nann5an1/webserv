@@ -53,6 +53,7 @@ int handleServerIndex(Response &rep, const Server *server){
 	std::vector<std::string> server_idx = server->server_idx();
 	std::string server_path = server->root(), index_path;
 	int status;
+	bool found_forbidden = false;
 
 	// std::cout << "Server indexes size -> " << server_idx.size() << std::endl; 
 	// std::cout << "Server path -> " << server_path << std::endl;
@@ -64,17 +65,16 @@ int handleServerIndex(Response &rep, const Server *server){
 	{
 		index_path = server_path + "/" + server_idx[i];
 		if ((status = file_check(index_path, R_OK)) == 200)
-			goto response;
+			if(status == 200){
+				status = read_file(index_path, rep._body);
+				rep._type = mime_types[get_ext(index_path)];
+				return (status);
+			}
+			if(status == 403)
+				found_forbidden = true;
 	}
-
-	response:
-		if (file_check(index_path, R_OK) == 200)
-		{
-			status = read_file(index_path, rep._body);
-			rep._type = mime_types[get_ext(index_path)];
-			return (status);
-		}
-	return (403);
+	if(found_forbidden) return (403);
+	return (404);
 }
 
 int	norm_handle(std::string	&final_path, Request &req, Response &rep,
@@ -86,16 +86,22 @@ int	norm_handle(std::string	&final_path, Request &req, Response &rep,
 
 
 	if (is_dir(path)) //directory look out for the indexfiles
-	{
+	{	
+		int prev_code;
 		for (int i = 0; i < indexs.size(); ++i)
 		{
 			index_path = path + "/" + indexs[i];
-			int status = 0;
+			std::cout << "index_path " << index_path << std::endl;
+			status = 0;
 			if ((status = file_check(index_path, R_OK)) == 200)
 			{
 				path = index_path;
 				goto response;
 			}
+			else if(prev_code == 404 && status == 404) return (404);
+			else if (status == 404)
+				prev_code = 404;
+			
 		}
 		if(location->autoindex)
 		{
@@ -113,9 +119,17 @@ int	norm_handle(std::string	&final_path, Request &req, Response &rep,
 					rep._status = 200;
 					return (200);
 				}
-				else return (403);
+				else {
+					rep._type = "text/html";
+					std::cout << "feel in that going here " << std::endl;
+					rep._body = status_page(403);
+					return (403);
+				}
 			}
-			else return (403);
+			else {
+				std::cout << "another feeling " << std::endl;
+				return (403);
+			}
 		}
 
 	}
@@ -302,7 +316,7 @@ int	handleFile(const t_location* location, std::string &remain_path, Request &re
 		}
 		else
 		{
-			std::cout << "file does not existed or has been deleted." << std::endl;
+			std::cout << "file does not exist or has been deleted." << std::endl;
 			return (status);
 		}
 			
