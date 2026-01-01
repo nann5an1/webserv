@@ -295,26 +295,40 @@ bool	Connection::request()
 	return (true);
 }
 
-bool	Connection::response()
+bool Connection::response()
 {
-	// _rep._body = status_page(200);
-	// _rep._status = 200;
-	// _rep._type = "text/html";
-	const char* str = _rep.build();
-	size_t size = std::strlen(str);
-	ssize_t n = write(_fd, str, size);
+    const char* headers = _rep.build();
+    size_t headers_size = _rep.headerSize();
 
-	if (n < 0)
-	{
-		if (errno == EAGAIN || errno == EWOULDBLOCK)
-			return (false);   // wait for next epoll notification
-		return (fail("Response", errno), true);
-	}
-	// all bytes sent (or small responses handled in one write)
-	std::cout << "[connection]\tclient received response \t| " << _ip << ":" << _port << " | socket:" << _fd << " | "
-			  << "method: " << _rep._status << std::endl;
-	return (true);
+    ssize_t n = write(_fd, headers, headers_size);
+    if (n < 0)
+    {
+        if (errno == EAGAIN || errno == EWOULDBLOCK)
+            return false;   // wait for next epoll notification
+        return (fail("Response headers", errno), true);
+    }
+
+    // Send body separately
+    size_t body_size = _rep.bodySize();
+    if (body_size > 0)
+    {
+        const char* body_data = _rep.bodyData();
+        ssize_t nb = write(_fd, body_data, body_size);
+        if (nb < 0)
+        {
+            if (errno == EAGAIN || errno == EWOULDBLOCK)
+                return false;
+            return (fail("Response body", errno), true);
+        }
+    }
+
+    std::cout << "[connection]\tclient received response \t| " 
+              << _ip << ":" << _port << " | socket:" << _fd << " | "
+              << "status: " << _rep._status << std::endl;
+
+    return true;
 }
+
 
 /* =================== HANDLE WHICH ROUTE TO HANDLE ================ */
 void	Connection::route()
@@ -369,6 +383,7 @@ void	Connection::route()
 		}
 
 	}
+	std::cout << "Connectin rep check >> " << _rep._status << std::endl;
 	if(_server->locations().empty() && _req.path() == "/")
 	{
 		
@@ -376,7 +391,6 @@ void	Connection::route()
 		_rep._status = handleServerIndex(_rep, _server);
 		if(_rep._status != 200) _rep._body = status_page(404);
 	}
-	std::cout << "Connectin rep check >> " << _rep._status << std::endl;
 	if (_rep._status >= 400)
 	{
 		const std::string* err_page;
@@ -389,7 +403,6 @@ void	Connection::route()
 			err_page = get(_server->err_pages(), _rep._status);
 			if (err_page)
 				err_path = _server->root() + *err_page;
-			std::cout << "error path 1" << err_path << std::endl;
 		}
 		else if (!location->err_pages.empty())
 		{

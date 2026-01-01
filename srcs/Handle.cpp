@@ -98,7 +98,7 @@ int	norm_handle(std::string	&final_path, Request &req, Response &rep,
 				path = index_path;
 				goto response;
 			}
-			else if(prev_code == 404 && status == 404) return (404);
+			else if(prev_code == 404 && status == 404) return (403);
 			else if (status == 404)
 				prev_code = 404;
 			
@@ -131,7 +131,6 @@ int	norm_handle(std::string	&final_path, Request &req, Response &rep,
 				return (403);
 			}
 		}
-
 	}
 	response:
 		status = file_check(path, R_OK);
