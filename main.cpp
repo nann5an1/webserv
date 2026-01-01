@@ -2,7 +2,6 @@
 #include "Server.hpp"
 #include "Request.hpp"
 #include "Utils.hpp"
-#include "Cgi.hpp"
 
 #include <pwd.h>
 
@@ -125,15 +124,12 @@ int main(int ac, char **av)
 		// av[1] = (char *)(std::string(getpwuid(getuid())->pw_name) + ".conf").c_str();
 
 		webserv.fileParser(av[1]);
-		// webserv.printServers();
 
 		// std::cout << "========== " << av[1] << " ==========" << std::endl;
 		
 		// testing_request();
 		if (webserv.start())
 			return (1);
-		
-
 	} catch (std::exception &e)
 	{
 		std::cerr << e.what() << std::endl;

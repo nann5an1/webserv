@@ -182,6 +182,14 @@ int	identify_method(const std::string& method)
 	return (UNKNOWN);
 }
 
+bool	set_nblocking(fd fd_)
+{
+	int flags = fcntl(fd_, F_GETFL, 0);
+    if (flags == -1)
+		return (false);
+    return (fcntl(fd_, F_SETFL, flags | O_NONBLOCK) != -1);
+}
+
 Error::Error() : std::runtime_error(std::string(RED) + "Error: " + RESET) {}
 
 Error::Error(const std::string &msg) : std::runtime_error(std::string(RED) + "Error: " + msg + RESET) {}

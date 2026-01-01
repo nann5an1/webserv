@@ -54,6 +54,7 @@ int		fail(std::string head, int err_no);
 int		read_file(std::string &path, std::string &data);
 int     identify_method(const std::string& method);
 int		identify_method(const char *method);
+bool	set_nblocking(fd fd_);
 
 std::string	get_ext(const std::string& filename);
 

@@ -15,6 +15,7 @@ class	Response
 		Response	&operator=(const Response &other);
 		~Response();
 
+		int	cgi_handle(const std::string &str);
 		const char*	build();
 		operator const char*() const;
 };

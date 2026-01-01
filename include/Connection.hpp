@@ -5,9 +5,11 @@
 #include "Request.hpp"
 #include "Response.hpp"
 #include "Handle.hpp"
-#include "Pollable.hpp"
+#include "IPollable.hpp"
+#include "Cgi.hpp"
 
 class Server;
+class Cgi;
 
 struct	t_reader
 {
@@ -29,16 +31,19 @@ enum	con_state
 	DONE,
 };
 
-class	Connection : public Pollable
+class	Connection : public IPollable
 {
 	private:
+		fd				_fd;
 		const Server	*_server;
 
 		std::string	_ip;
 		int			_port;
 		std::time_t	_time;
+
+		Cgi			*_cgi;
+
 		std::string _loc;
-		
 		con_state	_state;
 		t_reader	_reader;
 		Request		_req;
@@ -64,6 +69,7 @@ class	Connection : public Pollable
 		// std::vector<std::string> get_server_idx() const;
 
 		operator	std::time_t() const;
+		operator	fd() const;
 
 		void		set_req(Request &req);
 		void		set_server(Server *server);

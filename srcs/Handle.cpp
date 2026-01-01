@@ -14,38 +14,38 @@ std::string autoIndexOnListing(std::string& path)
     if (!dir)
         return ("");
 
-    std::string html;
+	std::string html;
 
-    html += "<html><head>Index listing of " + path + "</head>";
-    html += "<body>";
-    html += "<ul>";
+	html += "<html><head>Index listing of " + path + "</head>";
+	html += "<body>";
+	html += "<ul>";
 
-    dirent* entry;
-    while ((entry = readdir(dir)) != NULL)
-    {
-        if (std::strcmp(entry->d_name, ".") == 0 || //skil the . and ..
-            std::strcmp(entry->d_name, "..") == 0)
-            continue;
+	dirent* entry;
+	while ((entry = readdir(dir)) != NULL)
+	{
+		if (std::strcmp(entry->d_name, ".") == 0 || //skil the . and ..
+			std::strcmp(entry->d_name, "..") == 0)
+			continue;
 
-        html += "<li><a href=\"";
-        html += entry->d_name;
+		html += "<li><a href=\"";
+		html += entry->d_name;
 
-        if (entry->d_type == DT_DIR)
-            html += "/";
+		if (entry->d_type == DT_DIR)
+			html += "/";
 
-        html += "\">";
-        html += entry->d_name;
+		html += "\">";
+		html += entry->d_name;
 
-        if (entry->d_type == DT_DIR)
-            html += "/";
+		if (entry->d_type == DT_DIR)
+			html += "/";
 
-        html += "</a></li>";
-    }
+		html += "</a></li>";
+	}
 
-    html += "</ul></body></html>";
+	html += "</ul></body></html>";
 
-    closedir(dir);
-    return html;
+	closedir(dir);
+	return html;
 }
 
 
@@ -97,10 +97,10 @@ int	norm_handle(std::string	&final_path, Request &req, Response &rep,
 				goto response;
 			}
 		}
-		if(location->autoindex){ //autoindex is on
-			std::cout << "location's idnex is off and server's root should be applied " << std::endl;
+		if(location->autoindex)
+		{
 			if(indexs.empty())
-			{ //autoindex is on and index files is empty (list out the files in the directory)
+			{ 
 				rep._body = autoIndexOnListing(path);
 				rep._type = "text/html";
     			return (200);
@@ -177,42 +177,42 @@ int	cgi_handle(std::string &final_path, const t_location *location, Request& req
 			close(in_pipe[1]);
 		return (500);
 	}
-    pid_t pid = fork();
-    if (pid == -1)
+	pid_t pid = fork();
+	if (pid == -1)
 		return (fail("CGI: Fork", errno));
 
-    if (pid == 0)
-    {
-        dup2(in_pipe[0], STDIN_FILENO);
-        dup2(out_pipe[1], STDOUT_FILENO);
+	if (pid == 0)
+	{
+		dup2(in_pipe[0], STDIN_FILENO);
+		dup2(out_pipe[1], STDOUT_FILENO);
 
-        close(in_pipe[1]);
-        close(out_pipe[0]);
+		close(in_pipe[1]);
+		close(out_pipe[0]);
 	
 		char	*argv[] = {const_cast<char *>(exec_path->c_str()), const_cast<char *>(final_path.c_str()), NULL};
 		execve(exec_path->c_str(), argv, const_cast<char* const*>(&env[0]));
-        _exit(1);
-    }
-    else
-    {
-        close(in_pipe[0]);
-        close(out_pipe[1]);
-        if (!req.body().empty())
-            write(in_pipe[1], req.body().c_str(), req.body().size());
-        close(in_pipe[1]); // close writing end to signal EOF
+		_exit(1);
+	}
+	else
+	{
+		close(in_pipe[0]);
+		close(out_pipe[1]);
+		if (!req.body().empty())
+			write(in_pipe[1], req.body().c_str(), req.body().size());
+		close(in_pipe[1]); // close writing end to signal EOF
 
-        // Optionally read CGI output
-        char buffer[4096];
-        ssize_t n;
-        while ((n = read(out_pipe[0], buffer, sizeof(buffer))) > 0) {
-            std::cout.write(buffer, n);
-        }
-        close(out_pipe[0]);
+		// Optionally read CGI output
+		char buffer[4096];
+		ssize_t n;
+		while ((n = read(out_pipe[0], buffer, sizeof(buffer))) > 0) {
+			std::cout.write(buffer, n);
+		}
+		close(out_pipe[0]);
 
-        // Wait for child to finish
-        int status;
-        waitpid(pid, &status, 0);
-    }
+		// Wait for child to finish
+		int status;
+		waitpid(pid, &status, 0);
+	}
 	return (0);
 }
 
@@ -226,9 +226,9 @@ bool fileExists(std::string &path)
 // Add this helper function first
 std::string size_to_string(off_t size)
 {
-    std::ostringstream oss;
-    oss << size;
-    return oss.str();
+	std::ostringstream oss;
+	oss << size;
+	return oss.str();
 }
 
 

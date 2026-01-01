@@ -1,8 +1,9 @@
 #include "Connection.hpp"
 #include "Server.hpp"
+#include "Cgi.hpp"
 
 Connection::Connection() :
-	Pollable(-1),
+	_fd(-1),
 	_ip(""),
 	_port(0),
 	_time(0),
@@ -10,13 +11,14 @@ Connection::Connection() :
 	_req(),
 	_rep(),
 	_server(NULL),
-	_loc("")
+	_loc(""),
+	_cgi(NULL)
 {
 	_reader = t_reader();
 }
 
 Connection::Connection(const Connection &other) :
-	Pollable(other._fd),
+	_fd(-1),
 	_ip(other._ip),
 	_port(other._port),
 	_time(other._time),
@@ -24,7 +26,8 @@ Connection::Connection(const Connection &other) :
 	_req(other._req),
 	_rep(other._rep),
 	_server(other._server),
-	_loc(other._loc)
+	_loc(other._loc),
+	_cgi(other._cgi)
 {
 	_reader = other._reader;
 }
@@ -43,6 +46,7 @@ Connection	&Connection::operator=(const Connection &other)
 		_server = other._server;
 		_reader = other._reader;
 		_loc = other._loc;
+		_cgi = other._cgi;
 	}
 	return (*this);
 }
@@ -51,17 +55,23 @@ Connection::~Connection()
 {
 	if (_fd >= 0)
 		close(_fd);
+	if (_cgi)
+	{
+		delete _cgi;
+		_cgi = NULL;
+	}
 }
 
 Connection::Connection(const Server *server) :
+	_fd(-1),
 	_server(server),
-	Pollable(-1),
-	_state(),
+	_state(CREATED),
 	_reader(t_reader()),
 	_ip(""),
 	_port(0),
 	_time(0),
-	_loc("")
+	_loc(""),
+	_cgi(NULL)
 {
 	fd	server_fd = *_server;
 	sockaddr_in	client_addr;
@@ -126,12 +136,13 @@ void	Connection::handle(uint32_t events)
 		{
 			if (_state == PROCESSING)
 			{
-				if (Epoll::instance().mod_ptr(this, EPOLLOUT |EPOLLET ) < 0)
+				if (Epoll::instance().mod_fd(this, _fd, EPOLLOUT) < 0)
 				{
 					fail("Epoll: Mod", errno);
 					cleanup();
 					return ;
 				}
+				// std::cerr << std::string(40, '=') << "\n" << _reader.header << _reader.body << std::string(40, '=') << std::endl;
 				_req.parseRequest((_reader.header + _reader.body).c_str());
 				_reader.body = "";
 				_reader.header = "";
@@ -150,9 +161,41 @@ void	Connection::handle(uint32_t events)
 	}
 	if (events & EPOLLOUT)
 	{
-		route();
-		if (response())
-			cleanup();	
+		if (_state == PROCESSING)
+		{
+			route();
+			std::cout << "conneciton processing done" << std::endl;
+			_state = READING_RESPONSE;
+		}
+		if (_state == READING_RESPONSE)
+		{
+			if (_cgi)
+			{
+				if (_cgi->done())
+				{
+					std::cout << std::string(40, '=') << "\n" << _cgi->output().size() << std::endl;
+					_rep._status = 200;
+					_rep._type = "text/html";
+					_rep._body = _cgi->output();
+
+					if (_cgi)
+					{
+						delete _cgi;
+						_cgi = NULL;
+					}
+					std::cout << "cgi done" << std::endl;
+					_state = DONE;
+				}
+				return ;
+			}
+			std::cout << "connection read response" << std::endl;
+			_state = DONE;
+		}
+		if (_state == DONE)
+		{
+			response();
+			cleanup();
+		}
 	}
 }
 bool	Connection::read_header()
@@ -286,7 +329,8 @@ void	Connection::route()
 	const t_location*	location = find_location(url, final_path, remain_path);
 	
 	if (location)
-	{	
+	{
+		const std::string *exec_path = NULL;
 		if (!(location->methods & identify_method(_req.method())))
 		{
 			_rep._status = 405;
@@ -297,6 +341,13 @@ void	Connection::route()
 		 
 		if (location->r_status > 0)
 			_req.set_category(REDIRECTION);
+		std::cout << "category : " << _req.category() << std::endl;
+		if (_req.category() == CGI)
+		{
+			exec_path = get(location->cgi, "." + get_ext(final_path));
+			if (!exec_path)
+				_req.set_category(NORMAL);
+		}
 		if(_req.method() == "DELETE" && _req.category() != CGI)
 			_req.set_category(FILEHANDLE);
 		switch (_req.category())
@@ -305,11 +356,9 @@ void	Connection::route()
 				_rep._status = norm_handle(final_path, _req, _rep, location, _loc, _server);
 				break;
 			case CGI:
-				_rep._status = cgi_handle(final_path, location, _req, _rep);
-
-				std::cout << "cgi request come in " << std::endl;
-				// std::cout << "\n" << _req.cgi_env() <<  std::endl;
-				_rep._status = 200;
+				std::cout << "cgi" << std::endl;
+				_cgi = new Cgi();
+				_cgi->execute(final_path, exec_path, _req);
 				break;
 			case REDIRECTION:
 				redirect_handle(location->r_status, location->r_url, _rep);
@@ -363,7 +412,7 @@ void	Connection::route()
 
 void	Connection::cleanup()
 {
-	Epoll::instance().del_ptr(this);
+	Epoll::instance().del_fd(_fd);
 	std::cout << "[connection]\tclient disconnected\t\t| socket:" << _fd << std::endl;
 	if (_fd >= 0)
 	{
@@ -382,6 +431,11 @@ std::time_t	Connection::con_time() const
 Connection::operator std::time_t() const
 {
 	return (_time);
+}
+
+Connection::operator	fd() const
+{
+	return (_fd);
 }
 
 void	Connection::set_req(Request &req)

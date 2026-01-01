@@ -7,12 +7,12 @@
 #include <sys/epoll.h>
 #include "Utils.hpp"
 
-struct Pollable; // forward
+struct IPollable; // forward
 
 struct Epoll
 {
 	private:
-		fd	_fd;
+		int	_fd;
 		Epoll();
 		~Epoll();
 	public:
@@ -22,9 +22,9 @@ struct Epoll
 
 		operator	fd() const;
 
-		int add_ptr(Pollable* p, uint32_t events);
-		int mod_ptr(Pollable* p, uint32_t events);
-		int del_ptr(Pollable* p);
+		int add_fd(IPollable* poll_obj, fd fd_, uint32_t events);
+		int mod_fd(IPollable* poll_obj, fd fd_, uint32_t events);
+		int del_fd(fd fd_);
 
 		int wait(struct epoll_event *events, int maxevents, int timeout);
 };

@@ -43,7 +43,7 @@ bool	Webserv::server_add()
 			fail_count++;
 			continue;
 		}
-		if (Epoll::instance().add_ptr(&server, EPOLLIN) < 0)
+		if (Epoll::instance().add_fd(&server, s_fd, EPOLLIN | EPOLLET) < 0)
 			return (fail("Epoll: Server", errno));
 	}
 	return (fail_count == _servers.size());
@@ -55,10 +55,8 @@ void	Webserv::fileParser(char *av)
 	std::string		config_file, line;
 	
 	config_file = av ? av : "eval.conf";
-	if(config_file == "def.conf")
-		std::cout << "<< USING DEFAULT CONFIG >> " << config_file << std::endl;
-	else
-		std::cout << "<< USING CONFIG >> " << config_file << std::endl;
+
+	std::cout << "========== " << config_file << " ==========" << std::endl;
 
 	std::ifstream	file(config_file.c_str());
 		
@@ -204,7 +202,7 @@ int	Webserv::start()
 		}
 		for (int i = 0; i < hits; ++i)
 		{
-			Pollable	*poll_obj = static_cast<Pollable*>(events[i].data.ptr);
+			IPollable	*poll_obj = static_cast<IPollable*>(events[i].data.ptr);
 			if (poll_obj)
 			{
 				poll_obj->handle(events[i].events);
