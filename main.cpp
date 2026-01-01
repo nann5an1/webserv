@@ -121,11 +121,11 @@ int main(int ac, char **av)
 	{
 		Webserv webserv;
 
-		// argv[1] = (char *)(std::string(getpwuid(getuid())->pw_name) + ".conf").c_str();
+		// av[1] = (char *)(std::string(getpwuid(getuid())->pw_name) + ".conf").c_str();
 
 		webserv.fileParser(av[1]);
 
-		// std::cout << "========== " << argv[1] << " ==========" << std::endl;
+		// std::cout << "========== " << av[1] << " ==========" << std::endl;
 		
 		// testing_request();
 		if (webserv.start())

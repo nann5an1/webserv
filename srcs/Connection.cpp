@@ -11,6 +11,7 @@ Connection::Connection() :
 	_req(),
 	_rep(),
 	_server(NULL),
+	_loc(""),
 	_cgi(NULL)
 {
 	_reader = t_reader();
@@ -25,6 +26,7 @@ Connection::Connection(const Connection &other) :
 	_req(other._req),
 	_rep(other._rep),
 	_server(other._server),
+	_loc(other._loc),
 	_cgi(other._cgi)
 {
 	_reader = other._reader;
@@ -43,6 +45,7 @@ Connection	&Connection::operator=(const Connection &other)
 		_rep = other._rep;
 		_server = other._server;
 		_reader = other._reader;
+		_loc = other._loc;
 		_cgi = other._cgi;
 	}
 	return (*this);
@@ -67,6 +70,7 @@ Connection::Connection(const Server *server) :
 	_ip(""),
 	_port(0),
 	_time(0),
+	_loc(""),
 	_cgi(NULL)
 {
 	fd	server_fd = *_server;
@@ -96,21 +100,21 @@ Connection::Connection(const Server *server) :
 /* ====================== return the whole location block from the config ======================*/
 const t_location*	Connection::find_location(std::string &req_url, std::string &final_path, std::string &remain)
 {
-	std::string			loc = "";
+	// std::string			loc = "";
 	const t_location*	location = NULL;
 
 	for (int i = req_url.size(); i >= 0; --i)
 	{
 		if (req_url[i] == '/' || i == req_url.size())
 		{
-			loc = req_url.substr(0, i);
-			location = get(_server->locations(), !i ? "/" : loc);
+			_loc = req_url.substr(0, i);
+			location = get(_server->locations(), !i ? "/" : _loc);
 			
 			if (location)
 			{
 				std::string	root = location->root.empty() ? _server->root() : location->root;
 				remain = req_url.substr(i);
-				final_path = root + (loc == "/" ? "" : loc) + remain;	
+				final_path = root + (_loc == "/" ? "" : _loc) + remain;
 				return (location);
 			}
 		}
@@ -349,7 +353,7 @@ void	Connection::route()
 		switch (_req.category())
 		{
 			case NORMAL:
-				_rep._status = norm_handle(final_path, _req, _rep, location);
+				_rep._status = norm_handle(final_path, _req, _rep, location, _loc, _server);
 				break;
 			case CGI:
 				std::cout << "cgi" << std::endl;
@@ -364,17 +368,46 @@ void	Connection::route()
 				std::cout << "filehandle: " << _rep._status << std::endl;
 				break;
 		}
+
 	}
-	else if(location == NULL){
+	else if(_server->locations().empty() && _req.path() == "/")
+	{
+		
 		_rep._type = "text/html";
 		_rep._status = handleServerIndex(_rep, _server);
+		if(_rep._status != 200) _rep._body = status_page(404);
 	}
-	else
+	if (_rep._status >= 400)
 	{
+		const std::string* err_page;
+		std::string err_path;
+
 		_rep._type = "text/html";
-		_rep._status = 404;
-		_rep._body = status_page(404);
+
+		if (!_server->err_pages().empty())
+		{
+			err_page = get(_server->err_pages(), _rep._status);
+			if (err_page)
+				err_path = _server->root() + *err_page;
+		}
+		if (!location->err_pages.empty())
+		{
+			err_page = get(location->err_pages, _rep._status);
+			if (err_page)
+				err_path = location->root + *err_page;
+		}
+		if (!err_path.empty())
+		{
+			int status = read_file(err_path, _rep._body);
+			if (status != 200)
+				_rep._status = status;
+			else
+				return ;
+		}
+		_rep._body = status_page(_rep._status);
+		// std::cout << _server->err_pages().count() << std::endl;
 	}
+
 }
 
 void	Connection::cleanup()

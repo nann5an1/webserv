@@ -120,7 +120,7 @@ void Webserv::fileParser(char *av)
 	std::string	config_file;
 
 	if(av) config_file = av;
-	else config_file = "def.conf";
+	else config_file = "eval.conf";
 
 	// std::cout << "config file >> "<< config_file << std::endl;
 	std::ifstream	file(config_file.c_str());
