@@ -169,6 +169,7 @@ void	Connection::handle(uint32_t events)
 			{
 				if (_cgi->done())
 				{
+					std::cout << std::string(40, '=') << "\n" << _cgi->output().size() << std::endl;
 					_rep._status = 200;
 					_rep._type = "text/html";
 					_rep._body = _cgi->output();
