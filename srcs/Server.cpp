@@ -333,7 +333,19 @@ int	Server::start()
 		return (status);
 	}
 	std::cout << "[server]\t" << std::string(*this) << "\t| socket:" << _fd << " started - http://" << _ip << ":" << _port << std::endl;
+	_time = time(NULL);
 	return (0);
+}
+
+bool	Server::is_timeout() const
+{
+	return (false);
+}
+
+void	Server::timeout()
+{
+	Epoll::instance().del_fd(_fd);
+	delete this;
 }
 
 Server::operator	fd() const

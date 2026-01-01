@@ -32,8 +32,10 @@ int	Epoll::add_fd(IPollable* poll_obj, fd fd_, uint32_t events)
 	std::memset(&ev, 0, sizeof(ev));
 	ev.events = events;
 	ev.data.ptr = poll_obj;
-	
-	return (epoll_ctl(_fd, EPOLL_CTL_ADD, fd_, &ev));
+	int status = epoll_ctl(_fd, EPOLL_CTL_ADD, fd_, &ev);
+	if (status != -1)
+		_objs[fd_] = poll_obj;
+	return (status);
 }
 
 int Epoll::mod_fd(IPollable* poll_obj, fd fd_, uint32_t events)
@@ -52,7 +54,10 @@ int Epoll::del_fd(fd fd_)
 {
 	if (_fd < 0 || fd_ < 0)
 		return (-1);
-	return (epoll_ctl(_fd, EPOLL_CTL_DEL, fd_, NULL));
+	int status = epoll_ctl(_fd, EPOLL_CTL_DEL, fd_, NULL);
+	if (status != -1)
+		_objs.erase(fd_);
+	return (status);
 }
 
 int Epoll::wait(struct epoll_event *events, int maxevents, int timeout)
@@ -65,4 +70,22 @@ int Epoll::wait(struct epoll_event *events, int maxevents, int timeout)
 Epoll::operator	fd() const
 {
 	return (_fd);
+}
+
+void Epoll::objs_timeout()
+{
+	std::set<IPollable*>	timed_out;
+
+    for (std::map<fd, IPollable*>::iterator it = _objs.begin(); it != _objs.end(); ++it)
+    {
+        IPollable* obj = it->second;
+        if (obj && obj->is_timeout())
+            timed_out.insert(obj);
+    }
+    for (std::set<IPollable*>::iterator it = timed_out.begin(); it != timed_out.end(); ++it)
+    {
+        IPollable* obj = *it;
+        if (obj)
+            obj->timeout();
+    }
 }

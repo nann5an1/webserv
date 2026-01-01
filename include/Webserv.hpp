@@ -16,7 +16,6 @@
 #include "Epoll.hpp"
 
 #define	MAX_EVENTS	1024
-#define WAIT_TIME	5 // wait time in sec
 
 class	Webserv
 {

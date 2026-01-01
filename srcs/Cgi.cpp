@@ -36,6 +36,7 @@ int	Cgi::execute(std::string& final_path, const std::string* exec_path, Request 
 {
 	int	in_pipe[2], out_pipe[2];
 
+	_time = time(NULL);
 	_body = req.body();
 	_written = 0;
 	_output.clear();
@@ -184,7 +185,7 @@ void	Cgi::handle(uint32_t events)
 	}
 	if ((events & (EPOLLIN | EPOLLHUP)) && _out_fd != -1)
 	{
-		std::cout << "cgi epollin : state " << _state << std::endl;
+		// std::cout << "cgi epollin : state " << _state << std::endl;
 
 		char 	buffer[4096];
 		ssize_t	total = 0;
@@ -253,12 +254,36 @@ void	Cgi::handle(uint32_t events)
 	// }
 }
 
-bool	Cgi::done()
-{
-	return (_state == CGI_DONE);
-}
-
 std::string	Cgi::output()
 {
 	return (_output);
+}
+
+std::time_t	Cgi::get_time() const
+{
+	std::time_t	now = time(0);
+	return (now - _time);
+}
+
+bool	Cgi::is_timeout() const
+{
+	return (get_time() >= CGI_TIMEOUT);
+}
+
+void	Cgi::timeout()
+{
+	if (_pid > 0)
+	{
+		::kill(_pid, SIGKILL);
+		::waitpid(_pid, NULL, 0);
+		_pid = -1;
+	}
+	close_fd(_in_fd);
+	close_fd(_out_fd);
+	_state = CGI_KILL;
+}
+
+cgi_state	Cgi::state() const
+{
+	return (_state);
 }

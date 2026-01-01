@@ -209,7 +209,7 @@ int	Webserv::start()
 				continue;
 			}
 		}
-		// timeout();
+		Epoll::instance().objs_timeout();
 	}
 	return (0);
 }

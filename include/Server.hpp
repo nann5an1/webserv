@@ -3,6 +3,7 @@
 
 #include <fstream>
 #include <cstdlib>
+#include <ctime>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/epoll.h>
@@ -42,10 +43,11 @@ class	Server : public IPollable
 		long long	_max_size;
 		int			_r_status;
 		std::string	_r_url;
+		std::time_t	_time;
 		std::vector<std::string> _server_idx;
 		std::map<int, std::string>			_err_pages;
 		std::map<std::string, t_location>	_locations;
-
+	
 		int	parse_return(std::stringstream&, int&, std::string&);
 		int	parse_err_pages(std::stringstream&, std::map<int,std::string>& err_pg_container);
 		void	handle(uint32_t events);
@@ -66,6 +68,8 @@ class	Server : public IPollable
 
 		void	print() const;
 		int		start();
+		bool	is_timeout() const;
+		void	timeout();
 
 		operator fd() const;
 		operator int() const;

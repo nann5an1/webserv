@@ -171,7 +171,16 @@ void	Connection::handle(uint32_t events)
 		{
 			if (_cgi)
 			{
-				if (_cgi->done())
+				if (_cgi->state() == CGI_KILL)
+				{
+					_rep._status = 504;
+					std::cout << YELLOW << "[connection]\tcgi timeout\t\t\t| socket:" << _fd << "(client)" << RESET << std::endl;
+					_rep._body = status_page(504);
+					_rep._type = "text/html";
+					delete	_cgi;
+					_cgi = NULL;
+				}
+				else if (_cgi->state() == CGI_DONE)
 				{
 					std::cout << std::string(40, '=') << "\n" << _cgi->output().size() << std::endl;
 					_rep._status = 200;
@@ -358,7 +367,7 @@ void	Connection::route()
 			case CGI:
 				std::cout << "cgi" << std::endl;
 				_cgi = new Cgi();
-				_cgi->execute(final_path, exec_path, _req);
+				_rep._status = _cgi->execute(final_path, exec_path, _req);
 				break;
 			case REDIRECTION:
 				redirect_handle(location->r_status, location->r_url, _rep);
@@ -422,7 +431,26 @@ void	Connection::cleanup()
 	delete	this;
 }
 
-std::time_t	Connection::con_time() const
+bool	Connection::is_timeout() const
+{
+	return (get_time() >= CON_TIMEOUT);
+}
+
+void	Connection::timeout()
+{
+	std::cout << YELLOW << "[connection]\tclient timeout\t\t\t| socket:" << _fd << RESET << std::endl;
+	if (_cgi)
+		_cgi->timeout();
+	std::cout << "b4 cleanup" << std::endl;
+	_rep._status = 408;
+	_rep._body = status_page(408);
+	_rep._type = "text/html";
+	response();
+	cleanup();
+
+}
+
+std::time_t	Connection::get_time() const
 {
 	std::time_t	now = time(0);
 	return (now - _time);
@@ -447,5 +475,7 @@ void	Connection::set_server(Server *server)
 {
 	_server = server;
 }
+
+
 
 
