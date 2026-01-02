@@ -15,7 +15,7 @@ enum	cgi_state
 };
 
 #define	CGI_CAP	64 * 1024
-#define	CGI_TIMEOUT 5
+#define	CGI_TIMEOUT 10
 
 
 class	Cgi : public IPollable

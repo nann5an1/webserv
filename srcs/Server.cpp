@@ -120,7 +120,7 @@ int	Server::parse_err_pages(std::stringstream &ss, std::map<int,std::string> &er
 	for (int i = 0; i < temp.size() - 1; ++i)
 	{
 		int	key = std::atoi(temp[i].c_str());
-		if (!validateHTTPCode(key))
+		if (!validateHTTPCode(key) && key >= 400 && key <= 599)
 			return (0);
 		err_pg_container[key] = err_path;
 		std::cout << "key >> " << key << std::endl;
@@ -254,8 +254,8 @@ int Server::inputLocation(std::string line, t_location &location)
 		ss >> val;
 		location.rproxy = trimSemiColon(val);
 	}
-	else if(token == "error_page")
-		parse_err_pages(ss, location.err_pages);
+	else if(token == "error_page" && !parse_err_pages(ss, location.err_pages))
+		return (0);
 	return (1);
 }
 
