@@ -8,13 +8,20 @@ std::string	status_page(int status)
 }
 
 /* ================ READ THE ENTIRE DIRECTORY AND LIST DOWN ================*/
-std::string autoIndexOnListing(std::string& path)
-{
+std::string autoIndexOnListing(const Server *server, const t_location* location,
+	std::string& path)
+{	
+	size_t remain_len;
+	std::string html, ret_str;
     DIR* dir = opendir(path.c_str());
     if (!dir)
         return ("");
-
-	std::string html;
+	
+	if(!location->root.empty())
+		remain_len = path.length() - location->root.length();
+	else
+		remain_len = path.length() - server->root().length();
+	ret_str = path.substr(path.length() - remain_len, remain_len);
 
 	html += "<html><head>Index listing of " + path + "</head>";
 	html += "<body>";
@@ -28,7 +35,7 @@ std::string autoIndexOnListing(std::string& path)
 			continue;
 
 		html += "<li><a href=\"";
-		html += entry->d_name;
+		html +=  ret_str + "/" + entry->d_name;
 
 		if (entry->d_type == DT_DIR)
 			html += "/";
@@ -84,30 +91,48 @@ int	norm_handle(std::string	&final_path, Request &req, Response &rep,
 	const std::vector<std::string>	&indexs = location->index_files;
 	std::string	path = final_path, index_path;
 
-
+	std::cout << "PATH for index search >> " << path << std::endl;
 	if (is_dir(path)) //directory look out for the indexfiles
 	{	
 		int prev_code;
-		for (int i = 0; i < indexs.size(); ++i)
-		{
-			index_path = path + "/" + indexs[i];
-			std::cout << "index_path " << index_path << std::endl;
-			status = 0;
-			if ((status = file_check(index_path, R_OK)) == 200)
+		if(!location->index_files.empty()){
+			for (int i = 0; i < indexs.size(); ++i)
 			{
-				path = index_path;
-				goto response;
+				index_path = path + "/" + indexs[i];
+				std::cout << "index_path " << index_path << std::endl;
+				status = 0;
+				if ((status = file_check(index_path, R_OK)) == 200)
+				{
+					path = index_path;
+					goto response;
+				}
+				else if(prev_code == 404 && status == 404) return (403);
+				else if (status == 404)
+					prev_code = 404;
+				
 			}
-			else if(prev_code == 404 && status == 404) return (404);
-			else if (status == 404)
-				prev_code = 404;
+		}
+		else{ //if location index files are not defined by directive, search for index.html file in the directory
+			DIR* dir = opendir(path.c_str());
+			dirent* entry;
+
+			while((entry = readdir(dir)) != NULL){
+				if(std::string(entry->d_name) == "index.html") {
+					// std::cout << "hihi" << std::endl;
+					path += "/index.html";
+					rep._type = "text/html";
+					return (read_file(path, rep._body));
+				}
+			}
+			
 			
 		}
+		
 		if(location->autoindex)
 		{
 			if(indexs.empty())
 			{ 
-				rep._body = autoIndexOnListing(path);
+				rep._body = autoIndexOnListing(server, location, path);
 				rep._type = "text/html";
     			return (200);
 			}
@@ -131,7 +156,6 @@ int	norm_handle(std::string	&final_path, Request &req, Response &rep,
 				return (403);
 			}
 		}
-
 	}
 	response:
 		status = file_check(path, R_OK);

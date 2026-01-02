@@ -8,6 +8,7 @@
 #include <sys/stat.h>
 #include <cstring>
 #include <sstream>
+#include <string>
 
 #include "Response.hpp"
 #include "Server.hpp"

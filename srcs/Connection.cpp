@@ -117,6 +117,7 @@ const t_location*	Connection::find_location(std::string &req_url, std::string &f
 			{
 				std::string	root = location->root.empty() ? _server->root() : location->root;
 				remain = req_url.substr(i);
+				// std::cout << "_loc >> " << _loc << std::endl;
 				final_path = root + (_loc == "/" ? "" : _loc) + remain;
 				return (location);
 			}
@@ -307,24 +308,40 @@ bool	Connection::request()
 	return (true);
 }
 
-bool	Connection::response()
+bool Connection::response()
 {
-	const char* str = _rep.build();
-	size_t size = _rep._reply.size();
-	ssize_t n = write(_fd, str, size);
+    const char* headers = _rep.build();
+    size_t headers_size = _rep.headerSize();
 
-	if (n < 0)
-	{
-		if (errno == EAGAIN || errno == EWOULDBLOCK)
-			return (false);   // wait for next epoll notification
-		return (fail("Response", errno), true);
-	}
-	// all bytes sent (or small responses handled in one write)
-	std::cout << "_body" << _rep._body << std::endl;
-	std::cout << "[connection]\tclient received response \t| " << _ip << ":" << _port << " | socket:" << _fd << " | "
-			  << "method: " << _rep._status << std::endl;
-	return (true);
+    ssize_t n = write(_fd, headers, headers_size);
+    if (n < 0)
+    {
+        if (errno == EAGAIN || errno == EWOULDBLOCK)
+            return false;   // wait for next epoll notification
+        return (fail("Response headers", errno), true);
+    }
+
+    // Send body separately
+    size_t body_size = _rep.bodySize();
+    if (body_size > 0)
+    {
+        const char* body_data = _rep.bodyData();
+        ssize_t nb = write(_fd, body_data, body_size);
+        if (nb < 0)
+        {
+            if (errno == EAGAIN || errno == EWOULDBLOCK)
+                return false;
+            return (fail("Response body", errno), true);
+        }
+    }
+
+    std::cout << "[connection]\tclient received response \t| " 
+              << _ip << ":" << _port << " | socket:" << _fd << " | "
+              << "status: " << _rep._status << std::endl;
+
+    return true;
 }
+
 
 /* =================== HANDLE WHICH ROUTE TO HANDLE ================ */
 void	Connection::route()
