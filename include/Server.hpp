@@ -70,6 +70,7 @@ class	Server : public IPollable
 		int		start();
 		bool	is_timeout() const;
 		void	timeout();
+		void	cleanup();
 
 		operator fd() const;
 		operator int() const;

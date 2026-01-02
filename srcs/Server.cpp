@@ -47,7 +47,16 @@ Server& Server:: operator=(const Server &other)
     return (*this);
 }
 
-Server::~Server() {}
+Server::~Server()
+{
+	if (_fd != -1)
+	{
+		std::cout << "got called here" << std::endl;
+		Epoll::instance().del_fd(_fd);
+		close(_fd);
+		_fd = -1;
+	}
+}
 
 Server::Server(std::ifstream &file) :
 	_fd(-1),
@@ -346,11 +355,9 @@ bool	Server::is_timeout() const
 	return (false);
 }
 
-void	Server::timeout()
-{
-	Epoll::instance().del_fd(_fd);
-	delete this;
-}
+void	Server::timeout() {}
+
+void	Server::cleanup() {}
 
 Server::operator	fd() const
 {

@@ -54,16 +54,7 @@ Connection	&Connection::operator=(const Connection &other)
 	return (*this);
 }
 
-Connection::~Connection()
-{
-	if (_fd >= 0)
-		close(_fd);
-	if (_cgi)
-	{
-		delete _cgi;
-		_cgi = NULL;
-	}
-}
+Connection::~Connection() {}
 
 Connection::Connection(const Server *server) :
 	_fd(-1),
@@ -363,7 +354,14 @@ void	Connection::route()
 	if (_location)
 	{
 		const std::string *exec_path = NULL;
-		if (!(_location->methods & identify_method(_req.method())))
+		int	req_method = identify_method(_req.method());
+		if (req_method == 0)
+		{
+			_rep._status = 501;
+			fail("method not implemented", -1);
+			return ;
+		}
+		if (!(_location->methods & req_method))
 		{
 			_rep._status = 405;
 			fail("method not allowed", -1);
@@ -452,8 +450,15 @@ void	Connection::handle_error()
 
 void	Connection::cleanup()
 {
-	Epoll::instance().del_fd(_fd);
+	if (_cgi)
+	{
+		_cgi->timeout();
+		delete _cgi;
+		_cgi = NULL;
+	}
 	std::cout << "[connection]\tclient disconnected\t\t| socket:" << _fd << std::endl;
+
+	Epoll::instance().del_fd(_fd);
 	if (_fd >= 0)
 	{
 		close(_fd);
@@ -470,9 +475,6 @@ bool	Connection::is_timeout() const
 void	Connection::timeout()
 {
 	std::cout << YELLOW << "[connection]\tclient timeout\t\t\t| socket:" << _fd << RESET << std::endl;
-	if (_cgi)
-		_cgi->timeout();
-	std::cout << "b4 cleanup" << std::endl;
 	_rep._status = 408;
 	_rep._body = status_page(408);
 	_rep._type = "text/html";

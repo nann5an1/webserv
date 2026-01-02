@@ -124,7 +124,7 @@ int main(int ac, char **av)
 		// av[1] = (char *)(std::string(getpwuid(getuid())->pw_name) + ".conf").c_str();
 
 		webserv.fileParser(av[1]);
-        // webserv.printServers();
+        webserv.printServers();
 		// std::cout << "========== " << av[1] << " ==========" << std::endl;
 		
 		// testing_request();

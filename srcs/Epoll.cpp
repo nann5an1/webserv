@@ -6,6 +6,21 @@ Epoll::Epoll() : _fd(-1) {}
 
 Epoll::~Epoll()
 {
+	std::set<IPollable*>	destory;
+
+	std::cout << "got called" << std::endl;
+	for (std::map<fd, IPollable*>::iterator it = _objs.begin(); it != _objs.end(); ++it)
+	{
+		IPollable* obj = it->second;
+		if (obj)
+			destory.insert(obj);
+	}
+	for (std::set<IPollable*>::iterator it = destory.begin(); it != destory.end(); ++it)
+	{
+		IPollable* obj = *it;
+		if (obj)
+			obj->cleanup();
+	}
 	if (_fd >= 0)
 		close(_fd);
 }
@@ -76,16 +91,16 @@ void Epoll::objs_timeout()
 {
 	std::set<IPollable*>	timed_out;
 
-    for (std::map<fd, IPollable*>::iterator it = _objs.begin(); it != _objs.end(); ++it)
-    {
-        IPollable* obj = it->second;
-        if (obj && obj->is_timeout())
-            timed_out.insert(obj);
-    }
-    for (std::set<IPollable*>::iterator it = timed_out.begin(); it != timed_out.end(); ++it)
-    {
-        IPollable* obj = *it;
-        if (obj)
-            obj->timeout();
-    }
+	for (std::map<fd, IPollable*>::iterator it = _objs.begin(); it != _objs.end(); ++it)
+	{
+		IPollable* obj = it->second;
+		if (obj && obj->is_timeout())
+			timed_out.insert(obj);
+	}
+	for (std::set<IPollable*>::iterator it = timed_out.begin(); it != timed_out.end(); ++it)
+	{
+		IPollable* obj = *it;
+		if (obj)
+			obj->timeout();
+	}
 }

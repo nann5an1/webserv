@@ -50,6 +50,7 @@ class	Cgi : public IPollable
 
 		bool	is_timeout() const;
 		void	timeout();
+		void	cleanup();
 
 		cgi_state	state() const;
 };

@@ -55,7 +55,8 @@ std::string autoIndexOnListing(const Server *server, const t_location* location,
 	return html;
 }
 
-int handleServerIndex(Response &rep, const Server *server){
+int handleServerIndex(Response &rep, const Server *server)
+{
 	std::vector<std::string> server_idx = server->server_idx();
 	std::string server_path = server->root(), index_path;
 	int status;
@@ -78,6 +79,7 @@ int handleServerIndex(Response &rep, const Server *server){
 			return (status);
 		}
 	}
+	closedir(dir);
 	return (403);
 }
 
@@ -119,6 +121,8 @@ int	norm_handle(std::string	&final_path, Request &req, Response &rep,
 					return (read_file(path, rep._body));
 				}
 			}
+			if (dir)
+				closedir(dir);
 		}
 		
 		if(location->autoindex)
@@ -316,6 +320,7 @@ int	handleFile(const t_location* location, std::string &remain_path, Request &re
 				}
 			req.upload_files().clear();
 			ofs.close();
+			return (200);
 		}
 		
 	}

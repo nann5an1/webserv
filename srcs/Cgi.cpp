@@ -270,7 +270,7 @@ bool	Cgi::is_timeout() const
 	return (get_time() >= CGI_TIMEOUT);
 }
 
-void	Cgi::timeout()
+void	Cgi::cleanup()
 {
 	if (_pid > 0)
 	{
@@ -278,11 +278,15 @@ void	Cgi::timeout()
 		::waitpid(_pid, NULL, 0);
 		_pid = -1;
 	}
-	std::cout << "oh no " << std::endl;
 	close_fd(_in_fd);
 	close_fd(_out_fd);
 	// std::cout << YELLOW << "[connection]\tcgi timeout\t\t\t| socket:" << _fd << "(client)" << RESET << std::endl;
 	_state = CGI_KILL;
+}
+
+void	Cgi::timeout()
+{
+	cleanup();
 }
 
 cgi_state	Cgi::state() const
