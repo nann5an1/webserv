@@ -76,7 +76,7 @@ Server::Server(std::ifstream &file) :
 		{
 			location_scope = true;
 			location = t_location();
-			location.methods = GET;
+			location.methods = 0;
 			ss >> location_path;
 			continue;
 		}
@@ -210,12 +210,16 @@ int Server::inputLocation(std::string line, t_location &location)
 	}
 	else if(token == "methods")
 	{
-		if(line.find(";") != std::string::npos){
+		if(line.find(";") != std::string::npos)
+		{
 			while(ss >> val)
 			{
-				if (val.find(";") != std::string::npos) val = trimSemiColon(val);
+				if (val.find(";") != std::string::npos)
+					val = trimSemiColon(val);
 				location.methods |= identify_method(val);
 			}
+			if (location.methods == 0)
+				location.methods |= GET;
 		}
 		else {
 			throw Error("Server: Config failed at " + line);}
