@@ -102,7 +102,7 @@ int read_file(std::string &path, std::string &data)
 	int	fd = open(path.c_str(), O_RDONLY);
 	if (fd < 0)
 	{
-		
+
 		fail("File: " + path, errno);
 		if (errno == ENOENT)
 			return (404);
@@ -113,22 +113,28 @@ int read_file(std::string &path, std::string &data)
 	}
 	
 	char	buffer[4096];
-	size_t n;
-	while ((n = read(fd, buffer, sizeof(buffer))) > 0)
-		data.append(buffer, n);
-	if (n < 0)
-	{
-		data.clear();
-		fail("File: " + path, errno);
-
-		if(errno == EACCES){
-			std::cout << "ERROR 403 RETURNED" << std::endl;
-			return (403);
-		}
-		return (500);
-	}
-	close(fd);
-	return (200);
+    ssize_t n;
+    while (true)
+    {
+        n = read(fd, buffer, sizeof(buffer));
+        if (n > 0)
+            data.append(buffer, static_cast<size_t>(n));
+        else if (n == 0)
+            break; // EOF
+        else /* n < 0 */
+        {
+            if (errno == EINTR)
+                continue; // retry on interrupt
+            data.clear();
+            fail("File: " + path, errno);
+            close(fd);
+            if (errno == EACCES)
+                return (403);
+            return (500);
+        }
+    }
+    close(fd);
+    return (200);
 }
 
 std::vector<std::string>	split(std::string str, const char delimiter)

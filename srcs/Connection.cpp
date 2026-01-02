@@ -100,7 +100,6 @@ Connection::Connection(const Server *server) :
 /* ====================== return the whole location block from the config ======================*/
 const t_location*	Connection::find_location(std::string &req_url, std::string &final_path, std::string &remain)
 {
-	// std::string			loc = "";
 	const t_location*	location = NULL;
 
 	for (int i = req_url.size(); i >= 0; --i)
@@ -114,6 +113,7 @@ const t_location*	Connection::find_location(std::string &req_url, std::string &f
 			{
 				std::string	root = location->root.empty() ? _server->root() : location->root;
 				remain = req_url.substr(i);
+				// std::cout << "_loc >> " << _loc << std::endl;
 				final_path = root + (_loc == "/" ? "" : _loc) + remain;
 				return (location);
 			}
