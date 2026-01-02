@@ -159,7 +159,7 @@ int read_file(std::string &path, std::string &data)
 			return (404);
 		if (errno == EACCES)
 			return (403);
-			
+		
 		return (500); //internal server error
 	}
 	
@@ -215,15 +215,9 @@ int	file_check(std::string path, int mod)
 	struct stat st;
 	const char *loc = path.c_str();
 	if (stat(loc, &st) < 0)
-	{
-		std::cout << "hi hi 404" << std::endl;
 		return (404);
-	}
 	if (access(loc, mod) != 0)
-	{
-		std::cout << "hi hi 403" << std::endl;
 		return (403);
-	}
 	return (200);
 }
 

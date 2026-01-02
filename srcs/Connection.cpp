@@ -159,6 +159,8 @@ void	Connection::handle(uint32_t events)
 		}
 		else
 		{
+			handle_error();
+			response();
 			cleanup();
 			return ;
 		}
@@ -168,7 +170,6 @@ void	Connection::handle(uint32_t events)
 		if (_state == PROCESSING)
 		{
 			route();
-			std::cout << "conneciton processing done" << std::endl;
 			_state = READING_RESPONSE;
 		}
 		if (_state == READING_RESPONSE)
@@ -185,21 +186,18 @@ void	Connection::handle(uint32_t events)
 				}
 				else if (_cgi->state() == CGI_DONE)
 				{
-
 					/// shit need to fix
-					std::cout << std::string(40, '=') << "\n" << _cgi->output().size() << std::endl;
+					// std::cout << std::string(40, '=') << "\n" << _cgi->output().size() << std::endl;
 					_rep.cgi_handle(_cgi->output());
 					if (_cgi)
 					{
 						delete _cgi;
 						_cgi = NULL;
 					}
-					std::cout << "cgi done" << std::endl;
 					_state = DONE;
 				}
 				return ;
 			}
-			std::cout << "connection read response" << std::endl;
 			_state = DONE;
 		}
 		if (_state == DONE)
@@ -282,6 +280,8 @@ bool	Connection::request()
 			if (bytes > 0)
 			{
 				_reader.body.append(buffer, bytes);
+				if (_reader.body.size() > _server->max_size())
+					return (_rep._status = 413, false);
 				_time = time(NULL);
 				if ((_reader.is_chunked && _reader.body.find(CRLF + "0" + CRLF) != std::string::npos) ||
 				_reader.content_len > 0 && _reader.body.size() >= _reader.content_len)
@@ -289,13 +289,13 @@ bool	Connection::request()
 				return (true);
 			}
 			else if (bytes == 0)
-				return (false);
+				return (_rep._status = 500, false);
 			else
 			{
 				if (errno == EAGAIN || errno == EWOULDBLOCK)
 					break ;
 				fail("Request: Read: Body", errno);
-				return (false);
+				return (_rep._status = 500, false);
 			}
 			if ((_reader.is_chunked && _reader.body.find(CRLF + "0" + CRLF) != std::string::npos) ||
 				_reader.content_len > 0 && _reader.body.size() >= _reader.content_len)
@@ -347,12 +347,12 @@ bool Connection::response()
 void	Connection::route()
 {
 	std::string	url = _req.path(), final_path = "", remain_path = "";
+	
 	if (_server->r_status())
 	{
 		redirect_handle(_server->r_status(), _server->r_url(), _rep);
 		return ;
 	}
-	
 	_location = find_location(url, final_path, remain_path);
 	if (_req.body().size() > _server->max_size())
 	{	
@@ -371,7 +371,6 @@ void	Connection::route()
 		}
 		if (_location->r_status > 0)
 			_req.set_category(REDIRECTION);
-		std::cout << "category : " << _req.category() << std::endl;
 		if (_req.category() == CGI)
 		{
 			exec_path = get(_location->cgi, "." + get_ext(final_path));
@@ -386,6 +385,17 @@ void	Connection::route()
 				_rep._status = norm_handle(final_path, _req, _rep, _location, _loc, _server);
 				break;
 			case CGI:
+				int status;
+				if ((status = file_check(final_path, X_OK)) != 200)
+				{
+					_rep._status = status;
+					return ;
+				}
+				if (file_check(*exec_path, X_OK | R_OK) != 200)
+				{
+					_rep._status = 500;
+					return ;
+				}
 				_cgi = new Cgi();
 				_rep._status = _cgi->execute(final_path, exec_path, _req);
 				break;
@@ -411,7 +421,7 @@ void	Connection::route()
 void	Connection::handle_error()
 {
 	const std::string* err_page;
-	std::string err_path;
+	std::string err_path = "";
 
 	_rep._type = "text/html";
 
@@ -420,21 +430,14 @@ void	Connection::handle_error()
 		err_page = get(_server->err_pages(), _rep._status);
 		if (err_page)
 			err_path = _server->root() + *err_page;
-		std::cout << "error path 1" << err_path << std::endl;
+		// std::cout << "error path 1" << err_path << " : " << std::endl;
 	}
 	if (_location && !_location->err_pages.empty())
 	{
 		err_page = get(_location->err_pages, _rep._status);
 		if (err_page)
-		{
-			if(!_location->root.empty())
-				err_path = _location->root + *err_page;
-			else{
-				if(!_server->root().empty())
-					err_path = _server->root() + *err_page; //don't need "else" bcuz config will not work if no root in parsing
-			}
-		}
-		std::cout << "error path 2" << err_path << std::endl;
+			err_path = (_location->root.empty() ? _server->root() : _location->root) + *err_page;
+		// std::cout << "error path 2" << err_path << " : " << *err_page << std::endl;
 	}
 	if (!err_path.empty())
 	{

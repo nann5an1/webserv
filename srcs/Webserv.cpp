@@ -67,6 +67,8 @@ void	Webserv::fileParser(char *av)
 		std::string			tok = "";
 		while (ss >> tok)
 		{
+			if (tok == "#")
+				break ;
 			if (tok == "server")
 				_servers.push_back(Server(file));
 		}

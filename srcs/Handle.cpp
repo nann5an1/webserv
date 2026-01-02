@@ -55,33 +55,30 @@ std::string autoIndexOnListing(const Server *server, const t_location* location,
 	return html;
 }
 
-
 int handleServerIndex(Response &rep, const Server *server){
 	std::vector<std::string> server_idx = server->server_idx();
 	std::string server_path = server->root(), index_path;
 	int status;
-	bool found_forbidden = false;
 
 	// std::cout << "Server indexes size -> " << server_idx.size() << std::endl; 
 	// std::cout << "Server path -> " << server_path << std::endl;
 	DIR* dir = opendir(server->root().c_str());
 
-	if(!dir)	throw Error("root directory error >> "+ server->root());
+	if(!dir)
+		return (404);
 
 	for (int i = 0; i < server_idx.size(); ++i)
 	{
 		index_path = server_path + "/" + server_idx[i];
 		if ((status = file_check(index_path, R_OK)) == 200)
-			if(status == 200){
-				status = read_file(index_path, rep._body);
-				rep._type = mime_types[get_ext(index_path)];
-				return (status);
-			}
-			if(status == 403)
-				found_forbidden = true;
+		{
+			std::cout << "serverindex" << std::endl;
+			status = read_file(index_path, rep._body);
+			rep._type = mime_types[get_ext(index_path)];
+			return (status);
+		}
 	}
-	if(found_forbidden) return (403);
-	return (404);
+	return (403);
 }
 
 int	norm_handle(std::string	&final_path, Request &req, Response &rep,
@@ -91,28 +88,26 @@ int	norm_handle(std::string	&final_path, Request &req, Response &rep,
 	const std::vector<std::string>	&indexs = location->index_files;
 	std::string	path = final_path, index_path;
 
-	std::cout << "PATH for index search >> " << path << std::endl;
 	if (is_dir(path)) //directory look out for the indexfiles
-	{	
-		int prev_code;
-		if(!location->index_files.empty()){
+	{
+		if(!location->index_files.empty())
+		{
 			for (int i = 0; i < indexs.size(); ++i)
 			{
 				index_path = path + "/" + indexs[i];
-				std::cout << "index_path " << index_path << std::endl;
 				status = 0;
 				if ((status = file_check(index_path, R_OK)) == 200)
 				{
+					std::cout << "Hehe I found u " << std::endl;
 					path = index_path;
 					goto response;
 				}
-				else if(prev_code == 404 && status == 404) return (403);
-				else if (status == 404)
-					prev_code = 404;
-				
 			}
 		}
-		else{ //if location index files are not defined by directive, search for index.html file in the directory
+		else
+		{
+			// NEED TO FIX
+			//if location index files are not defined by directive, search for index.html file in the directory
 			DIR* dir = opendir(path.c_str());
 			dirent* entry;
 
@@ -124,21 +119,21 @@ int	norm_handle(std::string	&final_path, Request &req, Response &rep,
 					return (read_file(path, rep._body));
 				}
 			}
-			
-			
 		}
 		
 		if(location->autoindex)
 		{
-			if(indexs.empty())
-			{ 
-				rep._body = autoIndexOnListing(server, location, path);
-				rep._type = "text/html";
-    			return (200);
-			}
+			rep._body = autoIndexOnListing(server, location, path);
+			rep._type = "text/html";
+			if (rep._body.empty())
+				return (403);
+			return (200);
 		}
-		else{ //autoindex is off
-			if(!server->server_idx().empty()){ //fallback to the main server's
+		else
+		{
+			std::cout << "got in" << std::endl;
+			if(!server->server_idx().empty())
+			{ //fallback to the main server's
 				if(handleServerIndex(rep, server) == 200){
 					rep._type = "text/html";
 					rep._status = 200;
@@ -157,12 +152,17 @@ int	norm_handle(std::string	&final_path, Request &req, Response &rep,
 			}
 		}
 	}
+
+
+
+
 	response:
 		status = file_check(path, R_OK);
 		if (status == 200)
 		{
 			status = read_file(path, rep._body);
 			rep._type = mime_types[get_ext(path)];
+			std::cout << "hi hi here" << std::endl;
 			return (status);
 		}
 		return (status);
@@ -319,31 +319,55 @@ int	handleFile(const t_location* location, std::string &remain_path, Request &re
 		}
 		
 	}
-	else if(method == "DELETE"){
-		// std::cout << "remain path <><> " << remain_path << std::endl;
-		filepath = location->upload_dir + remain_path;
-		int	status = file_check(filepath, R_OK | X_OK);
-		if(status == 200){ //if file exists in the directory, remove the file
-			std::remove(filepath.c_str());
-			rep._type = "text/html";
-			rep._body = "<!DOCTYPE html>\n"
-					"<html>\n"
-					"<head>\n"
-					"<meta charset=\"UTF-8\">\n"
-					"</head>\n"
-					"<body>\n"
-					"<p>File delete successfully</p>\n"
-					"</body>\n"
-					"</html>";
-			
-			std::cout << "filepath removed aldy" << std::endl;
-		}
-		else
-		{
-			std::cout << "file does not exist or has been deleted." << std::endl;
-			return (status);
-		}
-			
-	}
-	return (200);
+	else if(method == "DELETE")
+	{
+        const std::string &base = location->upload_dir;
+
+        // Must be able to traverse and modify the directory
+        status = file_check(base, W_OK | X_OK);
+        if (status != 200)
+            return status;
+
+        // Basic traversal protection (minimal, but important)
+        // remain_path is expected to be like "/file.txt"
+        if (remain_path.empty() || remain_path == "/")
+            return 400;
+        if (remain_path.find("..") != std::string::npos)
+            return 403;
+
+        // Build target path safely-ish
+        std::string rel = remain_path;
+        if (!rel.empty() && rel[0] == '/')
+            rel.erase(0, 1);
+        const std::string target = base + "/" + rel;
+
+        // Don’t allow deleting directories (optional policy)
+        if (is_dir(target))
+            return 403;
+
+        if (std::remove(target.c_str()) != 0)
+        {
+            if (errno == ENOENT)
+                return 404;
+            if (errno == EACCES || errno == EPERM)
+                return 403;
+            return 500;
+        }
+
+        rep._type = "text/html";
+        rep._body =
+            "<!DOCTYPE html>\n"
+            "<html>\n"
+            "<head>\n"
+            "<meta charset=\"UTF-8\">\n"
+            "</head>\n"
+            "<body>\n"
+            "<p>File deleted successfully</p>\n"
+            "</body>\n"
+            "</html>";
+        return 200;
+    }
+
+    // If method not handled here, signal a proper error (or let caller decide)
+    return 405;
 }

@@ -89,7 +89,11 @@ Server::Server(std::ifstream &file) :
 			tok = "";
 		}
 		else if (location_scope)
+		{
 			inputLocation(line, location);
+			if (location.methods == 0)
+				location.methods = 7;
+		}
 		else
 			inputData(line);
 	}
@@ -116,14 +120,12 @@ int	Server::parse_err_pages(std::stringstream &ss, std::map<int,std::string> &er
 	if (temp.size() <= 1)
 		return (0);
 	std::string	err_path = trimSemiColon(temp[temp.size() - 1]);
-	std::cout << "err path -> " << err_path << std::endl;
 	for (int i = 0; i < temp.size() - 1; ++i)
 	{
 		int	key = std::atoi(temp[i].c_str());
 		if (!validateHTTPCode(key) && key >= 400 && key <= 599)
 			return (0);
 		err_pg_container[key] = err_path;
-		std::cout << "key >> " << key << std::endl;
 	}
 	return (1);
 }
@@ -218,8 +220,6 @@ int Server::inputLocation(std::string line, t_location &location)
 					val = trimSemiColon(val);
 				location.methods |= identify_method(val);
 			}
-			if (location.methods == 0)
-				location.methods |= GET;
 		}
 		else {
 			throw Error("Server: Config failed at " + line);}

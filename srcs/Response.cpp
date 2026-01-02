@@ -23,14 +23,9 @@ Response &Response::operator=(const Response &other)
 
 Response::~Response() {}
 
-int Response::cgi_handle(const std::string &str)
+int	Response::cgi_handle(const std::string &str)
 {
-	std::cout << std::string(40, '=') << "\n" << str << std::endl;
-
-	_status = 200;
-	_type.clear();
-	_location.clear();
-	_body.clear();
+    // ...existing code...
 
     // Split headers/body at first blank line (CRLFCRLF or LFLF)
     size_t sep = str.find("\r\n\r\n");
@@ -74,52 +69,28 @@ int Response::cgi_handle(const std::string &str)
                 ls >> code;
                 if (code >= 100 && code <= 599)
                     _status = code;
-            }
+		    }
             else if (line.rfind("Content-Type:", 0) == 0)
             {
                 std::string v = line.substr(std::string("Content-Type:").size());
                 while (!v.empty() && (v[0] == ' ' || v[0] == '\t')) v.erase(0, 1);
-                _type = v;
+                    _type = v;
             }
             else if (line.rfind("Location:", 0) == 0)
             {
                 std::string v = line.substr(std::string("Location:").size());
                 while (!v.empty() && (v[0] == ' ' || v[0] == '\t')) v.erase(0, 1);
-                _location = v;
+                    _location = v;
             }
-        }
+	    }
     }
-    _body = body;
-    return (_status);
-		if (line.rfind("Status:", 0) == 0)
-		{
-			std::istringstream ls(line.substr(7));
-			int code = 200;
-			ls >> code;
-			if (code >= 100 && code <= 599)
-				_status = code;
-		}
-		else if (line.rfind("Content-Type:", 0) == 0)
-		{
-			std::string v = line.substr(std::string("Content-Type:").size());
-			while (!v.empty() && (v[0] == ' ' || v[0] == '\t')) v.erase(0,1);
-			_type = v;
-		}
-		else if (line.rfind("Location:", 0) == 0)
-		{
-			std::string v = line.substr(std::string("Location:").size());
-			while (!v.empty() && (v[0] == ' ' || v[0] == '\t')) v.erase(0,1);
-			_location = v;
-		}
-	}
 	_body = body;
-	return (_status);
+    return (_status);
 }
 
-const char* Response::build()
+const char*	Response::build()
 {
 	_reply.clear();
-
     _reply = "HTTP/1.1 " + to_string(_status) + " " + gphrase[_status] + CRLF;
     if (!_location.empty())
         _reply += "Location: " + _location + CRLF;
@@ -155,5 +126,5 @@ size_t Response::bodySize() const
 
 Response::operator const char*() const
 {
-	return _reply.c_str();
+	return (_reply.c_str());
 }
