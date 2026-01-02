@@ -1,5 +1,7 @@
 #include "Utils.hpp"
 
+volatile sig_atomic_t g_stop = 0;
+
 const std::string	CRLF = "\r\n";
 
 fd::fd() : fd_(-1) {}
@@ -16,6 +18,29 @@ int	pipe(fd fds[2])
 	fds[0] = fd(tmp[0]);
 	fds[1] = fd(tmp[1]);
 	return (0);
+}
+
+void	on_signal(int signo)
+{
+	(void)signo;
+	g_stop = 1;
+}
+
+void	install_signals()
+{
+	struct sigaction sa;
+	std::memset(&sa, 0, sizeof(sa));
+	sa.sa_handler = on_signal;
+	sigemptyset(&sa.sa_mask);
+	sa.sa_flags = 0;
+
+	// Graceful stop signals
+	sigaction(SIGINT, &sa, NULL);
+	sigaction(SIGQUIT, &sa, NULL);
+
+	// Optional: avoid process death on client disconnect writes
+	// (write() to closed socket → SIGPIPE). Prefer handling EPIPE instead.
+	signal(SIGPIPE, SIG_IGN);
 }
 
 std::map<int, const char*>	gphrase;

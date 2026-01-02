@@ -1,4 +1,5 @@
 #include "Webserv.hpp"
+#include "Utils.hpp"
 
 Webserv::Webserv() {}
 
@@ -171,6 +172,8 @@ int	Webserv::start()
 {
 	int	status = 0;
 
+	install_signals();
+
 	if (Epoll::instance().init() < 0)
 	{
 		fail("Epoll", errno);
@@ -190,7 +193,7 @@ int	Webserv::start()
 
 	epoll_event	events[MAX_EVENTS];
 
- 	while (true)
+ 	while (!g_stop)
 	{
 		int	hits = Epoll::instance().wait(events, MAX_EVENTS, 1000);
 		if (hits < 0)
@@ -211,6 +214,8 @@ int	Webserv::start()
 		}
 		Epoll::instance().objs_timeout();
 	}
+	
+	std::cerr << "\n[webserv]\tshutdown requested" << std::endl;
 	return (0);
 }
 

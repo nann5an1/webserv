@@ -28,6 +28,8 @@
 #define POST (1 << 1)
 #define DELETE (1 << 2)
 
+extern volatile sig_atomic_t g_stop;
+
 struct	fd 
 {
 	int	fd_;
@@ -48,6 +50,8 @@ extern const std::string	CRLF;
 // extern std::string filename;
 
 void	init_global();
+void	install_signals();
+void	on_signal(int signo);
 bool	is_dir(std::string path);
 int		file_check(std::string path, int mod);
 int		fail(std::string head, int err_no);
