@@ -278,8 +278,10 @@ void	Cgi::timeout()
 		::waitpid(_pid, NULL, 0);
 		_pid = -1;
 	}
+	std::cout << "oh no " << std::endl;
 	close_fd(_in_fd);
 	close_fd(_out_fd);
+	// std::cout << YELLOW << "[connection]\tcgi timeout\t\t\t| socket:" << _fd << "(client)" << RESET << std::endl;
 	_state = CGI_KILL;
 }
 

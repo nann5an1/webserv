@@ -81,6 +81,7 @@ class	Server : public IPollable
 		std::string	root() const;
 		int			r_status() const;
 		std::string	r_url() const;
+		long long	max_size() const;
 		const std::map<int, std::string>& err_pages() const;
 		
 		std::vector<std::string> server_idx() const;

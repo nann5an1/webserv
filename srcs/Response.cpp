@@ -26,7 +26,7 @@ int	Response::cgi_handle(const std::string &str)
     // Parse CGI-style response: headers then blank line then body
     // Recognized headers: Status, Content-Type, Location, Content-Length
     _status = 200;
-    _type.clear();
+    _type = "text/plain";
     _location.clear();
     _body.clear();
 

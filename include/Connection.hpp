@@ -8,7 +8,7 @@
 #include "IPollable.hpp"
 #include "Cgi.hpp"
 
-#define CON_TIMEOUT	5
+#define CON_TIMEOUT	10
 
 class Server;
 class Cgi;

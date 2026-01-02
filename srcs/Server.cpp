@@ -394,6 +394,11 @@ std::string	Server::r_url() const
 	return (_r_url);
 }
 
+long long	Server::max_size() const
+{
+	return (_max_size);
+}
+
 const std::map<std::string, t_location>	&Server::locations() const
 {
 	return (_locations);

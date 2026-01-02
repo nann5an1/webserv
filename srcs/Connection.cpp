@@ -174,10 +174,11 @@ void	Connection::handle(uint32_t events)
 		{
 			if (_cgi)
 			{
+				std::cout << "cgi got in " << std::endl;
 				if (_cgi->state() == CGI_KILL)
 				{
-					_rep._status = 504;
 					std::cout << YELLOW << "[connection]\tcgi timeout\t\t\t| socket:" << _fd << "(client)" << RESET << std::endl;
+					_rep._status = 504;
 					delete	_cgi;
 					_cgi = NULL;
 				}
@@ -186,10 +187,7 @@ void	Connection::handle(uint32_t events)
 
 					/// shit need to fix
 					std::cout << std::string(40, '=') << "\n" << _cgi->output().size() << std::endl;
-					_rep._status = 200;
-					_rep._type = "text/html";
-					_rep._body = _cgi->output();
-
+					_rep.cgi_handle(_cgi->output());
 					if (_cgi)
 					{
 						delete _cgi;
@@ -341,18 +339,22 @@ void	Connection::route()
 	}
 	
 	_location = find_location(url, final_path, remain_path);
-	
+	if (_req.body().size() > _server->max_size())
+	{	
+		_rep._status = 413;
+		std::cout << " loL " << std::endl;
+		return ;
+	}
 	if (_location)
 	{
+		
 		const std::string *exec_path = NULL;
 		if (!(_location->methods & identify_method(_req.method())))
 		{
 			_rep._status = 405;
-			_rep._body = status_page(405);	
-			std::cout << "method not allowed " << std::endl;
+			fail("method not allowed", -1);
 			return;
 		}
-		 
 		if (_location->r_status > 0)
 			_req.set_category(REDIRECTION);
 		std::cout << "category : " << _req.category() << std::endl;
@@ -390,45 +392,6 @@ void	Connection::route()
 		_rep._status = handleServerIndex(_rep, _server);
 		if(_rep._status != 200) _rep._body = status_page(404);
 	}
-	std::cout << "Connectin rep check >> " << _rep._status << std::endl;
-	if (_rep._status >= 400)
-	{
-		const std::string* err_page;
-		std::string err_path;
-
-		_rep._type = "text/html";
-
-		if (!_server->err_pages().empty())
-		{
-			err_page = get(_server->err_pages(), _rep._status);
-			if (err_page)
-				err_path = _server->root() + *err_page;
-			std::cout << "error path 1" << err_path << std::endl;
-		}
-		else if (!_location->err_pages.empty())
-		{
-			err_page = get(_location->err_pages, _rep._status);
-			if (err_page){
-				if(!_location->root.empty())
-					err_path = _location->root + *err_page;
-				else{
-					if(!_server->root().empty())
-						err_path = _server->root() + *err_page; //don't need "else" bcuz config will not work if no root in parsing
-				}
-			}
-			std::cout << "error path 2" << err_path << std::endl;
-		}
-		if (!err_path.empty())
-		{
-			int status = read_file(err_path, _rep._body);
-			if (status != 200)
-				_rep._status = status;
-			else
-				return ;
-		}
-		else	_rep._status = 403;
-		_rep._body = status_page(_rep._status);
-	}
 }
 
 void	Connection::handle_error()
@@ -445,7 +408,7 @@ void	Connection::handle_error()
 			err_path = _server->root() + *err_page;
 		std::cout << "error path 1" << err_path << std::endl;
 	}
-	if (!_location->err_pages.empty())
+	if (_location && !_location->err_pages.empty())
 	{
 		err_page = get(_location->err_pages, _rep._status);
 		if (err_page)
