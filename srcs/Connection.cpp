@@ -309,11 +309,8 @@ bool	Connection::request()
 
 bool	Connection::response()
 {
-	// _rep._body = status_page(200);
-	// _rep._status = 200;
-	// _rep._type = "text/html";
 	const char* str = _rep.build();
-	size_t size = std::strlen(str);
+	size_t size = _rep._reply.size();
 	ssize_t n = write(_fd, str, size);
 
 	if (n < 0)
@@ -323,6 +320,7 @@ bool	Connection::response()
 		return (fail("Response", errno), true);
 	}
 	// all bytes sent (or small responses handled in one write)
+	std::cout << "_body" << _rep._body << std::endl;
 	std::cout << "[connection]\tclient received response \t| " << _ip << ":" << _port << " | socket:" << _fd << " | "
 			  << "method: " << _rep._status << std::endl;
 	return (true);
@@ -347,7 +345,6 @@ void	Connection::route()
 	}
 	if (_location)
 	{
-		
 		const std::string *exec_path = NULL;
 		if (!(_location->methods & identify_method(_req.method())))
 		{

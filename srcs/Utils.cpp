@@ -41,7 +41,7 @@ void	init_global()
     mime_types["zip"]  = "application/zip";
 
 	// 0xx Not found
-	gphrase[0] = "";
+	gphrase[0] = "Unknown";
 
 	// 1xx Informational
 	gphrase[100] = "Continue";
@@ -52,8 +52,13 @@ void	init_global()
 	gphrase[200] = "OK";
 	gphrase[201] = "Created";
 	gphrase[202] = "Accepted";
+	gphrase[203] = "Non-Authoritative Information";
 	gphrase[204] = "No Content";
+	gphrase[205] = "Reset Content";
 	gphrase[206] = "Partial Content";
+	gphrase[207] = "Multi-Status";
+	gphrase[208] = "Already Reported";
+	gphrase[226] = "IM Used";
 
 	// 3xx Redirection
 	gphrase[300] = "Multiple Choices";
@@ -61,23 +66,39 @@ void	init_global()
 	gphrase[302] = "Found";
 	gphrase[303] = "See Other";
 	gphrase[304] = "Not Modified";
+	gphrase[305] = "Use Proxy";
 	gphrase[307] = "Temporary Redirect";
 	gphrase[308] = "Permanent Redirect";
 
 	// 4xx Client errors
 	gphrase[400] = "Bad Request";
 	gphrase[401] = "Unauthorized";
+	gphrase[402] = "Payment Required";
 	gphrase[403] = "Forbidden";
 	gphrase[404] = "Not Found";
 	gphrase[405] = "Method Not Allowed";
+	gphrase[406] = "Not Acceptable";
+	gphrase[407] = "Proxy Authentication Required";
 	gphrase[408] = "Request Timeout";
 	gphrase[409] = "Conflict";
+	gphrase[410] = "Gone";
 	gphrase[411] = "Length Required";
+	gphrase[412] = "Precondition Failed";
 	gphrase[413] = "Payload Too Large";
 	gphrase[414] = "URI Too Long";
 	gphrase[415] = "Unsupported Media Type";
-	gphrase[418] = "I'm a teapot"; // optional
+	gphrase[416] = "Range Not Satisfiable";
+	gphrase[417] = "Expectation Failed";
+	gphrase[418] = "I'm a teapot";
+	gphrase[421] = "Misdirected Request";
+	gphrase[422] = "Unprocessable Entity";
+	gphrase[423] = "Locked";
+	gphrase[424] = "Failed Dependency";
+	gphrase[426] = "Upgrade Required";
+	gphrase[428] = "Precondition Required";
 	gphrase[429] = "Too Many Requests";
+	gphrase[431] = "Request Header Fields Too Large";
+	gphrase[451] = "Unavailable For Legal Reasons";
 
 	// 5xx Server errors
 	gphrase[500] = "Internal Server Error";
@@ -86,6 +107,11 @@ void	init_global()
 	gphrase[503] = "Service Unavailable";
 	gphrase[504] = "Gateway Timeout";
 	gphrase[505] = "HTTP Version Not Supported";
+	gphrase[506] = "Variant Also Negotiates";
+	gphrase[507] = "Insufficient Storage";
+	gphrase[508] = "Loop Detected";
+	gphrase[510] = "Not Extended";
+	gphrase[511] = "Network Authentication Required";
 }
 
 int	fail(std::string head, int err_no)
