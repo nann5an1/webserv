@@ -190,7 +190,7 @@ int Server::inputData(std::string &line)
 	else if(token == "max_body_size"){
 		if(!(ss >> value)) return 0;
 		else{
-			this->_max_size = atoi(value.c_str());
+			this->_max_size = std::atoi(value.c_str());
 		}
 	}
 	else if (token == "return" && this->_r_status == 0)

@@ -37,7 +37,7 @@ bool validate_len(std::string token){
 std::string toLower(std::string token){
 	std::string result = "";
 	for(size_t i = 0; i < token.length(); i++){
-		if(isalpha(token[i]))  result += (char)std::tolower(token[i]);
+		if(std::isalpha(token[i]))  result += (char)std::tolower(token[i]);
 		else result += token[i];
 	}
 	return result;
@@ -267,7 +267,7 @@ void Request::parseRequest(const char *raw_request){
 				bool_transfer = false;
 			} 
 			else if(bool_content_len){
-				if(validate_len(token)) this->content_len = atoi(token.c_str());
+				if(validate_len(token)) this->content_len = std::atoi(token.c_str());
 				_cgi_env.push_back("CONTENT_LENGTH=" + token);
 				bool_content_len = false;
 			}
@@ -276,7 +276,7 @@ void Request::parseRequest(const char *raw_request){
 				this->hostname = token.substr(0, idx);
 				if(idx != (int)std::string::npos) {
 					token = token.substr(idx + 1, (token.length()) - idx - 1).c_str();
-					this->port = atoi(token.c_str());
+					this->port = std::atoi(token.c_str());
 					_cgi_env.push_back("SERVER_PORT=" + token);
 				}
 				hostname = false;

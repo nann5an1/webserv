@@ -143,7 +143,7 @@ int	fail(std::string head, int err_no)
 {
 	std::cerr << RED << "[error]\t\t" << head;
 	if (err_no > 0)
-		std::cerr << ": " << strerror(err_no);
+		std::cerr << ": " << std::strerror(err_no);
 	std::cerr << RESET << std::endl;
 	return (err_no);
 }

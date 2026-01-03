@@ -52,10 +52,10 @@ test_case "DELETE" "/static/" "405" "DELETE not allowed"
 echo
 
 # STATIC FILE TESTS
-echo "=== STATIC FILE (/static/test.html) ==="
-test_case "GET" "/static/test.html" "200" "GET file"
-test_case "POST" "/static/test.html" "405" "POST not allowed"
-test_case "DELETE" "/static/test.html" "405" "DELETE not allowed"
+echo "=== STATIC FILE (/static/about.html) ==="
+test_case "GET" "/static/about.html" "200" "GET file"
+test_case "POST" "/static/about.html" "405" "POST not allowed"
+test_case "DELETE" "/static/about.html" "405" "DELETE not allowed"
 echo
 
 # REDIRECT LOCATION TESTS
@@ -68,7 +68,7 @@ echo
 # AUTOINDEX TESTS
 echo "=== AUTOINDEX LOCATION (/autoindex/) ==="
 test_case "GET" "/autoindex/" "200" "GET autoindex"
-test_case "POST" "/autoindex/" "200" "POST allowed"
+test_case "POST" "/autoindex/" "405" "POST not allowed"
 test_case "DELETE" "/autoindex/" "405" "DELETE not allowed"
 echo
 
@@ -76,21 +76,21 @@ echo
 echo "=== UPLOAD LOCATION (/upload/) ==="
 test_case "GET" "/upload/" "200" "serve /upload/"
 test_case "POST" "/upload/" "200" "POST allowed (upload_store)"
-test_case "DELETE" "/upload/" "200" "DELETE directory  allowed"
+test_case "DELETE" "/upload/" "405" "DELETE directory not allowed"
 echo
 
 # UPLOAD FILE TESTS
 echo "=== UPLOAD FILE (/upload/index.html) ==="
 test_case "GET" "/upload/index.html" "200" "GET existing file"
 test_case "DELETE" "/upload/test.txt" "200" "DELETE file allowed"
-test_case "POST" "/upload/upload.html" "200" "POST to file allowed"
+test_case "POST" "/upload/index.html" "200" "POST to file allowed"
 echo
 
 # CGI TESTS
-echo "=== CGI LOCATION (/cgi/) ==="
-test_case "GET" "/cgi/read.py" "200" "GET CGI script"
-test_case "POST" "/cgi/file.py" "405" "POST not allowed (GET only by default)"
-test_case "DELETE" "/cgi/file.py" "405" "DELETE not allowed"
+echo "=== CGI LOCATION (/cgi-bin/) ==="
+test_case "GET" "/cgi-bin/hello.py" "200" "GET CGI script"
+test_case "POST" "/cgi-bin/hello.py" "405" "POST not allowed (GET only by default)"
+test_case "DELETE" "/cgi-bin/hello.py" "405" "DELETE not allowed"
 echo
 
 # NONEXISTENT TESTS
