@@ -434,6 +434,7 @@ void	Server::handle(uint32_t events)
 		{
 			delete con;
 			fail("Server: Client", errno);
+			return ;
 		}
 		if (Epoll::instance().add_fd(con, con_fd, EPOLLIN) < 0)
 		{

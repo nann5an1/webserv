@@ -57,10 +57,11 @@ class	Connection : public IPollable
 		bool	read_header();
 		// bool	read_body();
 
-	public:
-		Connection();
 		Connection(const Connection &other);
 		Connection	&operator=(const Connection &other);
+		
+	public:
+		Connection();
 		~Connection();
 
 		Connection(const Server *server);

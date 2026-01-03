@@ -19,7 +19,18 @@ Cgi	&Cgi::operator=(const Cgi &other)
 	return (*this);
 }
 
-Cgi::~Cgi() {}
+Cgi::~Cgi() 
+{
+	 if (_pid > 0)
+    {
+        ::kill(_pid, SIGKILL);
+        ::waitpid(_pid, NULL, 0);
+    }
+    if (_in_fd >= 0)
+        close_fd(_in_fd);
+    if (_out_fd >= 0)
+        close_fd(_out_fd);
+}
 
 void	Cgi::close_fd(int &fd_)
 {

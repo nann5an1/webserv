@@ -36,7 +36,22 @@ int	Epoll::init()
 	if (_fd >= 0)
 		return (0);
 	_fd = epoll_create(1);
-	return (_fd < 0 ? -1 : 0);
+	if (_fd < 0)
+		return (-1);
+    int flags = fcntl(_fd, F_GETFL, 0);
+	if (flags == -1)
+	{
+		close(_fd);
+		_fd = -1;
+		return (-1);
+	}
+	if (fcntl(_fd, F_SETFL, flags | FD_CLOEXEC) == -1)
+	{
+		close(_fd);
+		_fd = -1;
+		return (-1);
+	}
+	return (0);
 }
 
 int	Epoll::add_fd(IPollable* poll_obj, fd fd_, uint32_t events)
