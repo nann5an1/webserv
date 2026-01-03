@@ -88,7 +88,7 @@ int	Response::cgi_handle(const std::string &str)
     return (_status);
 }
 
-const char*	Response::build()
+std::string	Response::build()
 {
 	_reply.clear();
     _reply = "HTTP/1.1 " + to_string(_status) + " " + gphrase[_status] + CRLF;
@@ -103,7 +103,9 @@ const char*	Response::build()
 	_reply += CRLF;
 
 	// Do NOT append _body here! Send body separately
-	return _reply.c_str();
+	_reply += _body;
+
+	return _reply;
 }
 
 // Helper to get header size

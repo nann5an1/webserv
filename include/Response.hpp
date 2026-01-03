@@ -21,6 +21,6 @@ class	Response
 		size_t bodySize() const;        // size of body in bytes
 
 		int	cgi_handle(const std::string &str);
-		const char*	build();
+		std::string	build();
 		operator const char*() const;
 };

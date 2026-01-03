@@ -8,46 +8,54 @@ std::string	status_page(int status)
 }
 
 /* ================ READ THE ENTIRE DIRECTORY AND LIST DOWN ================*/
-static std::string autoIndexOnListing(const Server *server, Request &req, std::string& path)
-{	
-	size_t remain_len;
-	std::string html, ret_str;
-    DIR* dir = opendir(path.c_str());
+static std::string autoIndexOnListing(const Server *server, Request &req, std::string &path)
+{
+    DIR *dir = opendir(path.c_str());
     if (!dir)
-        return ("");
+        return "";
 
-	html += "<html><head>Index listing of " + path + "</head>";
-	html += "<body>";
-	html += "<ul>";
+    std::string url_path = req.path();
+    if (!url_path.empty() && url_path[url_path.size() - 1] != '/')
+        url_path += "/";
 
-	dirent* entry;
-	
-	while ((entry = readdir(dir)) != NULL)
-	{
-		if (std::strcmp(entry->d_name, ".") == 0 || //skil the . and ..
-			std::strcmp(entry->d_name, "..") == 0)
-			continue;
+    std::string html;
+    html += "<!DOCTYPE html>\n";
+    html += "<html lang=\"en\">\n";
+    html += "<head>\n";
+    html += "  <meta charset=\"UTF-8\">\n";
+    html += "  <title>Index of " + url_path + "</title>\n";
+    html += "</head>\n";
+    html += "<body>\n";
+    html += "  <h1>Index of " + url_path + "</h1>\n";
+    html += "  <ul>\n";
 
-		html += "<li><a href=\"";
-		std::cout << "dname << " << entry->d_name << std::endl;
-		html += req.path() + "/" + entry->d_name;
+    struct dirent *entry;
+    while ((entry = readdir(dir)) != NULL)
+    {
+        if (std::strcmp(entry->d_name, ".") == 0 ||
+            std::strcmp(entry->d_name, "..") == 0)
+            continue;
 
-		// if (entry->d_type == DT_DIR)
-		// 	html += "/";
+        std::string name = entry->d_name;
+        bool is_dir = (entry->d_type == DT_DIR);
 
-		html += "\">";
-		html += entry->d_name;
+        html += "    <li><a href=\"";
+        html += url_path + name;
+        if (is_dir)
+            html += "/";
+        html += "\">";
+        html += name;
+        if (is_dir)
+            html += "/";
+        html += "</a></li>\n";
+    }
 
-		if (entry->d_type == DT_DIR)
-			html += "/";
+    html += "  </ul>\n";
+    html += "</body>\n";
+    html += "</html>\n";
 
-		html += "</a></li>";
-	}
-
-	html += "</ul></body></html>";
-
-	closedir(dir);
-	return html;
+    closedir(dir);
+    return (html);
 }
 
 int handleServerIndex(Response &rep, const Server *server)

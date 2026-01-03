@@ -13,7 +13,8 @@ Connection::Connection() :
 	_server(NULL),
 	_loc(""),
 	_location(NULL),
-	_cgi(NULL)
+	_cgi(NULL),
+	_written(0)
 {
 	_reader = t_reader();
 }
@@ -29,7 +30,8 @@ Connection::Connection(const Connection &other) :
 	_server(other._server),
 	_loc(other._loc),
 	_location(other._location),
-	_cgi(other._cgi)
+	_cgi(other._cgi),
+	_written(other._written)
 {
 	_reader = other._reader;
 }
@@ -50,23 +52,12 @@ Connection	&Connection::operator=(const Connection &other)
 		_location = other._location;
 		_loc = other._loc;
 		_cgi = other._cgi;
+		_written = other._written;
 	}
 	return (*this);
 }
 
-Connection::~Connection() 
-{
-	if (_cgi)
-    {
-        delete _cgi;
-        _cgi = NULL;
-    }
-    if (_fd >= 0)
-    {
-        close(_fd);
-        _fd = -1;
-    }
-}
+Connection::~Connection() {}
 
 Connection::Connection(const Server *server) :
 	_fd(-1),
@@ -78,7 +69,8 @@ Connection::Connection(const Server *server) :
 	_time(0),
 	_loc(""),
 	_location(NULL),
-	_cgi(NULL)
+	_cgi(NULL),
+	_written(0)
 {
 	fd	server_fd = *_server;
 	sockaddr_in	client_addr;
@@ -123,7 +115,6 @@ const t_location*	Connection::find_location(std::string &req_url, std::string &f
 					final_path = _server->root() + (_loc == "/" ? "" : _loc) + remain;
 				else
 					final_path = location->root + remain;
-				// std::cout << "fubak : " << final_path << std::endl;
 				return (location);
 			}
 		}
@@ -196,17 +187,25 @@ void	Connection::handle(uint32_t events)
 						delete _cgi;
 						_cgi = NULL;
 					}
-					_state = DONE;
+					_state = CHECK_ERROR;
 				}
 				return ;
 			}
-			_state = DONE;
+			_state = CHECK_ERROR;
 		}
-		if (_state == DONE)
+		if (_state == CHECK_ERROR)
 		{
 			if (_req.category() != REDIRECTION && _rep._status >= 400)
 				handle_error();
+			_state = WRITING_RESPONSE;
+		}
+		if (_state == WRITING_RESPONSE)
 			response();
+		if (_state == DONE)
+		{
+			std::cout << "[connection]\tclient received response \t| " 
+					<< _ip << ":" << _port << " | socket:" << _fd << " | "
+					<< "status: " << _rep._status << std::endl;
 			cleanup();
 		}
 	}
@@ -309,38 +308,35 @@ bool	Connection::request()
 	return (true);
 }
 
-bool Connection::response()
+void	Connection::response()
 {
-    const char* headers = _rep.build();
-    size_t headers_size = _rep.headerSize();
-
-    ssize_t n = write(_fd, headers, headers_size);
-    if (n < 0)
-    {
-        if (errno == EAGAIN || errno == EWOULDBLOCK)
-            return false;   // wait for next epoll notification
-        return (fail("Response headers", errno), true);
-    }
-
+	std::string	reply = _rep.build();
     // Send body separately
-    size_t body_size = _rep.bodySize();
-    if (body_size > 0)
-    {
-        const char* body_data = _rep.bodyData();
-        ssize_t nb = write(_fd, body_data, body_size);
-        if (nb < 0)
-        {
-            if (errno == EAGAIN || errno == EWOULDBLOCK)
-                return false;
-            return (fail("Response body", errno), true);
-        }
-    }
-
-    std::cout << "[connection]\tclient received response \t| " 
-              << _ip << ":" << _port << " | socket:" << _fd << " | "
-              << "status: " << _rep._status << std::endl;
-
-    return true;
+    size_t	remian = reply.size() - _written;
+	if (remian == 0)
+	{
+		_state = DONE;
+		return ;
+	}
+    ssize_t nb = ::write(_fd, reply.data() + _written, remian);
+	if (nb > 0)
+	{
+		_written += static_cast<size_t>(nb);
+		if (_written >= reply.size())
+			_state = DONE;
+			
+	}
+	else if (nb == 0)
+	{
+		_state = DONE;
+		return ;
+	}
+	else if (nb < 0 && !(errno == EAGAIN || errno == EWOULDBLOCK))
+	{
+		fail("Connection: Response", errno);
+		_state = DONE;
+		return ;
+	}
 }
 
 
@@ -485,6 +481,7 @@ void	Connection::timeout()
 	_rep._body = status_page(408);
 	_rep._type = "text/html";
 	response();
+	_written = 0;
 	cleanup();
 
 }

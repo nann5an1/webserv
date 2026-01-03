@@ -30,6 +30,7 @@ enum	con_state
 	READING_BODY,
 	PROCESSING,
 	READING_RESPONSE,
+	CHECK_ERROR,
 	WRITING_RESPONSE,
 	DONE,
 };
@@ -52,6 +53,8 @@ class	Connection : public IPollable
 		t_reader			_reader;
 		Request				_req;
 		Response			_rep;
+
+		size_t				_written;
 		
 		const t_location*	find_location(std::string &req_url, std::string &final_path, std::string &remain_path);
 		void	handle(uint32_t	events);
@@ -70,7 +73,7 @@ class	Connection : public IPollable
 		bool	request();
 		void	route();
 		void	handle_error();
-		bool	response();
+		void	response();
 		void	cleanup();
 		// std::vector<std::string> get_server_idx() const;
 
