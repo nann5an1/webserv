@@ -56,11 +56,8 @@ int handleServerIndex(Response &rep, const Server *server)
 	std::string server_path = server->root(), index_path;
 	int status;
 
-	DIR* dir = opendir(server->root().c_str());
-
-	if(!dir)
-		return (404);
-
+	// std::cout << "Server indexes size -> " << server_idx.size() << std::endl; 
+	// std::cout << "Server path -> " << server_path << std::endl;
 	for (int i = 0; i < server_idx.size(); ++i)
 	{
 		index_path = server_path + "/" + server_idx[i];
@@ -71,7 +68,6 @@ int handleServerIndex(Response &rep, const Server *server)
 			return (status);
 		}
 	}
-	closedir(dir);
 	return (403);
 }
 

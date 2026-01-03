@@ -54,7 +54,19 @@ Connection	&Connection::operator=(const Connection &other)
 	return (*this);
 }
 
-Connection::~Connection() {}
+Connection::~Connection() 
+{
+	if (_cgi)
+    {
+        delete _cgi;
+        _cgi = NULL;
+    }
+    if (_fd >= 0)
+    {
+        close(_fd);
+        _fd = -1;
+    }
+}
 
 Connection::Connection(const Server *server) :
 	_fd(-1),
