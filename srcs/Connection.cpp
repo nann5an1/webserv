@@ -106,10 +106,12 @@ const t_location*	Connection::find_location(std::string &req_url, std::string &f
 			
 			if (location)
 			{
-				std::string	root = location->root.empty() ? _server->root() : location->root;
+				std::cout << "i found location " << std::endl;
 				remain = req_url.substr(i);
-				// std::cout << "_loc >> " << _loc << std::endl;
-				final_path = root + (_loc == "/" ? "" : _loc) + remain;
+				if (location->root.empty())
+					final_path = _server->root() + (_loc == "/" ? "" : _loc) + remain;
+				else
+					final_path = location->root + remain;
 				return (location);
 			}
 		}
@@ -193,7 +195,7 @@ void	Connection::handle(uint32_t events)
 		}
 		if (_state == DONE)
 		{
-			if (_rep._status >= 400)
+			if (_req.category() != REDIRECTION && _rep._status >= 400)
 				handle_error();
 			response();
 			cleanup();

@@ -83,104 +83,88 @@ int handleServerIndex(Response &rep, const Server *server)
 	return (403);
 }
 
-int	norm_handle(std::string	&final_path, Request &req, Response &rep,
-	 const t_location* location, std::string loc, const Server *server)
+int norm_handle(std::string &final_path, Request &req, Response &rep,
+                const t_location *location, std::string loc,
+                const Server *server)
 {
-	int	status;
-	const std::vector<std::string>	&indexs = location->index_files;
-	std::string	path = final_path, index_path;
+    std::string path = final_path;
+    int status;
 
-	if (is_dir(path)) //directory look out for the indexfiles
-	{
-		if(!location->index_files.empty())
+	std::cout << "path " << path << std::endl;
+    // 1. If path is a directory, try index files
+    if (is_dir(path))
+    {
+        // 1.1 Location-level index
+        if (!location->index_files.empty())
+        {
+            for (size_t i = 0; i < location->index_files.size(); ++i)
+            {
+                std::string index_path = path + "/" + location->index_files[i];
+                if (file_check(index_path, R_OK) == 200)
+                {
+                    status = read_file(index_path, rep._body);
+                    rep._type = mime_types[get_ext(index_path)];
+                    return status;
+                }
+            }
+        }
+
+        // 1.2 Autoindex
+        if (location->autoindex)
+        {
+            rep._body = autoIndexOnListing(server, location, path);
+            if (rep._body.empty())
+                return 403;
+
+            rep._type = "text/html";
+            return 200;
+        }
+
+		if (location->index_files.empty())
 		{
-			for (int i = 0; i < indexs.size(); ++i)
+			const std::vector<std::string> &srv_idx = server->server_idx();
+			for (size_t i = 0; i < srv_idx.size(); ++i)
 			{
-				index_path = path + "/" + indexs[i];
-				status = 0;
-				if ((status = file_check(index_path, R_OK)) == 200)
+				std::string index_path = path + "/" + srv_idx[i];
+				if (file_check(index_path, R_OK) == 200)
 				{
-					std::cout << "Hehe I found u " << std::endl;
-					path = index_path;
-					goto response;
+					status = read_file(index_path, rep._body);
+					rep._type = mime_types[get_ext(index_path)];
+					return status;
 				}
 			}
 		}
-		else
-		{
-			// NEED TO FIX
-			//if location index files are not defined by directive, search for index.html file in the directory
-			DIR* dir = opendir(path.c_str());
-			dirent* entry;
 
-			while((entry = readdir(dir)) != NULL){
-				if(std::string(entry->d_name) == "index.html") {
-					// std::cout << "hihi" << std::endl;
-					path += "/index.html";
-					rep._type = "text/html";
-					return (read_file(path, rep._body));
-				}
-			}
-			if (dir)
-				closedir(dir);
-		}
-		
-		if(location->autoindex)
-		{
-			rep._body = autoIndexOnListing(server, location, path);
-			rep._type = "text/html";
-			if (rep._body.empty())
-				return (403);
-			return (200);
-		}
-		else
-		{
-			std::cout << "got in" << std::endl;
-			if(!server->server_idx().empty())
-			{ //fallback to the main server's
-				if(handleServerIndex(rep, server) == 200){
-					rep._type = "text/html";
-					rep._status = 200;
-					return (200);
-				}
-				else {
-					rep._type = "text/html";
-					std::cout << "feel in that going here " << std::endl;
-					rep._body = status_page(403);
-					return (403);
-				}
-			}
-			else {
-				std::cout << "another feeling " << std::endl;
-				return (403);
-			}
-		}
-	}
+        // 1.4 Directory access forbidden
+        return 403;
+    }
 
 
+    // 2. Regular file request
+    status = file_check(path, R_OK);
+    if (status != 200)
+        return status;
 
-
-	response:
-		status = file_check(path, R_OK);
-		if (status == 200)
-		{
-			status = read_file(path, rep._body);
-			rep._type = mime_types[get_ext(path)];
-			std::cout << "hi hi here" << std::endl;
-			return (status);
-		}
-		return (status);
-	return (403);
+    status = read_file(path, rep._body);
+    rep._type = mime_types[get_ext(path)];
+    return status;
 }
+
 
 void	redirect_handle(int status, const std::string &path, Response& rep)
 {
-	rep._body = status_page(status);
+	std::cout << "shit got in " << std::endl;
+	if (status >= 300)
+		rep._body = status_page(status);
 	rep._type = "text/html";
 	rep._status = status;
 	
 	if (status > 300 && status < 400)
+	{
+		if (!path.empty())
+			rep._body.clear();
 		rep._location = path;
+	}
 	else if (!path.empty())
 	{
 		rep._body = path;
