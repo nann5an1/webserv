@@ -23,10 +23,69 @@ Response &Response::operator=(const Response &other)
 
 Response::~Response() {}
 
+
+static bool decode_chunked_body(const std::string &in, std::string &out)
+{
+    out.clear();
+    size_t pos = 0;
+
+    while (pos < in.size())
+    {
+        // read chunk-size line
+        size_t line_end = in.find("\r\n", pos);
+        size_t line_skip = 2;
+        if (line_end == std::string::npos)
+        {
+            line_end = in.find("\n", pos);
+            line_skip = 1;
+        }
+        if (line_end == std::string::npos)
+            return false;
+
+        std::string line = in.substr(pos, line_end - pos);
+        pos = line_end + line_skip;
+
+        // ignore chunk extensions: "HEX;ext=..."
+        size_t semi = line.find(';');
+        if (semi != std::string::npos)
+            line.erase(semi);
+
+        // trim spaces
+        while (!line.empty() && (line[0] == ' ' || line[0] == '\t'))
+            line.erase(0, 1);
+        while (!line.empty() && (line[line.size() - 1] == ' ' || line[line.size() - 1] == '\t'))
+            line.erase(line.size() - 1, 1);
+
+        char *endp = NULL;
+        unsigned long chunk_sz = std::strtoul(line.c_str(), &endp, 16);
+        if (endp == line.c_str())
+            return false;
+
+        if (chunk_sz == 0)
+        {
+            // Optional trailers exist; we can ignore them because we buffer everything anyway.
+            return true;
+        }
+
+        if (pos + chunk_sz > in.size())
+            return false;
+
+        out.append(in, pos, chunk_sz);
+        pos += chunk_sz;
+
+        // expect CRLF (or LF) after chunk data
+        if (pos < in.size() && in.compare(pos, 2, "\r\n") == 0)
+            pos += 2;
+        else if (pos < in.size() && in[pos] == '\n')
+            pos += 1;
+        else
+            return false;
+    }
+    return false;
+}
+
 int	Response::cgi_handle(const std::string &str)
 {
-    // ...existing code...
-
     // Split headers/body at first blank line (CRLFCRLF or LFLF)
     size_t sep = str.find("\r\n\r\n");
     size_t skip = 4;
@@ -49,6 +108,8 @@ int	Response::cgi_handle(const std::string &str)
         headers = str.substr(0, sep);
         body = str.substr(sep + skip);
     }
+
+	bool	cgi_chunked = false;
 
     // Only parse headers if we actually have some
     if (!headers.empty())
@@ -82,9 +143,22 @@ int	Response::cgi_handle(const std::string &str)
                 while (!v.empty() && (v[0] == ' ' || v[0] == '\t')) v.erase(0, 1);
                     _location = v;
             }
+			else if (line.rfind("Transfer-Encoding:", 0) == 0)
+			{
+				if (line.find("chunked") != std::string::npos)
+					cgi_chunked = true;
+			}
 	    }
     }
-	_body = body;
+    if (cgi_chunked)
+    {
+        std::string decoded;
+        if (!decode_chunked_body(body, decoded))
+            return (_status = 502);
+        _body = decoded;
+    }
+    else
+        _body = body;
     return (_status);
 }
 
