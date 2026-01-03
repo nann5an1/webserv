@@ -374,13 +374,13 @@ void	Connection::route()
 		}
 		if (_location->r_status > 0)
 			_req.set_category(REDIRECTION);
-		if (_req.category() == CGI)
+		else if (_req.category() == CGI)
 		{
 			exec_path = get(_location->cgi, "." + get_ext(final_path));
 			if (!exec_path)
 				_req.set_category(NORMAL);
 		}
-		if(_req.method() == "DELETE" && _req.category() != CGI)
+		else if(_req.method() == "DELETE" && _req.category() != CGI)
 			_req.set_category(FILEHANDLE);
 		switch (_req.category())
 		{
@@ -406,7 +406,7 @@ void	Connection::route()
 				redirect_handle(_location->r_status, _location->r_url, _rep);
 				return ;
 			case FILEHANDLE:
-				_rep._status = handleFile(_location, remain_path, _req, _rep);
+				_rep._status = handleFile(_location, final_path, _req, _rep);
 				break;
 		}
 

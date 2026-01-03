@@ -250,13 +250,13 @@ std::string size_to_string(off_t size)
 
 
 /* ====================== add the data from the upload_files of the server into the server's upload_dir ======================*/
-int	handleFile(const t_location* location, std::string &remain_path, Request &req, Response &rep){
+int	handleFile(const t_location* location, std::string &final_path, Request &req, Response &rep){
 	std::string filepath;
 	std::string method = req.method();
 	int status;
 
 	if(method == "POST" && req.upload_files().size() > 0)
-	{ //METHOD = POST
+	{
 		std::vector<binary_file> files = req.upload_files();
 		
 		//iterate the upload_files to get the filename under the req
@@ -295,55 +295,48 @@ int	handleFile(const t_location* location, std::string &remain_path, Request &re
 		}
 		
 	}
-	else if(method == "DELETE")
+	else if (method == "DELETE")
 	{
-        const std::string &base = location->upload_dir;
+		const std::string &target = final_path;
 
-        // Must be able to traverse and modify the directory
-        status = file_check(base, W_OK | X_OK);
-        if (status != 200)
-            return status;
+		if (target.empty())
+			return 400;
 
-        // Basic traversal protection (minimal, but important)
-        // remain_path is expected to be like "/file.txt"
-        if (remain_path.empty() || remain_path == "/")
-            return 400;
-        if (remain_path.find("..") != std::string::npos)
-            return 403;
+		if (is_dir(target))
+			return 403;
 
-        // Build target path safely-ish
-        std::string rel = remain_path;
-        if (!rel.empty() && rel[0] == '/')
-            rel.erase(0, 1);
-        const std::string target = base + "/" + rel;
+		if (std::remove(target.c_str()) != 0)
+		{
+			switch (errno)
+			{
+				case ENOENT:
+					return 404;
+				case EACCES:
+				case EPERM:
+					return 403;
+				default:
+					return 500;
+			}
+		}
+		rep._status = 200;
+		rep._type = "text/html";
+		rep._body =
+			"<!DOCTYPE html>\n"
+			"<html lang=\"en\">\n"
+			"<head>\n"
+			"  <meta charset=\"UTF-8\">\n"
+			"  <title>Deleted</title>\n"
+			"</head>\n"
+			"<body>\n"
+			"  <h1>File deleted successfully</h1>\n"
+			"</body>\n"
+			"</html>\n";
 
-        // Don’t allow deleting directories (optional policy)
-        if (is_dir(target))
-            return 403;
+		return (200);
+	}
 
-        if (std::remove(target.c_str()) != 0)
-        {
-            if (errno == ENOENT)
-                return 404;
-            if (errno == EACCES || errno == EPERM)
-                return 403;
-            return 500;
-        }
 
-        rep._type = "text/html";
-        rep._body =
-            "<!DOCTYPE html>\n"
-            "<html>\n"
-            "<head>\n"
-            "<meta charset=\"UTF-8\">\n"
-            "</head>\n"
-            "<body>\n"
-            "<p>File deleted successfully</p>\n"
-            "</body>\n"
-            "</html>";
-        return 200;
-    }
 
     // If method not handled here, signal a proper error (or let caller decide)
-    return 405;
+    return (405);
 }
