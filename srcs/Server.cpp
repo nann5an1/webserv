@@ -51,7 +51,6 @@ Server::~Server()
 {
 	if (_fd != -1)
 	{
-		std::cout << "got called here" << std::endl;
 		Epoll::instance().del_fd(_fd);
 		close(_fd);
 		_fd = -1;
@@ -93,6 +92,7 @@ Server::Server(std::ifstream &file) :
 		{
 			if (!location_scope)
 				break ;
+			location.path = location_path;
 			this->_locations[location_path] = location;
 			location_scope = false;
 			tok = "";
@@ -211,7 +211,6 @@ int Server::inputLocation(std::string line, t_location &location)
 	std::stringstream ss(line);
 
 	ss >> token;
-		// std::cout << "token  in inputLocation>> " << token << std::endl;
 	if(token == "autoindex")
 	{
 		ss >> val;
@@ -236,7 +235,6 @@ int Server::inputLocation(std::string line, t_location &location)
 	else if(token == "root"){
 		ss >> val;
 		location.root = trimSemiColon(val);
-		// std::cout <<"location _root >> " << location._root << std::endl;
 	}
 	else if(token == "upload_dir"){
 		ss >> val;

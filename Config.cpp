@@ -98,78 +98,6 @@ bool	Config::parse_file(std::ifstream &file)
 	return parse_value(file);
 }
 
-// bool Config::parse_value(std::istream &is)
-// {
-
-// 	std::string line;
-// 	std::string pending_key;
-
-// 	while (std::getline(is, line))
-// 	{
-// 		trim(line);
-// 		if (line.empty() || line[0] == '#')
-// 			continue;
-
-// 		if (line == "}")
-// 			return true;
-
-// 		std::istringstream iss(line);
-// 		std::string key, token;
-// 		iss >> key;
-
-// 		// skip empty
-// 		if (key.empty())
-// 			continue;
-
-// 		if (key == "{")
-// 		{
-// 			if (pending_key.empty())
-// 				continue; // malformed block
-// 			Config value;
-// 			value._type = Object;
-// 			value.parse_value(is);
-// 			_obj_value[pending_key] = value;
-// 			pending_key.clear();
-// 			continue;
-// 		}
-
-// 		if (!(iss >> token))
-// 		{
-// 			// line only had one token — could be key waiting for '{'
-// 			pending_key = key;
-// 			continue;
-// 		}
-
-// 		// Config	value;  
-// 		// normal case: key + value(s)
-// 		if (token == "{")
-// 		{
-// 			Config	value;
-// 			value._type = Object;
-// 			value.parse_value(is);
-// 		}
-// 		else if (_type == Null)
-// 		{
-// 			value._type = Array;
-// 			do
-// 			{
-//                 if (!token.empty() && token[token.size() - 1] == ';')
-//                     token = token.substr(0, token.size() - 1);
-//                 if (!token.empty())
-//                     value._array_value.push_back(Config(token));
-
-//             } while (iss >> token);
-//         }
-// 		if (_obj_value.find(key) != _obj_value.end())
-// 			_obj_value[key]._array_value.push_back(value);
-// 		else
-// 			_obj_value[key] = value;
-// 	}
-// 	return true;
-// }
-
-// std::vector<std::string> tokens(std::istream_iterator<std::string>(iss),
-// 										std::istream_iterator<std::string>());
 
 bool Config::parse_value(std::istream &is)
 {
@@ -183,20 +111,17 @@ bool Config::parse_value(std::istream &is)
 
         while (iss >> token)
         {
-			// std::cout << " token:" << token << "\t\t";
             if (token[0] == '#')
                 break;
             if (token == "}")
            		return true;
 			if (token != "{" && token.back() != '{' && key.empty())
 				key = token;
-			// std::cout << "key:" << key << std::endl;
 			if (token.back() == '{')
 			{
 				token.pop_back();
 				if (key.empty())
 					key = token;
-				// std::cout << "\tkey:" << key << std::endl;
 				Config	value;
 				value._type = Object;
 				value.parse_value(is);
@@ -220,32 +145,14 @@ bool Config::parse_value(std::istream &is)
 				}
 				_obj_value[key] = value;
 				continue;
-				// std::cout << "shit : "; this->print();
-				
 			}
 			if (_type == Null)
 			{
-				std::cout << "never got in" << std::endl;
 				Config	value;
 				value._type = String;
 				value._str_value = token;
 				continue;
 			}
-			// if (_type == Object)
-			// {
-			// 	Config	value, arr_val;
-			// 	value._type = Array;
-			// 	arr_val.parse_value(is);
-			// 	std::cout << "help " ; arr_val.print();
-			// 	value._array_value.push_back(arr_val);
-			// }
-			// else if (_type == Null)
-			// {
-			// 	Config	value;
-			// 	value._type = String;
-			// 	value._str_value = token;
-
-			// }
 		}
 	}
 	return (true);
@@ -256,10 +163,8 @@ void	Config::print()
 	switch (_type)
 	{
 		case	Config::Null:
-			std::cout << "null";
 			break;
 		case	Config::String:
-			std::cout << _str_value;
 			break;
 		case	Config::Array:
 			std::cout << "[";
@@ -274,9 +179,7 @@ void	Config::print()
 		case	Config::Object:
 			for (std::map<std::string, Config>::iterator it = _obj_value.begin(); it != _obj_value.end(); ++it)
 			{
-				std::cout << it->first << " : ";
 				it->second.print();
-				std::cout << "\n";
 				std::map<std::string, Config>::iterator next = it;
 				++next;
 			}

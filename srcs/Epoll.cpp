@@ -8,7 +8,6 @@ Epoll::~Epoll()
 {
 	std::set<IPollable*>	destory;
 
-	std::cout << "got called" << std::endl;
 	for (std::map<fd, IPollable*>::iterator it = _objs.begin(); it != _objs.end(); ++it)
 	{
 		IPollable* obj = it->second;

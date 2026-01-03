@@ -88,7 +88,6 @@ int	Webserv::scopeValidation(std::ifstream &file)
 
 	//if we are in the server scope now read the line until the ending of the server's }
 	while(getline(file, line)){
-		// std::cout << "line check >> " << line << std::endl;
 		std::string token;
 		std::stringstream ss(line);
 		ss >> token;
@@ -104,7 +103,6 @@ int	Webserv::scopeValidation(std::ifstream &file)
 				ss >> tok;
 				if(tok != "{")	return 0;
 			}
-			// server_scope = true;
 			start_server++;
 		}
 		else if(line.find("location") != std::string::npos){
@@ -115,7 +113,6 @@ int	Webserv::scopeValidation(std::ifstream &file)
 			if(tok1 != "location") return 0;
 			if(tok3 != "{"){ //if the opening isn't on the same line	
 				getline(file, line); //read the next line if the opening isn't on the same line
-				// std::cout << "Moved to another line of location >> " << line << std::endl;
 				std::stringstream ss(line);
 				ss >> tok1;
 				if(tok1 != "{") return 0;
@@ -138,8 +135,6 @@ int	Webserv::scopeValidation(std::ifstream &file)
 			std::stringstream ss(line);
 			std::string tok1;
 			ss >> tok1;
-
-			// std::cout << "token of ending server scope >> " << tok1 << std::endl;
 			if(tok1 == "}") end_server++;
 		}
 	}

@@ -8,26 +8,20 @@ std::string	status_page(int status)
 }
 
 /* ================ READ THE ENTIRE DIRECTORY AND LIST DOWN ================*/
-std::string autoIndexOnListing(const Server *server, const t_location* location,
-	std::string& path)
+static std::string autoIndexOnListing(const Server *server, Request &req, std::string& path)
 {	
 	size_t remain_len;
 	std::string html, ret_str;
     DIR* dir = opendir(path.c_str());
     if (!dir)
         return ("");
-	
-	if(!location->root.empty())
-		remain_len = path.length() - location->root.length();
-	else
-		remain_len = path.length() - server->root().length();
-	ret_str = path.substr(path.length() - remain_len, remain_len);
 
 	html += "<html><head>Index listing of " + path + "</head>";
 	html += "<body>";
 	html += "<ul>";
 
 	dirent* entry;
+	
 	while ((entry = readdir(dir)) != NULL)
 	{
 		if (std::strcmp(entry->d_name, ".") == 0 || //skil the . and ..
@@ -35,10 +29,11 @@ std::string autoIndexOnListing(const Server *server, const t_location* location,
 			continue;
 
 		html += "<li><a href=\"";
-		html +=  ret_str + "/" + entry->d_name;
+		std::cout << "dname << " << entry->d_name << std::endl;
+		html += req.path() + "/" + entry->d_name;
 
-		if (entry->d_type == DT_DIR)
-			html += "/";
+		// if (entry->d_type == DT_DIR)
+		// 	html += "/";
 
 		html += "\">";
 		html += entry->d_name;
@@ -61,8 +56,6 @@ int handleServerIndex(Response &rep, const Server *server)
 	std::string server_path = server->root(), index_path;
 	int status;
 
-	// std::cout << "Server indexes size -> " << server_idx.size() << std::endl; 
-	// std::cout << "Server path -> " << server_path << std::endl;
 	DIR* dir = opendir(server->root().c_str());
 
 	if(!dir)
@@ -73,7 +66,6 @@ int handleServerIndex(Response &rep, const Server *server)
 		index_path = server_path + "/" + server_idx[i];
 		if ((status = file_check(index_path, R_OK)) == 200)
 		{
-			std::cout << "serverindex" << std::endl;
 			status = read_file(index_path, rep._body);
 			rep._type = mime_types[get_ext(index_path)];
 			return (status);
@@ -90,7 +82,6 @@ int norm_handle(std::string &final_path, Request &req, Response &rep,
     std::string path = final_path;
     int status;
 
-	std::cout << "path " << path << std::endl;
     // 1. If path is a directory, try index files
     if (is_dir(path))
     {
@@ -112,7 +103,8 @@ int norm_handle(std::string &final_path, Request &req, Response &rep,
         // 1.2 Autoindex
         if (location->autoindex)
         {
-            rep._body = autoIndexOnListing(server, location, path);
+			// std
+            rep._body = autoIndexOnListing(server, req, path);
             if (rep._body.empty())
                 return 403;
 
@@ -153,7 +145,6 @@ int norm_handle(std::string &final_path, Request &req, Response &rep,
 
 void	redirect_handle(int status, const std::string &path, Response& rep)
 {
-	std::cout << "shit got in " << std::endl;
 	if (status >= 300)
 		rep._body = status_page(status);
 	rep._type = "text/html";
@@ -183,9 +174,6 @@ int	cgi_handle(std::string &final_path, const t_location *location, Request& req
 	for (int i = 0; i < cgi_env.size(); ++i)
 		env.push_back(cgi_env[i].c_str());
 	env.push_back(NULL);
-	// char *const *omg = const_cast<char* const*>(&env[0]);
-	// for (int i = 0; i < cgi_env.size(); ++i)
-	// 	std::cout << omg[i] << std::endl;
 
 	const std::string	*exec_path = get(location->cgi, "." + get_ext(final_path));
 	if (!exec_path)
@@ -244,7 +232,6 @@ int	cgi_handle(std::string &final_path, const t_location *location, Request& req
 
 bool fileExists(std::string &path)
 {
-	std::cout << "getter path >> " << path << std::endl;
 	std::ifstream file(path.c_str());
 	return file.good();
 }
@@ -264,21 +251,17 @@ int	handleFile(const t_location* location, std::string &remain_path, Request &re
 	std::string method = req.method();
 	int status;
 
-	// std::cout << "method in handleFile" << method << std::endl;
 	if(method == "POST" && req.upload_files().size() > 0)
 	{ //METHOD = POST
 		std::vector<binary_file> files = req.upload_files();
-		std::cout << "files size DEBUG >> " << files.size() << std::endl;
 		
 		//iterate the upload_files to get the filename under the req
 		for(size_t it = 0; it < files.size(); it++)
 		{
 			const binary_file& file = files[it];
-			std::cout << "binary file content >> " << file.filename << std::endl;
 
 			//filepath: /home/nsan/Exercises/webserv/sites/tmp/text
 			filepath = location->upload_dir + "/" + file.filename;
-			std::cout << "filepath: " << filepath << std::endl;
 
 			std::ofstream ofs(filepath.c_str(), std::ios::out | std::ios::binary);
 

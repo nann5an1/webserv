@@ -22,6 +22,7 @@ typedef struct	s_location
 	bool		autoindex;
 	int			methods;
 	int			r_status;
+	std::string	path;
 	std::string r_url;
 	std::string	root;
 	std::string	upload_dir;

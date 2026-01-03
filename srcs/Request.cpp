@@ -170,7 +170,6 @@ void Request::parseSinglePart(const std::string &headers,
 				fn += 10;
 				size_t end = line.find("\"", fn);
 				file.filename = line.substr(fn, end - fn);
-				// std::cout << "<< DEBUG >> FILENAME -> " << file.filename << std::endl;
 			}
 		}
 		else if (line.find("Content-Type") != std::string::npos)
@@ -190,7 +189,6 @@ void Request::parseSinglePart(const std::string &headers,
 	}
 	file.data = binary;
 	_upload_files.push_back(file);
-	// std::cout << "Added file: " << file.filename << " (" << file.data.size() << " bytes)" << std::endl;
 }
 
 /* ========================= Main request Parsing =========================*/
@@ -306,7 +304,6 @@ void Request::parseRequest(const char *raw_request){
 				bool_cont_type = false;
 			}
 			if(token.find("boundary=") != std::string::npos){ //boundary does not help identify the file upload
-				std::cout << "token" << token << std::endl;
 				int idx = token.find("=");
 				boundary = token.substr(idx + 1, token.length() - idx - 1);
 				bool_boundary = true;

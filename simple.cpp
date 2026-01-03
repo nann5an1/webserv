@@ -88,9 +88,6 @@ int main() {
                     close(fd);
                     std::cout << "Client disconnected, fd=" << fd << std::endl;
                 } else {
-                    // Echo back a simple response
-                    std::cout << "Received: " << std::string(buf, bytes)
-                              << " from fd=" << fd << std::endl;
                     const char* reply = "Hello from server!\n";
                     write(fd, reply, strlen(reply));
                 }

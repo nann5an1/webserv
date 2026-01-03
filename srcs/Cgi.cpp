@@ -124,7 +124,6 @@ int	Cgi::execute(std::string& final_path, const std::string* exec_path, Request 
 
 void	Cgi::handle(uint32_t events)
 {
-	// std::cout << "Cgi handle" << std::endl;
 	if (events & EPOLLERR)
 	{
 		close_fd(_out_fd);
@@ -145,7 +144,6 @@ void	Cgi::handle(uint32_t events)
 		size_t	remain = _body.size() - _written;
 		if (remain == 0)
 		{
-			std::cout << "cgi input is done" << std::endl;
 			close_fd(_in_fd);
 			_state  = CGI_READING;
 			return ;
@@ -154,7 +152,6 @@ void	Cgi::handle(uint32_t events)
 		if (n > 0)
 		{
 			_written += static_cast<size_t>(n);
-			std::cout << "cgi input, n : " << n << " written: " << _written << std::endl;
 			if (_written >= _body.size())
 			{
 				close_fd(_in_fd);
@@ -169,23 +166,9 @@ void	Cgi::handle(uint32_t events)
 			close_fd(_in_fd);
 			_state = CGI_ERROR;
 		}
-		// if (_written >= _body.size())
-		// {
-		// 	std::cout << "cinput 3 " << std::endl;
-		// 	std::cout << "cgi writing"  << std::endl;
-		// 	Epoll::instance().del_fd(_in_fd);
-		// 	close(_in_fd);
-		// 	_in_fd = -1;
-		// 	_state = CGI_READING;
-		// 	std::cout << "cgi input done" << std::endl;
-		// 	return ;
-		// }
-		// std::cout << "cinput 4 " << remain << std::endl;
-		// _state = CGI_READING;
 	}
 	if ((events & (EPOLLIN | EPOLLHUP)) && _out_fd != -1)
 	{
-		// std::cout << "cgi epollin : state " << _state << std::endl;
 
 		char 	buffer[4096];
 		ssize_t	total = 0;
@@ -280,7 +263,6 @@ void	Cgi::cleanup()
 	}
 	close_fd(_in_fd);
 	close_fd(_out_fd);
-	// std::cout << YELLOW << "[connection]\tcgi timeout\t\t\t| socket:" << _fd << "(client)" << RESET << std::endl;
 	_state = CGI_KILL;
 }
 

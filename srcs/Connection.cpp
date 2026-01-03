@@ -106,12 +106,12 @@ const t_location*	Connection::find_location(std::string &req_url, std::string &f
 			
 			if (location)
 			{
-				std::cout << "i found location " << std::endl;
 				remain = req_url.substr(i);
 				if (location->root.empty())
 					final_path = _server->root() + (_loc == "/" ? "" : _loc) + remain;
 				else
 					final_path = location->root + remain;
+				// std::cout << "fubak : " << final_path << std::endl;
 				return (location);
 			}
 		}
@@ -169,7 +169,6 @@ void	Connection::handle(uint32_t events)
 		{
 			if (_cgi)
 			{
-				std::cout << "cgi got in " << std::endl;
 				if (_cgi->state() == CGI_KILL)
 				{
 					std::cout << YELLOW << "[connection]\tcgi timeout\t\t\t| socket:" << _fd << "(client)" << RESET << std::endl;
@@ -179,8 +178,6 @@ void	Connection::handle(uint32_t events)
 				}
 				else if (_cgi->state() == CGI_DONE)
 				{
-					/// shit need to fix
-					// std::cout << std::string(40, '=') << "\n" << _cgi->output().size() << std::endl;
 					_rep.cgi_handle(_cgi->output());
 					if (_cgi)
 					{
@@ -253,7 +250,6 @@ bool	Connection::read_header()
 			return (false);
 		}
 	}
-	// std::cout << std::string(40, '=') << "\n" << _reader.header << std::string(40, '=') << std::endl;
 	return (true);
 }
 
@@ -350,7 +346,6 @@ void	Connection::route()
 	if (_req.body().size() > _server->max_size())
 	{	
 		_rep._status = 413;
-		std::cout << " loL " << std::endl;
 		return ;
 	}
 	if (_location)
@@ -404,7 +399,6 @@ void	Connection::route()
 				return ;
 			case FILEHANDLE:
 				_rep._status = handleFile(_location, remain_path, _req, _rep);
-				std::cout << "filehandle: " << _rep._status << std::endl;
 				break;
 		}
 
@@ -430,14 +424,12 @@ void	Connection::handle_error()
 		err_page = get(_server->err_pages(), _rep._status);
 		if (err_page)
 			err_path = _server->root() + *err_page;
-		// std::cout << "error path 1" << err_path << " : " << std::endl;
 	}
 	if (_location && !_location->err_pages.empty())
 	{
 		err_page = get(_location->err_pages, _rep._status);
 		if (err_page)
 			err_path = (_location->root.empty() ? _server->root() : _location->root) + *err_page;
-		// std::cout << "error path 2" << err_path << " : " << *err_page << std::endl;
 	}
 	if (!err_path.empty())
 	{
