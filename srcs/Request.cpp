@@ -26,6 +26,50 @@ Request::Request():
 	content_types["multipart/form-data"] = FORM;
 }
 
+Request::Request(const Request &other)
+    : _method(other._method),
+      _path(other._path),
+      version(other.version),
+      hostname(other.hostname),
+      port(other.port),
+      content_type(other.content_type),
+      content_len(other.content_len),
+      conn_status(other.conn_status),
+      _query(other._query),
+      _body(other._body),
+      _category(other._category),
+      binary_data(other.binary_data),
+      _cgi_env(other._cgi_env),
+      boundary(other.boundary),
+      content_types(other.content_types),
+      _upload_files(other._upload_files)
+{}
+
+Request &Request::operator=(const Request &other)
+{
+    if (this == &other)
+        return (*this);
+
+    _method = other._method;
+    _path = other._path;
+    version = other.version;
+    hostname = other.hostname;
+    port = other.port;
+    content_type = other.content_type;
+    content_len = other.content_len;
+    conn_status = other.conn_status;
+    _query = other._query;
+    _body = other._body;
+    _category = other._category;
+    binary_data = other.binary_data;
+    _cgi_env = other._cgi_env;
+    boundary = other.boundary;
+    content_types = other.content_types;
+    _upload_files = other._upload_files;
+
+    return (*this);
+}
+
 Request::~Request() {}
 
 bool validate_len(std::string token){

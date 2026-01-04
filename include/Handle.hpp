@@ -20,9 +20,9 @@ typedef struct	s_location	t_location;
 std::string	status_page(int status);
 
 int 	norm_handle(std::string	&final_path, Request &req, Response &rep,
-     const t_location* location, std::string loc, const Server* server);
+     const t_location* location, const Server* server);
 void	redirect_handle(int status, const std::string &path, Response& rep);
-int		cgi_handle(std::string &final_path, const t_location *location, Request& req, Response& rep);
+int		cgi_handle(std::string &final_path, const t_location *location, Request& req);
 
 int	handleFile(const t_location* location, std::string &remain_path, Request &req, Response &rep);
 int handleServerIndex(Response &rep, const Server *server);

@@ -41,7 +41,7 @@ class	Server : public IPollable
 		std::string _ip;
 		std::string _port;
 		std::string _root;
-		long long	_max_size;
+		size_t		_max_size;
 		int			_r_status;
 		std::string	_r_url;
 		std::time_t	_time;
@@ -83,7 +83,7 @@ class	Server : public IPollable
 		std::string	root() const;
 		int			r_status() const;
 		std::string	r_url() const;
-		long long	max_size() const;
+		size_t	max_size() const;
 		const std::map<int, std::string>& err_pages() const;
 		
 		std::vector<std::string> server_idx() const;

@@ -180,9 +180,7 @@ void	Cgi::handle(uint32_t events)
 	}
 	if ((events & (EPOLLIN | EPOLLHUP)) && _out_fd != -1)
 	{
-
 		char 	buffer[4096];
-		ssize_t	total = 0;
 		while (true)
         {
             ssize_t n = ::read(_out_fd, buffer, sizeof(buffer));

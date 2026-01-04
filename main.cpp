@@ -3,104 +3,9 @@
 #include "Request.hpp"
 #include "Utils.hpp"
 
-#include <pwd.h>
-
-// void	testing_request()
-// {
-// 	const char* raw_reqs[] = {
-
-//     // 1. Simple text body */ //normal chunking
-//     "POST /echo HTTP/1.1\r\n"
-//     "Host: example.com\r\n"
-//     "Transfer-Encoding: chunked\r\n"
-//     "Content-Type: text/plain\r\n"
-//     "\r\n"
-//     "5\r\n"
-//     "Hello\r\n"
-//     "6\r\n"
-//     " World\r\n"
-//     "0\r\n"
-//     "\r\n",
-
-//     /* 2. Chunk split logically */
-//     "POST /data HTTP/1.1\r\n"
-//     "Host: example.com\r\n"
-//     "Transfer-Encoding: chunked\r\n"
-//     "\r\n"
-//     "A\r\n"
-//     "01234"
-//     "56789\r\n"
-//     "0\r\n"
-//     "\r\n",
-
-//    /* 3. JSON request (CGI) - CORRECTED */
-//     "POST /cgi-bin/api HTTP/1.1\r\n"
-//     "Host: example.com\r\n"
-//     "Transfer-Encoding: chunked\r\n"
-//     "Content-Type: application/json\r\n"
-//     "\r\n"
-//     "6\r\n"        // 6 bytes, not 7
-//     "{\"id\":"      // no \r\n here!
-//     "\r\n"         // chunk terminator
-//     "8\r\n"
-//     " 42,\"ok\""
-//     "\r\n"
-//     "6\r\n"        // 6 bytes, not 7
-//     ":true}"       // no \r\n here!
-//     "\r\n"
-//     "0\r\n"
-//     "\r\n",
-
-//     // /* 4. Multipart file upload */
-//     "POST /upload HTTP/1.1\r\n"
-//     "Host: example.com\r\n"
-//     "Transfer-Encoding: chunked\r\n"
-//     "Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryX\r\n"
-//     "\r\n"
-//     "1A\r\n"
-//     "------WebKitFormBoundaryX\r\n"
-//     "Content-Disposition: form-data; name=\"file\"; filename=\"a.txt\"\r\n"
-//     "Content-Type: text/plain\r\n"
-//     "\r\n"
-//     "Hello\r\n"
-//     "1A\r\n"
-//     "World\r\n"
-//     "------WebKitFormBoundaryX--\r\n"
-//     "0\r\n"
-//     "\r\n",
-
-//     /* 5. Chunk extensions */
-//     "POST /ext HTTP/1.1\r\n"
-//     "Host: example.com\r\n"
-//     "Transfer-Encoding: chunked\r\n"
-//     "\r\n"
-//     "5;foo=bar\r\n"
-//     "Hello\r\n"
-//     "0\r\n"
-//     "\r\n",
-
-
-	
-// 	/* 7. Normal Upload */
-// 	"POST /upload HTTP/1.1\r\n"
-// 	"Host: example.com\r\n"
-// 	"Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryX\r\n"
-// 	"Content-Length: 165\r\n"
-// 	"\r\n"
-// 	"------WebKitFormBoundaryX\r\n"
-// 	"Content-Disposition: form-data; name=\"file\"; filename=\"a.txt\"\r\n"
-// 	"Content-Type: text/plain\r\n"
-// 	"\r\n"
-// 	"Hello\n"
-// 	"World\n"
-// 	"------WebKitFormBoundaryX--\r\n",
-
-//     NULL
-// 	};
 
 int main(int ac, char **av)
 {
-	int	status = 0;
 	if(ac > 2) 
 		return (1);
 	init_global();
@@ -108,15 +13,11 @@ int main(int ac, char **av)
 	{
 		Webserv webserv;
 
-		// av[1] = (char *)(std::string(getpwuid(getuid())->pw_name) + ".conf").c_str();
-
 		webserv.fileParser(av[1]);
-        // webserv.printServers();
-		
-		// testing_request();
 		if (webserv.start())
 			return (1);
-	} catch (std::exception &e)
+	}
+	catch (std::exception &e)
 	{
 		std::cerr << e.what() << std::endl;
 	}

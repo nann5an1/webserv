@@ -8,7 +8,7 @@ std::string	status_page(int status)
 }
 
 /* ================ READ THE ENTIRE DIRECTORY AND LIST DOWN ================*/
-static std::string autoIndexOnListing(const Server *server, Request &req, std::string &path)
+static std::string autoIndexOnListing(Request &req, std::string &path)
 {
     DIR *dir = opendir(path.c_str());
     if (!dir)
@@ -66,7 +66,7 @@ int handleServerIndex(Response &rep, const Server *server)
 
 	// std::cout << "Server indexes size -> " << server_idx.size() << std::endl; 
 	// std::cout << "Server path -> " << server_path << std::endl;
-	for (int i = 0; i < server_idx.size(); ++i)
+	for (size_t i = 0; i < server_idx.size(); ++i)
 	{
 		index_path = server_path + "/" + server_idx[i];
 		if ((status = file_check(index_path, R_OK)) == 200)
@@ -80,7 +80,7 @@ int handleServerIndex(Response &rep, const Server *server)
 }
 
 int norm_handle(std::string &final_path, Request &req, Response &rep,
-                const t_location *location, std::string loc,
+                const t_location *location,
                 const Server *server)
 {
     std::string path = final_path;
@@ -108,7 +108,7 @@ int norm_handle(std::string &final_path, Request &req, Response &rep,
         if (location->autoindex)
         {
 			// std
-            rep._body = autoIndexOnListing(server, req, path);
+            rep._body = autoIndexOnListing(req, path);
             if (rep._body.empty())
                 return 403;
 
@@ -167,7 +167,7 @@ void	redirect_handle(int status, const std::string &path, Response& rep)
 	}
 }
 
-int	cgi_handle(std::string &final_path, const t_location *location, Request& req, Response& rep)
+int	cgi_handle(std::string &final_path, const t_location *location, Request& req)
 {
 	fd	in_pipe[2];
 	fd	out_pipe[2];
@@ -175,7 +175,7 @@ int	cgi_handle(std::string &final_path, const t_location *location, Request& req
 
 	std::vector<std::string>	cgi_env = req.cgi_env();
 	std::vector<const char *>	env;
-	for (int i = 0; i < cgi_env.size(); ++i)
+	for (size_t i = 0; i < cgi_env.size(); ++i)
 		env.push_back(cgi_env[i].c_str());
 	env.push_back(NULL);
 

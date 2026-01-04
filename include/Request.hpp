@@ -1,8 +1,6 @@
 #ifndef REQUEST_HPP
 #define REQUEST_HPP
 
-// #include "Webserv.hpp"
-// #include "Server.hpp"
 #include <iostream>
 #include <map>
 #include <cstring>
@@ -41,13 +39,13 @@ class Request{
 		std::string version;
 		std::string hostname;
 		int port;
-		int content_type;        	// Data Content Type
+		int content_type;			// Data Content Type
 		int content_len;
 		std::string conn_status;	// Keep Alive or Close
 		std::string _query;
 		std::string _body;
 		request_cat	_category;		// Request Category : CGI, Upload, etc.
-		std::string binary_data; //data from the extractMultipleParts
+		std::string binary_data;	//data from the extractMultipleParts
 		std::vector<std::string> _cgi_env;
 		std::string boundary;
 		std::map<std::string, content_category> content_types;
@@ -56,8 +54,9 @@ class Request{
 	public:
 		Request();
 		~Request();
-		// Request(const Request &other);
-		// Request &operator=(const Request &other);
+		Request(const Request &other);
+		Request &operator=(const Request &other);
+
 		void parseRequest(const char *raw_request);
 		void handleChunkedBody(const char* body);
 		void extractMultipartFiles(const std::string &body);

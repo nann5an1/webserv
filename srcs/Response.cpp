@@ -3,20 +3,20 @@
 #include <iostream>
 #include <cstring>
 
-Response::Response() : _status(200), _type("text/plain"), _body(""), _reply(""), _location("") {}
+Response::Response() : _status(200), _reply(""), _body(""), _type("text/plain"), _location("")  {}
 
-Response::Response(const Response &other) : _status(other._status), _type(other._type), 
-											_body(other._body), _reply(other._reply),  _location(other._location) {}
+Response::Response(const Response &other) : _status(other._status), _reply(other._reply), _body(other._body),
+											_type(other._type), _location(other._location) {}
 
 Response &Response::operator=(const Response &other)
 {
 	if (this != &other)
 	{
 		_status = other._status;
+		_reply = other._reply;
+		_body = other._body;
 		_type = other._type;
 		_location = other._location;
-		_body = other._body;
-		_reply = other._reply;
 	}
 	return (*this);
 }
@@ -171,9 +171,9 @@ std::string	Response::build()
     if (!_type.empty())
         _reply += "Content-Type: " + _type + CRLF;
     if (!_body.empty())
+	{
         _reply += "Content-Length: " + to_string(_body.size()) + CRLF;
-
-	// End of headers
+	}
 	_reply += CRLF;
 
 	// Do NOT append _body here! Send body separately

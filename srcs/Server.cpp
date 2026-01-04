@@ -9,24 +9,24 @@ Server::Server() :
 	_root(""), 
 	_max_size(0),
 	_r_status(0),
-	_r_url("")
+	_r_url(""),
+	_time(0)
 {}
 
 Server::Server(const Server &other) :
-	_fd(other._fd),
-	_name(other._name),
-	_ip(other._ip),
-	_port(other._port),
-	_root(other._root),
-	_max_size(other._max_size),
-	_r_status(other._r_status),
-	_r_url(other._r_url),
-	_err_pages(other._err_pages),
-	_locations(other._locations),
-	_server_idx(other._server_idx)
-{
-    (void)other;
-}
+    _fd(other._fd),
+    _name(other._name),
+    _ip(other._ip),
+    _port(other._port),
+    _root(other._root),
+    _max_size(other._max_size),
+    _r_status(other._r_status),
+    _r_url(other._r_url),
+    _time(other._time),
+    _server_idx(other._server_idx),
+    _err_pages(other._err_pages),
+    _locations(other._locations)
+{}
 
 Server& Server:: operator=(const Server &other)
 {
@@ -78,7 +78,7 @@ Server::Server(std::ifstream &file) :
 		std::stringstream	ss(line);
 		ss >> tok;
 
-		if (tok == "{" && tok == "\n")
+		if (tok == "{" || tok == "\n")
 			continue ;
 		if (tok == "location" && !location_scope)
 		{
@@ -129,7 +129,7 @@ int	Server::parse_err_pages(std::stringstream &ss, std::map<int,std::string> &er
 	if (temp.size() <= 1)
 		return (0);
 	std::string	err_path = trimSemiColon(temp[temp.size() - 1]);
-	for (int i = 0; i < temp.size() - 1; ++i)
+	for (size_t i = 0; i < temp.size() - 1; ++i)
 	{
 		int	key = std::atoi(temp[i].c_str());
 		if (!validateHTTPCode(key) && key >= 400 && key <= 599)
@@ -403,7 +403,7 @@ std::string	Server::r_url() const
 	return (_r_url);
 }
 
-long long	Server::max_size() const
+size_t	Server::max_size() const
 {
 	return (_max_size);
 }
@@ -426,17 +426,18 @@ std::vector<std::string> Server::server_idx() const
 //accepting clients
 void	Server::handle(uint32_t events)
 {
-		Connection	*con = new Connection(this);
-		fd	con_fd = *con;
-		if (con_fd < 0)
-		{
-			delete con;
-			fail("Server: Client", errno);
-			return ;
-		}
-		if (Epoll::instance().add_fd(con, con_fd, EPOLLIN) < 0)
-		{
-			fail("Epoll: Client", errno);
-			delete con;
-		}
+	(void)events;
+	Connection	*con = new Connection(this);
+	fd	con_fd = *con;
+	if (con_fd < 0)
+	{
+		delete con;
+		fail("Server: Client", errno);
+		return ;
+	}
+	if (Epoll::instance().add_fd(con, con_fd, EPOLLIN) < 0)
+	{
+		fail("Epoll: Client", errno);
+		delete con;
+	}
 }

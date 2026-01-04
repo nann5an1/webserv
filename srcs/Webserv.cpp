@@ -16,7 +16,6 @@ Webserv::~Webserv() {}
 
 bool	Webserv::servers_start()
 {
-	int status = 0;
 	int	size = _servers.size(), fail_count = 0;
 	std::cerr << "[webserv]\tstarting " << size << " server(s)" << std::endl;
 	for (int i = 0; i < size; ++i)
@@ -33,7 +32,7 @@ bool	Webserv::servers_start()
 
 bool	Webserv::server_add()
 {
-	int	fail_count = 0;
+	size_t	fail_count = 0;
 	for(std::size_t i = 0; i < _servers.size(); ++i)
 	{
 		Server	&server = _servers[i];
@@ -147,7 +146,7 @@ int	Webserv::scopeValidation(std::ifstream &file)
 void	Webserv::print_server_head() const
 {
 	std::cout << "server count : " << _servers.size() << std::endl;
-	for (int i = 0; i < _servers.size(); ++i)
+	for (size_t i = 0; i < _servers.size(); ++i)
 	{
 		const Server	&server = _servers[i];
 		fd	s_fd = server;
@@ -167,7 +166,6 @@ void	Webserv::printServers() const
 
 int	Webserv::start()
 {
-	int	status = 0;
 
 	install_signals();
 

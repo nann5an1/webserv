@@ -3,38 +3,36 @@
 #include "Cgi.hpp"
 
 Connection::Connection() :
-	_fd(-1),
-	_ip(""),
-	_port(0),
-	_time(0),
-	_state(CREATED),
-	_req(),
-	_rep(),
-	_server(NULL),
-	_loc(""),
-	_location(NULL),
-	_cgi(NULL),
-	_written(0)
-{
-	_reader = t_reader();
-}
+    _fd(-1),
+    _server(NULL),
+    _ip(""),
+    _port(0),
+    _time(0),
+    _cgi(NULL),
+    _location(NULL),
+    _loc(""),
+    _state(CREATED),
+    _reader(),
+    _req(),
+    _rep(),
+    _written(0)
+{}
 
 Connection::Connection(const Connection &other) :
-	_fd(-1),
-	_ip(other._ip),
-	_port(other._port),
-	_time(other._time),
-	_state(other._state),
-	_req(other._req),
-	_rep(other._rep),
-	_server(other._server),
-	_loc(other._loc),
-	_location(other._location),
-	_cgi(other._cgi),
-	_written(other._written)
-{
-	_reader = other._reader;
-}
+	_fd(other._fd),
+    _server(other._server),
+    _ip(other._ip),
+    _port(other._port),
+    _time(other._time),
+    _cgi(other._cgi),
+    _location(other._location),
+    _loc(other._loc),
+    _state(other._state),
+    _reader(other._reader),
+    _req(other._req),
+    _rep(other._rep),
+    _written(other._written)
+{}
 
 Connection	&Connection::operator=(const Connection &other)
 {
@@ -61,16 +59,18 @@ Connection::~Connection() {}
 
 Connection::Connection(const Server *server) :
 	_fd(-1),
-	_server(server),
-	_state(CREATED),
-	_reader(t_reader()),
-	_ip(""),
-	_port(0),
-	_time(0),
-	_loc(""),
-	_location(NULL),
-	_cgi(NULL),
-	_written(0)
+    _server(server),
+    _ip(""),
+    _port(0),
+    _time(0),
+    _cgi(NULL),
+    _location(NULL),
+    _loc(""),
+    _state(CREATED),
+    _reader(),
+    _req(),
+    _rep(),
+    _written(0)
 {
 	fd	server_fd = *_server;
 	sockaddr_in	client_addr;
@@ -101,9 +101,9 @@ const t_location*	Connection::find_location(std::string &req_url, std::string &f
 {
 	const t_location*	location = NULL;
 
-	for (int i = req_url.size(); i >= 0; --i)
+	for (int i = (int)req_url.size(); i >= 0; --i)
 	{
-		if (req_url[i] == '/' || i == req_url.size())
+		if (req_url[i] == '/' || i == (int)req_url.size())
 		{
 			_loc = req_url.substr(0, i);
 			location = get(_server->locations(), !i ? "/" : _loc);
@@ -271,6 +271,7 @@ bool	Connection::request()
 	switch (_state)
 	{
 		case CREATED: _state = READING_HEADERS;
+			/* fall through */
 			
 		case READING_HEADERS:
 			return (read_header());
@@ -284,7 +285,7 @@ bool	Connection::request()
 					return (_rep._status = 413, false);
 				_time = time(NULL);
 				if ((_reader.is_chunked && _reader.body.find(CRLF + "0" + CRLF) != std::string::npos) ||
-				_reader.content_len > 0 && _reader.body.size() >= _reader.content_len)
+				(_reader.content_len > 0 && _reader.body.size() >= _reader.content_len))
 					_state = PROCESSING;
 				return (true);
 			}
@@ -298,7 +299,7 @@ bool	Connection::request()
 				return (_rep._status = 500, false);
 			}
 			if ((_reader.is_chunked && _reader.body.find(CRLF + "0" + CRLF) != std::string::npos) ||
-				_reader.content_len > 0 && _reader.body.size() >= _reader.content_len)
+				(_reader.content_len > 0 && _reader.body.size() >= _reader.content_len))
 				_state = PROCESSING;
 			return (true);
 		}
@@ -385,7 +386,7 @@ void	Connection::route()
 		switch (_req.category())
 		{
 			case NORMAL:
-				_rep._status = norm_handle(final_path, _req, _rep, _location, _loc, _server);
+				_rep._status = norm_handle(final_path, _req, _rep, _location, _server);
 				break;
 			case CGI:
 				int status;
