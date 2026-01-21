@@ -81,7 +81,7 @@ bool validate_len(std::string token){
 std::string toLower(std::string token){
 	std::string result = "";
 	for(size_t i = 0; i < token.length(); i++){
-		if(std::isalpha(token[i]))  result += (char)std::tolower(token[i]);
+		if(std::isalpha(static_cast<unsigned char>(token[i])))  result += std::tolower(static_cast<unsigned char>(token[i]));
 		else result += token[i];
 	}
 	return result;
@@ -133,10 +133,6 @@ void Request::extractMultipartFiles(const std::string &body)
 {
 	std::string delimiter = "--" + boundary;
 	size_t pos = 0;
-
-	std::cout << "=== Starting multipart extraction ===" << std::endl;
-	std::cout << "Boundary: [" << boundary << "]" << std::endl;
-	std::cout << "Body length: " << body.length() << std::endl;
 
 	while (true)
 	{

@@ -57,8 +57,10 @@ Connection	&Connection::operator=(const Connection &other)
 
 Connection::~Connection() {}
 
+// In Connection.cpp - Update the Server constructor
+
 Connection::Connection(const Server *server) :
-	_fd(-1),
+    _fd(-1),
     _server(server),
     _ip(""),
     _port(0),
@@ -72,28 +74,51 @@ Connection::Connection(const Server *server) :
     _rep(),
     _written(0)
 {
-	fd	server_fd = *_server;
-	sockaddr_in	client_addr;
-	socklen_t	client_len = sizeof(client_addr);
-	_fd = accept(server_fd, (sockaddr *)&client_addr, &client_len);
-	if (_fd < 0 )
-	{
-		if (errno != EAGAIN && errno != EWOULDBLOCK)
-			fail("Epoll", errno);
-		return ;
-	}
-	_ip = inet_ntoa(client_addr.sin_addr);
-	_port = ntohs(client_addr.sin_port);
-	if (fcntl(_fd, F_SETFL, fcntl(_fd, F_GETFL, 0) | O_NONBLOCK) < 0)
-	{
-		fail("Connection", errno);
-		if (_fd > 0)
-			close(_fd);
-		_fd = -1;
-		return;
-	}
-	_time = time(NULL);
-	std::cout << "[connection]\tclient connected\t\t| " << _ip << ":" << _port << " | socket:" << _fd << std::endl;
+    fd server_fd = *_server;
+    sockaddr_in client_addr;
+    socklen_t client_len = sizeof(client_addr);
+    
+    std::memset(&client_addr, 0, sizeof(client_addr));
+    
+    _fd = accept(server_fd, (sockaddr *)&client_addr, &client_len);
+    
+    if (_fd < 0)
+    {
+        // This is normal - no more connections to accept
+        if (errno == EAGAIN || errno == EWOULDBLOCK)
+            return;
+        
+        // Real error
+        fail("Connection: Accept", errno);
+        return;
+    }
+    
+    // Get client info
+    _ip = inet_ntoa(client_addr.sin_addr);
+    _port = ntohs(client_addr.sin_port);
+    
+    // Set non-blocking
+    int flags = fcntl(_fd, F_GETFL, 0);
+    if (flags < 0)
+    {
+        fail("Connection: F_GETFL", errno);
+        close(_fd);
+        _fd = -1;
+        return;
+    }
+    
+    if (fcntl(_fd, F_SETFL, flags | O_NONBLOCK) < 0)
+    {
+        fail("Connection: F_SETFL", errno);
+        close(_fd);
+        _fd = -1;
+        return;
+    }
+    
+    _time = time(NULL);
+    
+    std::cout << "[connection]\tclient connected\t\t| " << _ip << ":" 
+              << _port << " | socket:" << _fd << std::endl;
 }
 
 /* ====================== return the whole location block from the config ======================*/
@@ -176,7 +201,7 @@ void	Connection::handle(uint32_t events)
 				{
 					std::cout << YELLOW << "[connection]\tcgi timeout\t\t\t| socket:" << _fd << "(client)" << RESET << std::endl;
 					_rep._status = 504;
-					delete	_cgi;
+					delete _cgi;
 					_cgi = NULL;
 				}
 				else if (_cgi->state() == CGI_DONE)
@@ -189,7 +214,7 @@ void	Connection::handle(uint32_t events)
 					}
 					_state = CHECK_ERROR;
 				}
-				return ;
+				return;  // ← ADD THIS CRITICAL LINE
 			}
 			_state = CHECK_ERROR;
 		}
@@ -381,7 +406,7 @@ void	Connection::route()
 			if (!exec_path)
 				_req.set_category(NORMAL);
 		}
-		else if(_req.method() == "DELETE" && _req.category() != CGI)
+		if(_req.method() == "DELETE" && _req.category() != CGI && _req.category() != REDIRECTION)
 			_req.set_category(FILEHANDLE);
 		switch (_req.category())
 		{
@@ -412,12 +437,18 @@ void	Connection::route()
 		}
 
 	}
-	else if(_server->locations().empty() && _req.path() == "/")
+	else if(_server->locations().empty())
 	{
-		
-		_rep._type = "text/html";
-		_rep._status = handleServerIndex(_rep, _server);
-		if(_rep._status != 200) _rep._body = status_page(404);
+		if (_req.path() == "/")
+		{
+			_rep._type = "text/html";
+			_rep._status = handleServerIndex(_rep, _server);
+			if(_rep._status != 200) _rep._body = status_page(404);
+		}
+		else{
+			_rep._status = 404;
+			_rep._body = status_page(404);
+		}
 	}
 }
 
@@ -451,23 +482,23 @@ void	Connection::handle_error()
 	_rep._body = status_page(_rep._status);
 }
 
-void	Connection::cleanup()
+void Connection::cleanup()
 {
-	if (_cgi)
-	{
-		_cgi->timeout();
-		delete _cgi;
-		_cgi = NULL;
-	}
-	std::cout << "[connection]\tclient disconnected\t\t| socket:" << _fd << std::endl;
+    if (_cgi)
+    {
+        _cgi->timeout();
+        delete _cgi;
+        _cgi = NULL;
+    }
+    std::cout << "[connection]\tclient disconnected\t\t| socket:" << _fd << std::endl;
 
-	Epoll::instance().del_fd(_fd);
-	if (_fd >= 0)
-	{
-		close(_fd);
-		_fd = -1;
-	}
-	delete	this;
+    Epoll::instance().del_fd(_fd);  // Remove from epoll FIRST
+    if (_fd >= 0)
+    {
+        close(_fd);
+        _fd = -1;
+    }
+    delete this;  // Then delete
 }
 
 bool	Connection::is_timeout() const
@@ -475,16 +506,15 @@ bool	Connection::is_timeout() const
 	return (get_time() >= CON_TIMEOUT);
 }
 
-void	Connection::timeout()
+void Connection::timeout()
 {
-	std::cout << YELLOW << "[connection]\tclient timeout\t\t\t| socket:" << _fd << RESET << std::endl;
-	_rep._status = 408;
-	_rep._body = status_page(408);
-	_rep._type = "text/html";
-	response();
-	_written = 0;
-	cleanup();
-
+    std::cout << YELLOW << "[connection]\tclient timeout\t\t\t| socket:" << _fd << RESET << std::endl;
+    _rep._status = 408;
+    _rep._body = status_page(408);
+    _rep._type = "text/html";
+    _written = 0;  // ← Reset BEFORE sending response
+    response();
+    cleanup();
 }
 
 std::time_t	Connection::get_time() const

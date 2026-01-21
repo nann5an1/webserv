@@ -81,12 +81,17 @@ int Epoll::mod_fd(IPollable* poll_obj, fd fd_, uint32_t events)
 
 int Epoll::del_fd(fd fd_)
 {
-	if (_fd < 0 || fd_ < 0)
-		return (-1);
-	int status = epoll_ctl(_fd, EPOLL_CTL_DEL, fd_, NULL);
-	if (status != -1)
-		_objs.erase(fd_);
-	return (status);
+    if (_fd < 0 || fd_ < 0)
+        return (-1);
+    
+    // Remove from tracking map FIRST
+    _objs.erase(fd_);
+    
+	// std::cout << "[DEBUG] Removing fd=" << fd_ << " from epoll" << std::endl;
+    // Then remove from epoll (ignore errors)
+    epoll_ctl(_fd, EPOLL_CTL_DEL, fd_, NULL);
+    
+    return (0);  // Always return success
 }
 
 int Epoll::wait(struct epoll_event *events, int maxevents, int timeout)
@@ -103,18 +108,28 @@ Epoll::operator	fd() const
 
 void Epoll::objs_timeout()
 {
-	std::set<IPollable*>	timed_out;
-
-	for (std::map<fd, IPollable*>::iterator it = _objs.begin(); it != _objs.end(); ++it)
-	{
-		IPollable* obj = it->second;
-		if (obj && obj->is_timeout())
-			timed_out.insert(obj);
-	}
-	for (std::set<IPollable*>::iterator it = timed_out.begin(); it != timed_out.end(); ++it)
-	{
-		IPollable* obj = *it;
-		if (obj)
-			obj->timeout();
-	}
+    std::vector<IPollable*> timed_out;
+    std::set<IPollable*> seen;
+    
+    // Collect unique timed-out objects
+    for (std::map<fd, IPollable*>::iterator it = _objs.begin(); it != _objs.end(); ++it)
+    {
+        IPollable* obj = it->second;
+        if (obj && obj->is_timeout())
+        {
+            if (seen.find(obj) == seen.end())
+            {
+                seen.insert(obj);
+                timed_out.push_back(obj);
+            }
+        }
+    }
+    
+    // Call timeout on collected objects
+    for (size_t i = 0; i < timed_out.size(); ++i)
+    {
+        IPollable* obj = timed_out[i];
+        if (obj)
+            obj->timeout();
+    }
 }

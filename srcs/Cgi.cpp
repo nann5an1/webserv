@@ -21,15 +21,23 @@ Cgi	&Cgi::operator=(const Cgi &other)
 
 Cgi::~Cgi() 
 {
-	 if (_pid > 0)
+    if (_pid > 0)
     {
         ::kill(_pid, SIGKILL);
         ::waitpid(_pid, NULL, 0);
     }
+    
+    // Just close, don't call close_fd (which accesses Epoll)
     if (_in_fd >= 0)
-        close_fd(_in_fd);
+    {
+        close(_in_fd);
+        _in_fd = -1;
+    }
     if (_out_fd >= 0)
-        close_fd(_out_fd);
+    {
+        close(_out_fd);
+        _out_fd = -1;
+    }
 }
 
 void	Cgi::close_fd(int &fd_)

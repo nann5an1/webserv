@@ -322,30 +322,65 @@ void	Server::print() const
     std::cout << "=================================================\n";
 }
 
-int	Server::start()
-{
-	socklen_t	opt = 1;
-	struct sockaddr_in	sock_addr;
+// In Server.cpp - Update the start() function
 
-	std::memset(&sock_addr, 0, sizeof(sock_addr));
-	sock_addr.sin_family = AF_INET;	
-	sock_addr.sin_port = htons(std::atoi(_port.c_str()));
-	sock_addr.sin_addr.s_addr = inet_addr(_ip.c_str());
-	if ((_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0 ||
-		setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0 ||
-		bind(_fd, (sockaddr *)&sock_addr, sizeof(sock_addr)) < 0 ||
-		fcntl(_fd, F_SETFL, fcntl(_fd, F_GETFL, 0) | O_NONBLOCK) < 0 ||
-		listen(_fd, SOMAXCONN) < 0)
-	{
-		int status = fail("Server: " + std::string(*this), errno);
-		if (_fd > 0)
-			close(_fd);
-		_fd = -1;
-		return (status);
-	}
-	std::cout << "[server]\t" << std::string(*this) << "\t| socket:" << _fd << " started - http://" << _ip << ":" << _port << std::endl;
-	_time = time(NULL);
-	return (0);
+int Server::start()
+{
+    socklen_t opt = 1;
+    struct sockaddr_in sock_addr;
+
+    std::memset(&sock_addr, 0, sizeof(sock_addr));
+    sock_addr.sin_family = AF_INET;    
+    sock_addr.sin_port = htons(std::atoi(_port.c_str()));
+    sock_addr.sin_addr.s_addr = inet_addr(_ip.c_str());
+    
+    // Create socket
+    if ((_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    {
+        int status = fail("Server: Socket", errno);
+        return status;
+    }
+    
+    // Set SO_REUSEADDR to allow quick restart
+    if (setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
+    {
+        fail("Server: SO_REUSEADDR", errno);
+        close(_fd);
+        _fd = -1;
+        return -1;
+    }
+	
+    // Bind to address
+    if (bind(_fd, (sockaddr *)&sock_addr, sizeof(sock_addr)) < 0)
+    {
+        fail("Server: Bind", errno);
+        close(_fd);
+        _fd = -1;
+        return -1;
+    }
+    
+    // Set non-blocking
+    if (fcntl(_fd, F_SETFL, fcntl(_fd, F_GETFL, 0) | O_NONBLOCK) < 0)
+    {
+        fail("Server: Non-blocking", errno);
+        close(_fd);
+        _fd = -1;
+        return -1;
+    }
+    
+    // Listen with large backlog
+    if (listen(_fd, SOMAXCONN) < 0)
+    {
+        fail("Server: Listen", errno);
+        close(_fd);
+        _fd = -1;
+        return -1;
+    }
+    
+    std::cout << "[server]\t" << std::string(*this) << "\t| socket:" << _fd 
+              << " started - http://" << _ip << ":" << _port << std::endl;
+    _time = time(NULL);
+    return 0;
 }
 
 bool	Server::is_timeout() const
@@ -424,20 +459,44 @@ std::vector<std::string> Server::server_idx() const
 }
 
 //accepting clients
-void	Server::handle(uint32_t events)
-{
-	(void)events;
-	Connection	*con = new Connection(this);
-	fd	con_fd = *con;
-	if (con_fd < 0)
-	{
-		delete con;
-		fail("Server: Client", errno);
-		return ;
-	}
-	if (Epoll::instance().add_fd(con, con_fd, EPOLLIN) < 0)
-	{
-		fail("Epoll: Client", errno);
-		delete con;
-	}
+// In Server.cpp - Update the handle() function
+
+void Server::handle(uint32_t events)
+{   
+    if (events & (EPOLLERR | EPOLLHUP))
+    {
+        std::cout << "[ERROR] Server socket error/hangup!" << std::endl;
+        fail("Server: Socket error", errno);
+        return;
+    }
+    
+    // Accept new connections in a loop
+    while (true)
+    {
+        Connection *con = new Connection(this);
+        fd con_fd = *con;
+        
+        if (con_fd < 0)
+        {
+            // Check if it's just EAGAIN/EWOULDBLOCK (no more connections)
+            if (errno == EAGAIN || errno == EWOULDBLOCK)
+            {
+                delete con;
+                break; // No more connections to accept right now
+            }
+            
+            // Real error
+            delete con;
+            fail("Server: Accept", errno);
+            break;
+        }
+        
+        // Successfully accepted connection
+        if (Epoll::instance().add_fd(con, con_fd, EPOLLIN) < 0)
+        {
+            fail("Epoll: Add client", errno);
+            delete con; // This will close the connection
+            break;
+        }
+    }
 }

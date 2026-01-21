@@ -7,7 +7,7 @@
 int main(int ac, char **av)
 {
 	if(ac > 2) 
-		return (1);
+		return (std::cerr << "./webserv [configuration file]" << std::endl, 1);
 	init_global();
 	try
 	{

@@ -87,7 +87,6 @@ void	printMap(const std::map<K, V> &m) {
 template <typename MapType, typename KeyType>
 const typename MapType::mapped_type* get(const MapType& m, const KeyType& key)
 {
-	std::cout << "key " << key << std::endl;
 	typename MapType::const_iterator it = m.find(key);
 	if (it != m.end())
 		return &it->second;
